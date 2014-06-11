@@ -11,12 +11,9 @@
   display: inline-block;
 }
 
-/*
-.MathJax_Display {
-  text-align: center;
-  margin:       1em 0em
+.oo-ui-icon-math {
+  background-image: /* @embed */ url(math.svg);
 }
-*/
 
 .ve-ui-desktopContext {
   left: 5px !important;
