@@ -72,18 +72,7 @@ ve.ui.MathInspector.prototype.initialize = function () {
 ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
   return ve.ui.MathInspector.super.prototype.getSetupProcess.call( this, data )
     .next( function () {
-      console.log("ve.ui.MathInspector.getSetupProcess()");
-      // if ( !this.node ) {
-      //   // Note: collapseRangeToEnd returns a new fragment
-      //   this.fragment = this.getFragment().collapseRangeToEnd().insertContent( [
-      //     {
-      //       'type': 'mathInline',
-      //       'attributes': { 'formula': 'f(x)' }
-      //     }
-      //   ] );
-      //   this.getFragment().select();
-      //   this.node = this.getFragment().getSelectedNode();
-      // }
+      this.$contextOverlay.addClass("math-inspector");
     }, this );
 };
 
@@ -107,20 +96,23 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
   return ve.ui.MathInspector.super.prototype.getTeardownProcess.call( this, data )
     .first( function () {
       console.log("ve.ui.MathInspector.getTeardownProcess()", data);
+      this.$contextOverlay.removeClass("math-inspector");
       // Configuration initialization
       data = data || {};
-    } );
+    }, this);
 };
 
 ve.ui.MathInspector.prototype.onFormulaChange = function() {
   var newFormula = this.mathInput.getValue();
-
-  this.getFragment().changeAttributes(
-    {
-      'formula': newFormula
-    },
-    this.node.getType()
-  );
+  var fragment = this.getFragment();
+  if (fragment) {
+    fragment.changeAttributes(
+      {
+        'formula': newFormula
+      },
+      this.node.getType()
+    );
+  }
 };
 
 

@@ -107,13 +107,15 @@ ve.ce.MathNode.prototype.onClick = function ( e ) {
     selectionRange = surfaceModel.getSelection(),
     nodeRange = this.model.getOuterRange();
 
-  surfaceModel.getFragment(
-    e.shiftKey ?
-      ve.Range.newCoveringRange(
-        [ selectionRange, nodeRange ], selectionRange.from > nodeRange.from
-      ) :
-      nodeRange
-  ).select();
+  console.log("#########", nodeRange);
+
+  var surface = this.surface;
+
+  // FIXME: there seems to be a VE bug: when we select the node this way,
+  // the browser selection does not get updated
+  if (!e.shiftKey) {
+    surfaceModel.getFragment(nodeRange).select();
+  }
 };
 
 /**
@@ -125,7 +127,9 @@ ve.ce.MathNode.prototype.onClick = function ( e ) {
  * @method
  */
 ve.ce.MathNode.prototype.createHighlight = function () {
+  window.console.log("ce.MathNode.createHighlight");
   var node = this;
+
   this.$focusable.find( '.math' ).add( this.$focusable ).each(
     ve.bind( function ( i, el ) {
       var offset, $el = this.$( el );

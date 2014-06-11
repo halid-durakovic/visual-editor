@@ -15,31 +15,37 @@
   background-image: /* @embed */ url(math.svg);
 }
 
-.ve-ui-desktopContext {
+/* These are hacks to make the popup stretch over the whole width for math input */
+
+.ve-ui-desktopContext.math-inspector {
   left: 5px !important;
   right: 5px !important;
 }
 
-.oo-ui-popupWidget-tailed .oo-ui-popupWidget-popup {
+.ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-tailed .oo-ui-popupWidget-popup {
   position: static !important;
   width: auto !important;
 }
 
-.ve-ui-inspector .oo-ui-frame {
+.ve-ui-desktopContext.math-inspector .ve-ui-inspector .oo-ui-frame {
   width: 100% !important;
 }
 
-.ve-ui-desktopContext-inspectors {
+.ve-ui-desktopContext.math-inspector .ve-ui-desktopContext-inspectors {
   left: 0px !important;
   right: 0px !important;
 }
 
-.oo-ui-textInputWidget {
-width: auto !important;
+.oo-ui-textInputWidget.ve-ui-mathInputWidget {
+  width: auto !important;
 }
 
+.oo-ui-textInputWidget.ve-ui-mathInputWidget input {
+  text-align: center;
+  padding: 20px 0 20px 0;
+}
 
-.oo-ui-popupWidget-tailed .oo-ui-popupWidget-tail {
+.ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-tailed .oo-ui-popupWidget-tail {
   position: absolute !important;
   top: 0px !important;
   left: 50% !important;
