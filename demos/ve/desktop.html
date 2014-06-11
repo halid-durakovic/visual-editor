@@ -58,6 +58,8 @@
 		<link rel=stylesheet href="../../modules/ve/ui/themes/apex/ve.ui.Inspector.css">
 		<link rel=stylesheet href="../../modules/ve/ui/themes/apex/dialogs/ve.ui.ActionDialog.css">
 
+		<link rel=stylesheet href="../../modules/ve-ext/math/ve.ce.MathNode.css">
+
 		<!-- visualEditor.standalone.demo -->
 		<link rel=stylesheet href="../../demos/ve/demo.css">
 
@@ -329,6 +331,31 @@
 		<script src="../../modules/ve/ui/widgets/ve.ui.LanguageInputWidget.js"></script>
 		<script src="../../modules/ve/ui/inspectors/ve.ui.LanguageInspector.js"></script>
 		<script src="../../modules/ve/ui/inspectors/ve.ui.SpecialCharacterInspector.js"></script>
+
+		<script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js","asciimath2jax.js","toMathML.js"],
+      	"HTML-CSS": {
+         	linebreaks: {
+         		automatic: true,
+         		width: "container"
+         	}
+				},
+        showMathMenu: false,
+        showMathMenuMSIE: false,
+        TeX: { extensions: ["AMSmath.js","AMSsymbols.js","noUndefined.js"]},
+        jax: ["input/TeX","input/AsciiMath","output/HTML-CSS"],
+        // messageStyle: 'none'
+  	  });
+	    MathJax.Hub.config.skipStartupTypeset = true;
+    </script>
+		<script type="text/javascript" src="../../lib/MathJax/MathJax.js?config=TeX-MML-AM_HTMLorMML,local/local"></script>
+
+		<script src="../../modules/ve-ext/math/ve.dm.MathNode.js"></script>
+		<script src="../../modules/ve-ext/math/ve.ce.MathNode.js"></script>
+		<script src="../../modules/ve-ext/math/ve.ui.MathInputWidget.js"></script>
+		<script src="../../modules/ve-ext/math/ve.ui.MathInspector.js"></script>
+		<script src="../../modules/ve-ext/math/ve.ui.MathInspectorTool.js"></script>
 
 		<!-- visualEditor.desktop.build -->
 		<script src="../../modules/ve/ui/ve.ui.DesktopSurface.js"></script>
