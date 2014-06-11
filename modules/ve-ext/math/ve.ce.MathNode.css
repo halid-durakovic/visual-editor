@@ -1,7 +1,50 @@
-.ve-ce-mathNode {
+.ve-ce-mathNode .math-container {
+  display: inline-block;
 }
 
+.ve-ce-mathBlockNode {
+  display: block;
+  text-align: center;
+}
+
+.ve-ce-mathBlockNode .math-container {
+  display: inline-block;
+}
+
+/*
 .MathJax_Display {
-  text-align: "center";
-  margin:       "1em 0em"
-};
+  text-align: center;
+  margin:       1em 0em
+}
+*/
+
+.ve-ui-desktopContext {
+  left: 5px !important;
+  right: 5px !important;
+}
+
+.oo-ui-popupWidget-tailed .oo-ui-popupWidget-popup {
+  position: static !important;
+  width: auto !important;
+}
+
+.ve-ui-inspector .oo-ui-frame {
+  width: 100% !important;
+}
+
+.ve-ui-desktopContext-inspectors {
+  left: 0px !important;
+  right: 0px !important;
+}
+
+.oo-ui-textInputWidget {
+width: auto !important;
+}
+
+
+.oo-ui-popupWidget-tailed .oo-ui-popupWidget-tail {
+  position: absolute !important;
+  top: 0px !important;
+  left: 50% !important;
+  /*background: green;*/
+}
