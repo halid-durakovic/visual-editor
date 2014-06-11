@@ -31,7 +31,7 @@ ve.ce.MathNode = function VeCeMathNode( model, config ) {
 
   this.$element.on( 'click', ve.bind( this.onClick, this ) );
 
-  this.mathEl = null;
+  this.$mathEl = null;
   this.scriptEl = null;
 
   this.model.connect( this, { 'update': 'onUpdate' } );
@@ -59,23 +59,30 @@ ve.ce.MathNode.prototype.render = function () {
 
   var self = this;
   var formula = this.model.getFormula();
-  var mathEl = window.document.createElement('span');
-  this.mathEl = mathEl;
 
-  mathEl.classList.add('math-container');
-  mathEl.setAttribute("contenteditable", "false");
+  var wrappedFormula;
+  var elType = 'span';
   if (this.model.getType() === "mathInline") {
-    mathEl.innerHTML = "\\( " + formula + " \\)";
+    wrappedFormula = "\\( " + formula + " \\)";
   } else {
-    mathEl.innerHTML = "\\[ " + formula + " \\]";
+    wrappedFormula = "\\( " + formula + " \\)";
   }
 
-  this.$element.empty().append( mathEl );
+  var $mathEl = $(window.document.createElement(elType))
+    .addClass('math-container')
+    .attr('contenteditable', 'false')
+    .html(wrappedFormula);
+
+  this.$focusable = $mathEl;
+
+  this.$mathEl = $mathEl;
+
+  this.$element.empty().append( $mathEl );
 
   window.setTimeout(function() {
-    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, mathEl],
+    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, $mathEl[0]],
       function() {
-        self.scriptEl = self.$element.find('script')[0];
+        self.scriptEl = self.$mathEl.find('script')[0];
       }
     );
   }, 0);
@@ -86,7 +93,11 @@ ve.ce.MathNode.prototype.onUpdate = function () {
   if (this.scriptEl) {
     var formula = this.model.getFormula();
     this.scriptEl.textContent = formula;
-    window.MathJax.Hub.Queue(["Update", window.MathJax.Hub, this.mathEl]);
+    var self = this;
+    window.MathJax.Hub.Queue(["Update", window.MathJax.Hub, this.mathEl],
+      function() {
+      }
+    );
   }
 };
 
