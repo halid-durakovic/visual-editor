@@ -22,13 +22,17 @@
   right: 5px !important;
 }
 
-.ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-tailed .oo-ui-popupWidget-popup {
+.ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-popup {
   position: static !important;
   width: auto !important;
 }
 
 .ve-ui-desktopContext.math-inspector .ve-ui-inspector .oo-ui-frame {
   width: 100% !important;
+}
+
+.ve-ui-desktopContext.math-inspector .ve-ui-inspector .oo-ui-window-frame {
+  /*background: #EEE;*/
 }
 
 .ve-ui-desktopContext.math-inspector .ve-ui-desktopContext-inspectors {
