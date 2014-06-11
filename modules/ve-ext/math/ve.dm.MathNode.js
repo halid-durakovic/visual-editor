@@ -10,9 +10,9 @@
  * @param {number} [length] Length of content data in document; ignored and overridden to 0
  * @param {Object} [element] Reference to element in linear model
  */
-ve.dm.MathNode = function VeDmMathNode( length, element ) {
+ve.dm.MathNode = function VeDmMathNode( element ) {
   // Parent constructor
-  ve.dm.LeafNode.call( this, 0, element );
+  ve.dm.LeafNode.call( this, element );
 
   // Mixin constructors
   ve.dm.GeneratedContentNode.call( this );

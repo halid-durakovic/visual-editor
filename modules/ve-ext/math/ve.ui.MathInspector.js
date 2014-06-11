@@ -73,18 +73,26 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
   return ve.ui.MathInspector.super.prototype.getSetupProcess.call( this, data )
     .next( function () {
       this.$contextOverlay.addClass("math-inspector");
+
+      console.log("ve.ui.MathInspector.getReadyProcess()");
+      var fragment = this.getFragment();
+      if (!fragment) {
+        return false;
+      }
+      this.node = fragment.getSelectedNode();
+      if (!this.node) {
+        return false;
+      }
+      this.mathInput.$input.val(this.node.getFormula());
     }, this );
 };
 
 /**
  * @inheritdoc
  */
-ve.ui.MathInspector.prototype.getReadyProcess = function () {
+ve.ui.MathInspector.prototype.getReadyProcess = function (data) {
   return ve.ui.MathInspector.super.prototype.getReadyProcess.call( this )
     .next( function () {
-      console.log("ve.ui.MathInspector.getReadyProcess()");
-      this.node = this.getFragment().getSelectedNode();
-      this.mathInput.$input.val(this.node.getFormula());
       this.mathInput.focus();
     }, this );
 };

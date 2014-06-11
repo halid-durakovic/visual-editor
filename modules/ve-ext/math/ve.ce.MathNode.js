@@ -23,13 +23,23 @@ ve.ce.MathNode = function VeCeMathNode( model, config ) {
   ve.ce.LeafNode.call( this, model, config );
 
   // Mixin constructors
-  // ve.ce.GeneratedContentNode.call( this );
   ve.ce.FocusableNode.call( this );
+  ve.ce.ClickableNode.call( this );
 
   // DOM changes
   this.$element.addClass( 've-ce-mathNode' );
 
+  var self = this;
   this.$element.on( 'click', ve.bind( this.onClick, this ) );
+
+  // TODO: this does not work properly yet. Sometimes the SurfaceObserver gets into
+  // an invalid state.
+  // this.$element.on( 'dblclick', ve.bind( function() {
+  //   console.log("EMIT");
+  //   window.setTimeout(function() {
+  //     self.emit( 'dblclick' );
+  //   }, 50)
+  // }) );
 
   this.$mathEl = null;
   this.scriptEl = null;
@@ -44,7 +54,7 @@ ve.ce.MathNode = function VeCeMathNode( model, config ) {
 OO.inheritClass( ve.ce.MathNode, ve.ce.LeafNode );
 
 OO.mixinClass( ve.ce.MathNode, ve.ce.FocusableNode );
-// OO.mixinClass( ve.ce.MathNode, ve.ce.GeneratedContentNode );
+OO.mixinClass( ve.ce.MathNode, ve.ce.ClickableNode );
 
 /* Static Properties */
 
@@ -91,7 +101,7 @@ ve.ce.MathNode.prototype.render = function () {
 };
 
 ve.ce.MathNode.prototype.onUpdate = function () {
-  window.console.log("ce.MathNode.onUpdate", Date.now());
+  // window.console.log("ce.MathNode.onUpdate", Date.now());
   if (this.scriptEl) {
     var formula = this.model.getFormula();
     this.scriptEl.textContent = formula;
@@ -104,61 +114,18 @@ ve.ce.MathNode.prototype.onUpdate = function () {
 };
 
 ve.ce.MathNode.prototype.onClick = function ( e ) {
-  // window.console.log("MathNode.onClick", e);
   var surfaceModel = this.getRoot().getSurface().getModel(),
     selectionRange = surfaceModel.getSelection(),
     nodeRange = this.model.getOuterRange();
 
-  console.log("#########", nodeRange);
-
-  var surface = this.surface;
-
-  // FIXME: there seems to be a VE bug: when we select the node this way,
-  // the browser selection does not get updated
-  if (!e.shiftKey) {
-    surfaceModel.getFragment(nodeRange).select();
-  }
+    surfaceModel.getFragment(
+      e.shiftKey ?
+        ve.Range.newCoveringRange(
+          [ selectionRange, nodeRange ], selectionRange.from > nodeRange.from
+        ) :
+        nodeRange
+    ).select();
 };
-
-/**
- * Creates highlight.
- * Note: this is overridden, as the FocusableNode computes a bounding box from all children nodes,
- *       which is not optimal as MathJax generates some elements with bounding boxes that are only
- *       relevant for layout.
- *
- * @method
- */
-ve.ce.MathNode.prototype.createHighlight = function () {
-  window.console.log("ce.MathNode.createHighlight");
-  var node = this;
-
-  this.$focusable.find( '.math' ).add( this.$focusable ).each(
-    ve.bind( function ( i, el ) {
-      var offset, $el = this.$( el );
-      if ( !$el.is( ':visible' ) ) {
-        return true;
-      }
-      offset = OO.ui.Element.getRelativePosition(
-        $el, this.getRoot().getSurface().getSurface().$element
-      );
-      this.$highlights = this.$highlights.add(
-        this.$( '<div>' )
-          .css( {
-            height: $el.height(),
-            width: $el.width(),
-            top: offset.top,
-            left: offset.left
-          } )
-          .addClass( 've-ce-focusableNode-highlight' )
-          .on( 'dblclick', function () {
-            node.emit( 'dblclick' );
-          } )
-      );
-    }, this )
-  );
-  this.surface.replaceHighlight( this.$highlights );
-};
-
 
 /* Concrete subclasses */
 
