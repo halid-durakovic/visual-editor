@@ -50,6 +50,8 @@ OO.mixinClass( ve.ce.MathNode, ve.ce.FocusableNode );
 
 ve.ce.MathNode.static.name = 'math';
 
+ve.ce.MathNode.static.primaryCommandName = 'math';
+
 ve.ce.MathNode.isFocusable = true;
 
 /* Methods */
