@@ -128,6 +128,12 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 			this.$contextOverlay.removeClass("math-inspector");
 			// Configuration initialization
 			data = data || {};
+
+			if ( data && data.action === "remove" && this.node ) {
+				var fragment = this.getFragment();
+				fragment.removeContent([this.node]);
+			}
+
 		}, this);
 };
 
