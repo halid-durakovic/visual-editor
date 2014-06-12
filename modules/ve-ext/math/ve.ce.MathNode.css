@@ -9,6 +9,7 @@
 
 .ve-ce-mathBlockNode .math-container {
   display: inline-block;
+  width: 50%;
 }
 
 .oo-ui-icon-math {
