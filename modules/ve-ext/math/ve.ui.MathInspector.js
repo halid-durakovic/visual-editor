@@ -123,6 +123,13 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
   }
 };
 
+/**
+ * @inheritdoc
+ */
+ve.ui.MathInspector.prototype.isEmbeddable = function() {
+  return false;
+}
+
 
 /* Registration */
 
