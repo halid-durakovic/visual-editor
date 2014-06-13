@@ -1,4 +1,4 @@
-.ve-ce-mathNode .math-container {
+.ve-ce-mathNode .mathjax-wrapper {
   display: inline-block;
 }
 
@@ -7,9 +7,27 @@
   text-align: center;
 }
 
-.ve-ce-mathBlockNode .math-container {
+.ve-ce-mathInlineNode {
   display: inline-block;
+}
+
+.ve-ce-mathBlockNode .mathjax-wrapper {
   width: 50%;
+}
+
+/* Note: there are two rendered formulas which are controlled
+   by adding a class to the .mathjax-wrapper
+ */
+.ve-ce-mathNode .mathjax-wrapper .math-container {
+  display: none;
+}
+
+.ve-ce-mathNode .mathjax-wrapper.tex .math-container-tex {
+  display: inline-block;
+}
+
+.ve-ce-mathNode .mathjax-wrapper.asciimath .math-container-asciimath {
+  display: inline-block;
 }
 
 .oo-ui-icon-math {
