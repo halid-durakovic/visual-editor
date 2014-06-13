@@ -14,6 +14,7 @@
 
 .ve-ce-mathBlockNode .mathjax-wrapper {
   width: 50%;
+  /*width: 30px;*/
 }
 
 /* Note: there are two rendered formulas which are controlled
@@ -77,6 +78,10 @@
 .ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-tailed .oo-ui-popupWidget-tail {
   position: absolute !important;
   top: 0px !important;
-  left: 50% !important;
-  /*background: green;*/
+}
+
+.ve-ui-mathinspector-format-buttons {
+  display: inline-block;
+  float: right;
+  margin-right: 20px;
 }
