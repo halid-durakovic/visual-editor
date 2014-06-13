@@ -31,17 +31,9 @@ ve.ce.MathNode = function VeCeMathNode( model, config ) {
 
   this.$element.on( 'click', ve.bind( this.onClick, this ) );
 
-  // TODO: this does not work properly yet. Sometimes the SurfaceObserver gets into
-  // an invalid state.
-  // this.$element.on( 'dblclick', ve.bind( function() {
-  //   console.log("EMIT");
-  //   window.setTimeout(function() {
-  //     self.emit( 'dblclick' );
-  //   }, 50)
-  // }) );
-
-  this.$mathEl = null;
-  this.scriptEl = null;
+  this.$container = null;
+  this.$forTex = null;
+  this.$forAscii = null;
 
   this.model.connect( this, { 'update': 'onUpdate' } );
 
@@ -66,53 +58,76 @@ ve.ce.MathNode.isFocusable = true;
 /* Methods */
 
 ve.ce.MathNode.prototype.render = function () {
-  window.console.log("ce.MathNode.render", Date.now());
+  var self = this;
 
+  var $container = $('<span>')
+    .addClass('mathjax-wrapper')
+    .attr('contenteditable', 'false');
+
+  this.$container = $container;
+  this.$focusable = $container;
+
+  this.$forTex = $('<span>')
+    .addClass('math-container')
+    .addClass('math-container-tex')
+    .text('\\(\\)');
+
+  this.$forAscii = $('<span>')
+    .addClass('math-container')
+    .addClass('math-container-asciimath')
+    .text('``');
+
+  $container.append([
+    this.$forTex,
+    this.$forAscii
+  ]);
+
+  this.$element.empty().append( $container );
+
+  // We run MathJax on the stub math container for preparation.
+  // After that we can use the 'Update' command.
+
+  // ATTENTION: this has to be done delayed so that the element
+  // has been injected into the DOM before MathJax is run.
+  // MathJax looks up certain elements by id, thus requires it to be in the DOM.
+  window.setTimeout(function() {
+    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, $container[0]],
+      function() {
+        self.onUpdate();
+      }
+    );
+  }, 0)
+};
+
+/**
+ * Rerenders the formula according to the current model.
+ *
+ * This is called on each model change.
+ */
+ve.ce.MathNode.prototype.onUpdate = function () {
   var self = this;
   var formula = this.model.getFormula();
   var format = this.model.getFormat();
 
-  var elType = 'span';
-  var wrappedFormula;
-  if (format === "asciimath") {
-    wrappedFormula = "` " + formula + " `";
+  var $mathEl;
+  if (format === 'asciimath') {
+    $mathEl = this.$forAscii;
   } else {
-    wrappedFormula = "\\( " + formula + " \\)";
+    $mathEl = this.$forTex;
   }
 
-  var $mathEl = $(window.document.createElement(elType))
-    .addClass('math-container')
-    .attr('contenteditable', 'false')
-    .html(wrappedFormula);
+  var scriptEl = $mathEl.find('script')[0];
 
-  this.$focusable = $mathEl;
+  scriptEl.textContent = formula;
+  this.$container.removeClass('tex')
+    .removeClass('asciimath')
+    .addClass(format);
 
-  this.$mathEl = $mathEl;
-
-  this.$element.empty().append( $mathEl );
-
-  window.setTimeout(function() {
-    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, $mathEl[0]],
-      function() {
-        self.scriptEl = self.$mathEl.find('script')[0];
-      }
-    );
-  }, 0);
-};
-
-ve.ce.MathNode.prototype.onUpdate = function () {
-  // window.console.log("ce.MathNode.onUpdate", Date.now());
-  if (this.scriptEl) {
-    var formula = this.model.getFormula();
-    var format = "math/" + this.model.getFormat();
-
-    if (this.scriptEl.getAttribute("type") === format) {
-      this.scriptEl.textContent = formula;
-      window.MathJax.Hub.Queue(["Update", window.MathJax.Hub, this.mathEl]);
-    } else {
-      this.render();
-    }
-  }
+  window.MathJax.Hub.Queue(["Update", window.MathJax.Hub, $mathEl[0]],
+    function() {
+      // Make sure that the bounding box is rendered properly
+      self.redrawHighlights();
+    });
 };
 
 ve.ce.MathNode.prototype.onClick = function ( e ) {
