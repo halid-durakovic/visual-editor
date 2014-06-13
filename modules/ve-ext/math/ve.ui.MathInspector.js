@@ -105,6 +105,27 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 			);
 
 			this.mathInput.$input.val(this.node.getFormula());
+
+			// HACK: as we have a want the popup to be positioned in
+			// a non-floating way, we have to position the popup-tail now manually
+			// Unfortunately, we have not found a way to access the ce.MathNode
+			// from within this class.
+			// Thus we are doing a search on the DOM instead.
+			var $surface = $('.ve-ce-surface');
+			var $mathCe = $('.ve-ce-surface .ve-ce-documentNode .ve-ce-mathNode .ve-ce-node-focused');
+			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
+			if ($mathCe.length && $tail.length) {
+				var surfaceOffset = $surface.offset();
+				var popupOffset = this.$contextOverlay.offset();
+				var nodeOffset = $mathCe.offset();
+				var width = $mathCe.width();
+				var left = nodeOffset.left - popupOffset.left + width/2;
+				console.log('####', surfaceOffset, popupOffset, nodeOffset);
+				// ATTENTION: we have to clear this style when this inspector is
+				// teared down
+				$tail.css( { 'left': left, 'top': nodeOffset.top } );
+			}
+
 		}, this );
 };
 
@@ -162,6 +183,9 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 				var fragment = this.getFragment();
 				fragment.removeContent([this.node]);
 			}
+
+			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
+			$tail.css( { 'left': '', 'top': '' } );
 
 		}, this);
 };
