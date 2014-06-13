@@ -1,12 +1,5 @@
-/*!
- * VisualEditor UserInterface MathInspector class.
- *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
- */
-
 /**
- * Link inspector.
+ * Math inspector.
  *
  * @class
  * @extends ve.ui.Inspector
@@ -58,7 +51,6 @@ ve.ui.MathInspector.prototype.initialize = function () {
 		'$overlay': this.$contextOverlay || this.$overlay,
 		'classes': ['ve-ui-mathInputWidget']
 	} );
-	this.mathInput.connect( this, {'change': 'onFormulaChange'} );
 
 	this.formatSelect = new OO.ui.ButtonSelectWidget( {
 		'$': this.$,
@@ -67,11 +59,19 @@ ve.ui.MathInspector.prototype.initialize = function () {
 		new OO.ui.ButtonOptionWidget( 'tex', { '$': this.$, 'label': 'Latex' } ),
 		new OO.ui.ButtonOptionWidget( 'asciimath', { '$': this.$, 'label': 'ASCII' } ),
 	] );
-	this.formatSelect.connect( this, {'select': 'onFormatChange'} );
 
-	this.$head.append(this.formatSelect.$element);
 
 	// Initialization
+
+	this.formatSelect.connect( this, {'select': 'onFormatChange'} );
+	this.mathInput.connect( this, {'change': 'onFormulaChange'} );
+
+	var $formatButtonGroup = $('<div>')
+		.addClass('ve-ui-mathinspector-format-buttons')
+		.append(this.formatSelect.$element);
+
+	this.$head.append($formatButtonGroup);
+
 	this.$form.append([
 		this.mathInput.$element
 		]);
@@ -95,25 +95,7 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 			// Create a new node if it does not exist
 			// this is the case when inserting a new math node via toolbar
 			if (!this.node) {
-				var type;
-				var leafNodes = fragment.getLeafNodes();
-				if (!leafNodes.length) {
-					return false;
-				}
-				if (leafNodes[0].node.parent === leafNodes[0].node.root) {
-					type = "mathBlock";
-				} else {
-					type = "mathInline";
-				}
-				fragment.insertContent([
-					{
-						type: type,
-						attributes: {
-							formula: ""
-						}
-					}
-				], false ).collapseRangeToEnd().select();
-				this.node = fragment.getSelectedNode();
+				this.node = this.insertMathNode();
 				fragment.select(this.node.getOuterRange());
 			}
 
@@ -124,6 +106,28 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 
 			this.mathInput.$input.val(this.node.getFormula());
 		}, this );
+};
+
+ve.ui.MathInspector.prototype.insertMathNode = function() {
+	var type;
+	var fragment = this.getFragment();
+	var leafNodes = fragment.getLeafNodes();
+	if (!leafNodes.length) {
+		return false;
+	}
+	if (leafNodes[0].node.parent === leafNodes[0].node.root) {
+		type = "mathBlock";
+	} else {
+		type = "mathInline";
+	}
+	fragment.insertContent([
+		{
+			type: type,
+			attributes: ve.dm.MathNode.static.defaultAttributes
+		}
+	], false ).collapseRangeToEnd().select();
+
+	return fragment.getSelectedNode();
 };
 
 /**
@@ -147,7 +151,14 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 			// Configuration initialization
 			data = data || {};
 
-			if ( data && data.action === "remove" && this.node ) {
+			// delete the node if the user has clicked the remove button
+			// or if the formula is empty
+			var shouldDelete = (
+				this.node &&
+				(data.action === "remove" || this.node.getFormula().match(/^\s*$/))
+			);
+
+			if ( shouldDelete ) {
 				var fragment = this.getFragment();
 				fragment.removeContent([this.node]);
 			}
@@ -189,7 +200,6 @@ ve.ui.MathInspector.prototype.onFormatChange = function() {
 ve.ui.MathInspector.prototype.isEmbeddable = function() {
 	return false;
 };
-
 
 /* Registration */
 

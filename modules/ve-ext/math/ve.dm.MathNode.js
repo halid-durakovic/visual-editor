@@ -45,6 +45,11 @@ ve.dm.MathNode.static.storeHtmlAttributes = false;
 
 ve.dm.MathNode.static.enableAboutGrouping = true;
 
+ve.dm.MathNode.static.defaultAttributes = {
+  'formula': '',
+  'format': 'tex'
+};
+
 ve.dm.MathNode.static.toDataElement = function ( domElements, converter ) {
   window.console.log("MathNode.toDataElement", domElements, converter);
 
