@@ -70,6 +70,7 @@
 .oo-ui-textInputWidget.ve-ui-mathInputWidget input {
   text-align: center;
   padding: 20px 0 20px 0;
+  font-family: 'Consolas', 'Liberation Mono', 'Menlo', 'Courier', 'Monospace';
 }
 
 .ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-tailed .oo-ui-popupWidget-tail {
