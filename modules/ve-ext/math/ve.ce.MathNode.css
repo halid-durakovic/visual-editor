@@ -1,5 +1,6 @@
 .ve-ce-mathNode .mathjax-wrapper {
   display: inline-block;
+  min-width: 5px;
 }
 
 .ve-ce-mathBlockNode {

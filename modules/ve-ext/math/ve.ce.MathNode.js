@@ -1,18 +1,11 @@
-/*!
- * VisualEditor ContentEditable MathNode, MathBlockNode and MathInlineNode classes.
- *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
- */
-
 /**
  * ContentEditable math node.
  *
  * @class
  * @abstract
  * @extends ve.ce.LeafNode
- * @mixins ve.ce.ProtectedNode
- * @mixins ve.ce.GeneratedContentNode
+ * @mixins ve.ce.FocusableNode
+ * @mixins ve.ce.ClickableNode
  *
  * @constructor
  * @param {ve.dm.MathNode} model Model to observe
