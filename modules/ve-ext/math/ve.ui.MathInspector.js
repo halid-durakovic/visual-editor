@@ -10,6 +10,9 @@
 ve.ui.MathInspector = function VeUiMathInspector( config ) {
 	// Parent constructor
 	ve.ui.Inspector.call( this, config );
+
+	// Register a message hook to show parse errors
+	window.MathJax.Hub.Register.MessageHook("TeX Jax - parse error", ve.bind(this.onParseError, this));
 };
 
 /* Inheritance */
@@ -22,6 +25,7 @@ ve.ui.MathInspector.static.name = 'math';
 
 ve.ui.MathInspector.static.icon = 'math';
 
+// TODO: this should come from i18n configuration
 ve.ui.MathInspector.static.title = 'Math';
 
 ve.ui.MathInspector.static.modelClasses = [ ve.dm.MathNode ];
@@ -52,6 +56,8 @@ ve.ui.MathInspector.prototype.initialize = function () {
 		'classes': ['ve-ui-mathInputWidget']
 	} );
 
+	this.$errorEl = $('<div>').addClass('ve-ui-mathInspector-parseError');
+
 	this.formatSelect = new OO.ui.ButtonSelectWidget( {
 		'$': this.$,
 		'classes': [ 've-ui-mathInspector-formatSelect' ]
@@ -67,14 +73,19 @@ ve.ui.MathInspector.prototype.initialize = function () {
 	this.mathInput.connect( this, {'change': 'onFormulaChange'} );
 
 	var $formatButtonGroup = $('<div>')
-		.addClass('ve-ui-mathinspector-format-buttons')
+		.addClass('ve-ui-mathInspector-format-buttons')
 		.append(this.formatSelect.$element);
 
-	this.$head.append($formatButtonGroup);
+	this.$head.append( [
+			$formatButtonGroup
+		] );
 
-	this.$form.append([
-		this.mathInput.$element
-		]);
+	this.$form.append( [
+			this.mathInput.$element
+		] );
+	this.$body.append( [
+			this.$errorEl
+		] );
 };
 
 /**
@@ -193,7 +204,9 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 ve.ui.MathInspector.prototype.onFormulaChange = function() {
 	var newFormula = this.mathInput.getValue();
 	var fragment = this.getFragment();
+
 	if (fragment) {
+		this.$errorEl.text('');
 		fragment.changeAttributes(
 			{
 				'formula': newFormula
@@ -209,6 +222,7 @@ ve.ui.MathInspector.prototype.onFormatChange = function() {
 
 	var fragment = this.getFragment();
 	if (fragment && this.node) {
+		this.$errorEl.text('');
 		fragment.changeAttributes(
 			{
 				'format': formatType
@@ -216,6 +230,11 @@ ve.ui.MathInspector.prototype.onFormatChange = function() {
 			this.node.getType()
 		);
 	}
+};
+
+ve.ui.MathInspector.prototype.onParseError = function(message) {
+	console.error("MathInspector.onParseError", message);
+	this.$errorEl.text(message[1]);
 };
 
 /**
