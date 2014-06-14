@@ -62,13 +62,8 @@ ve.ce.MathNode.prototype.render = function () {
 
   this.$forTex = $('<span>')
     .addClass('math-container')
-    .addClass('math-container-tex');
-
-  if (this.model.getType() === "mathBlock") {
-    this.$forTex.text('\\(\\)');
-  } else {
-    this.$forTex.text('\\[\\]');
-  }
+    .addClass('math-container-tex')
+    .text('\\(\\)');
 
   this.$forAscii = $('<span>')
     .addClass('math-container')
