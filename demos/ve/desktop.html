@@ -343,13 +343,13 @@
 				},
         showMathMenu: false,
         showMathMenuMSIE: false,
-        TeX: { extensions: ["AMSmath.js","AMSsymbols.js","noUndefined.js"]},
+        TeX: { extensions: ["AMSmath.js","AMSsymbols.js","noUndefined.js", "noErrors.js"]},
         jax: ["input/TeX","input/AsciiMath","output/HTML-CSS"],
         // messageStyle: 'none'
   	  });
 	    MathJax.Hub.config.skipStartupTypeset = true;
     </script>
-		<script type="text/javascript" src="../../lib/MathJax/MathJax.js?config=TeX-MML-AM_HTMLorMML,local/local"></script>
+		<script type="text/javascript" src="../../lib/MathJax/unpacked/MathJax.js?config=TeX-MML-AM_HTMLorMML,local/local"></script>
 
 		<script src="../../modules/ve-ext/math/ve.dm.MathNode.js"></script>
 		<script src="../../modules/ve-ext/math/ve.ce.MathNode.js"></script>
