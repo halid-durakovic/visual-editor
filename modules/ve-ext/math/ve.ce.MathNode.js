@@ -29,7 +29,6 @@ ve.ce.MathNode = function VeCeMathNode( model, config ) {
   // DOM changes
   this.$element.addClass( 've-ce-mathNode' );
 
-  var self = this;
   this.$element.on( 'click', ve.bind( this.onClick, this ) );
 
   // TODO: this does not work properly yet. Sometimes the SurfaceObserver gets into
@@ -71,11 +70,12 @@ ve.ce.MathNode.prototype.render = function () {
 
   var self = this;
   var formula = this.model.getFormula();
+  var format = this.model.getFormat();
 
-  var wrappedFormula;
   var elType = 'span';
-  if (this.model.getType() === "mathInline") {
-    wrappedFormula = "\\( " + formula + " \\)";
+  var wrappedFormula;
+  if (format === "asciimath") {
+    wrappedFormula = "` " + formula + " `";
   } else {
     wrappedFormula = "\\( " + formula + " \\)";
   }
@@ -104,12 +104,14 @@ ve.ce.MathNode.prototype.onUpdate = function () {
   // window.console.log("ce.MathNode.onUpdate", Date.now());
   if (this.scriptEl) {
     var formula = this.model.getFormula();
-    this.scriptEl.textContent = formula;
-    var self = this;
-    window.MathJax.Hub.Queue(["Update", window.MathJax.Hub, this.mathEl],
-      function() {
-      }
-    );
+    var format = "math/" + this.model.getFormat();
+
+    if (this.scriptEl.getAttribute("type") === format) {
+      this.scriptEl.textContent = formula;
+      window.MathJax.Hub.Queue(["Update", window.MathJax.Hub, this.mathEl]);
+    } else {
+      this.render();
+    }
   }
 };
 

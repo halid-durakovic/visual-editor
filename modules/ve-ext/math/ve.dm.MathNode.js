@@ -33,9 +33,8 @@ ve.dm.MathNode.prototype.getFormula = function () {
   return this.getAttribute('formula');
 };
 
-ve.dm.MathNode.prototype.setFormula = function (formula) {
-  this.element.attributes['formula'] = formula;
-  return this.getAttribute('formula');
+ve.dm.MathNode.prototype.getFormat = function () {
+  return this.getAttribute('format');
 };
 
 /* Static members */
@@ -50,6 +49,7 @@ ve.dm.MathNode.static.toDataElement = function ( domElements, converter ) {
   window.console.log("MathNode.toDataElement", domElements, converter);
 
   var formula = domElements[0].textContent;
+  var format = domElements[0].getAttribute('data-format') || 'tex';
 
   var isInline = this.isHybridInline( domElements, converter ),
     type = isInline ? 'mathInline' : 'mathBlock';
@@ -57,7 +57,8 @@ ve.dm.MathNode.static.toDataElement = function ( domElements, converter ) {
   return {
     'type': type,
     'attributes': {
-      'formula': formula
+      'formula': formula,
+      'format': format
     }
   };
 };
@@ -72,6 +73,7 @@ ve.dm.MathNode.static.toDomElements = function ( dataElement, doc ) {
     el = doc.createElement('div');
   }
   el.setAttribute('rel', 'ext:math');
+  el.setAttribute('data-format', dataElement.attributes.format);
   el.innerHTML = dataElement.attributes.formula;
 
   return [ el ];

@@ -31,8 +31,6 @@ ve.ui.MathInspector.static.icon = 'math';
 
 ve.ui.MathInspector.static.title = 'Math';
 
-ve.ui.MathInspector.static.mathInputWidget = ve.ui.MathInputWidget;
-
 ve.ui.MathInspector.static.modelClasses = [ ve.dm.MathNode ];
 
 /* Methods */
@@ -41,7 +39,6 @@ ve.ui.MathInspector.static.modelClasses = [ ve.dm.MathNode ];
  * @inheritdoc
  */
 ve.ui.MathInspector.prototype.getInsertionText = function () {
-	console.log("ve.ui.MathInspector.getInsertionText()");
 	return this.mathInput.getValue();
 };
 
@@ -49,21 +46,35 @@ ve.ui.MathInspector.prototype.getInsertionText = function () {
  * @inheritdoc
  */
 ve.ui.MathInspector.prototype.initialize = function () {
-	console.log("ve.ui.MathInspector.initialize()");
+	// console.log("ve.ui.MathInspector.initialize()");
 
 	// Parent method
 	ve.ui.MathInspector.super.prototype.initialize.call( this );
 
 	// Properties
-	this.mathInput = new this.constructor.static.mathInputWidget(this.node, {
-		'$': this.$, '$overlay': this.$contextOverlay || this.$overlay
-	} );
 
+	this.mathInput = new OO.ui.TextInputWidget({
+		'$': this.$,
+		'$overlay': this.$contextOverlay || this.$overlay,
+		'classes': ['ve-ui-mathInputWidget']
+	} );
 	this.mathInput.connect( this, {'change': 'onFormulaChange'} );
 
+	this.formatSelect = new OO.ui.ButtonSelectWidget( {
+		'$': this.$,
+		'classes': [ 've-ui-mathInspector-formatSelect' ]
+	} ).addItems( [
+		new OO.ui.ButtonOptionWidget( 'tex', { '$': this.$, 'label': 'Latex' } ),
+		new OO.ui.ButtonOptionWidget( 'asciimath', { '$': this.$, 'label': 'ASCII' } ),
+	] );
+	this.formatSelect.connect( this, {'select': 'onFormatChange'} );
+
+	this.$head.append(this.formatSelect.$element);
 
 	// Initialization
-	this.$form.append( this.mathInput.$element );
+	this.$form.append([
+		this.mathInput.$element
+		]);
 };
 
 /**
@@ -74,13 +85,15 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 		.next( function () {
 			this.$contextOverlay.addClass("math-inspector");
 
-			console.log("ve.ui.MathInspector.getReadyProcess()");
+			// console.log("ve.ui.MathInspector.getReadyProcess()");
 			var fragment = this.getFragment();
 			if (!fragment) {
 				return false;
 			}
 			this.node = fragment.getSelectedNode();
 
+			// Create a new node if it does not exist
+			// this is the case when inserting a new math node via toolbar
 			if (!this.node) {
 				var type;
 				var leafNodes = fragment.getLeafNodes();
@@ -104,6 +117,11 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 				fragment.select(this.node.getOuterRange());
 			}
 
+			var format = this.node.getFormat();
+			this.formatSelect.selectItem(
+				this.formatSelect.getItemFromData( format )
+			);
+
 			this.mathInput.$input.val(this.node.getFormula());
 		}, this );
 };
@@ -111,7 +129,7 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 /**
  * @inheritdoc
  */
-ve.ui.MathInspector.prototype.getReadyProcess = function (data) {
+ve.ui.MathInspector.prototype.getReadyProcess = function (/*data*/) {
 	return ve.ui.MathInspector.super.prototype.getReadyProcess.call( this )
 		.next( function () {
 			this.mathInput.focus();
@@ -124,7 +142,7 @@ ve.ui.MathInspector.prototype.getReadyProcess = function (data) {
 ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 	return ve.ui.MathInspector.super.prototype.getTeardownProcess.call( this, data )
 		.first( function () {
-			console.log("ve.ui.MathInspector.getTeardownProcess()", data);
+			// console.log("ve.ui.MathInspector.getTeardownProcess()", data);
 			this.$contextOverlay.removeClass("math-inspector");
 			// Configuration initialization
 			data = data || {};
@@ -150,12 +168,27 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 	}
 };
 
+ve.ui.MathInspector.prototype.onFormatChange = function() {
+	var selectedItem = this.formatSelect.getSelectedItem();
+	var formatType = selectedItem.data;
+
+	var fragment = this.getFragment();
+	if (fragment && this.node) {
+		fragment.changeAttributes(
+			{
+				'format': formatType
+			},
+			this.node.getType()
+		);
+	}
+};
+
 /**
  * @inheritdoc
  */
 ve.ui.MathInspector.prototype.isEmbeddable = function() {
 	return false;
-}
+};
 
 
 /* Registration */
