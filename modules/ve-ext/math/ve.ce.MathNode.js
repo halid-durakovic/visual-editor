@@ -62,8 +62,13 @@ ve.ce.MathNode.prototype.render = function () {
 
   this.$forTex = $('<span>')
     .addClass('math-container')
-    .addClass('math-container-tex')
-    .text('\\(\\)');
+    .addClass('math-container-tex');
+
+  if (this.model.getType() === "mathBlock") {
+    this.$forTex.text('\\(\\)');
+  } else {
+    this.$forTex.text('\\[\\]');
+  }
 
   this.$forAscii = $('<span>')
     .addClass('math-container')
@@ -82,14 +87,14 @@ ve.ce.MathNode.prototype.render = function () {
 
   // ATTENTION: this has to be done delayed so that the element
   // has been injected into the DOM before MathJax is run.
-  // MathJax looks up certain elements by id, thus requires it to be in the DOM.
+  // MathJax looks up certain elements by id, thus requires them to be in the DOM.
   window.setTimeout(function() {
     window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, $container[0]],
       function() {
         self.onUpdate();
       }
     );
-  }, 0)
+  }, 0);
 };
 
 /**
@@ -109,18 +114,20 @@ ve.ce.MathNode.prototype.onUpdate = function () {
     $mathEl = this.$forTex;
   }
 
-  var scriptEl = $mathEl.find('script')[0];
-
-  scriptEl.textContent = formula;
   this.$container.removeClass('tex')
     .removeClass('asciimath')
     .addClass(format);
 
-  window.MathJax.Hub.Queue(["Update", window.MathJax.Hub, $mathEl[0]],
+  // Update the formula of the specific element
+  var math = window.MathJax.Hub.getAllJax($mathEl[0])[0];
+
+  window.MathJax.Hub.Queue(
+    ["Text", math, formula],
     function() {
       // Make sure that the bounding box is rendered properly
       self.redrawHighlights();
-    });
+    }
+  );
 };
 
 ve.ce.MathNode.prototype.onClick = function ( e ) {
