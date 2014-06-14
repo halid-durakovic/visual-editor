@@ -23,6 +23,10 @@
   right: 5px !important;
 }
 
+.ve-ui-mathInspector-formatSelect {
+  float:right;
+}
+
 .ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-popup {
   position: static !important;
   width: auto !important;
