@@ -22,6 +22,7 @@
  */
 .ve-ce-mathNode .mathjax-wrapper .math-container {
   display: none;
+  width:100%;
 }
 
 .ve-ce-mathNode .mathjax-wrapper.tex .math-container-tex {
