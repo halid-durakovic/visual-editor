@@ -1,0 +1,41 @@
+.ve-ui-inspector {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}
+
+.ve-ce-branchNode-blockSlugWrapper {
+  -webkit-transition: none !important;
+  -moz-transition:  none !important;
+  -o-transition:  none !important;
+  transition:  none !important;
+}
+
+.ve-ce-branchNode-blockSlugWrapper .ve-ce-branchNode-blockSlug {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}
+
+/*
+.ve-ce-branchNode-blockSlugWrapper-unfocused {
+  margin: 0 0 -0.2em 0;
+  outline-offset: 0;
+}
+*/
+
+/*
+.ve-ce-branchNode-blockSlugWrapper-unfocused .ve-ce-branchNode-blockSlug {
+  font-size: 0.8em;
+  margin: 0.2em 0;
+}
+*/
+
+.ve-ce-resizableNode-sizeLabel {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}
