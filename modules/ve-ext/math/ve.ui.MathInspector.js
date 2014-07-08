@@ -159,7 +159,7 @@ ve.ui.MathInspector.prototype.insertMathNode = function() {
 	fragment.insertContent([
 		{
 			type: type,
-			attributes: ve.dm.MathNode.static.defaultAttributes
+			attributes: JSON.parse( JSON.stringify( ve.dm.MathNode.static.defaultAttributes ) )
 		}
 	], false ).collapseRangeToEnd().select();
 
