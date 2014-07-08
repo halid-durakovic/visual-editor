@@ -208,7 +208,18 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 			);
 			if ( shouldDelete ) {
 				var fragment = this.getFragment();
+				var type = this.node.type;
+				var range = this.node.getRange();
+
 				fragment.change( ve.dm.Transaction.newFromRemoval( fragment.document, this.node.getOuterRange() ) );
+
+				// HACK: there is a glitch with the selection after removal for MathBlocks:
+				// the selection wraps around the previous line break
+				// Expected is, that the cursor returns to the initial position, i.e., to the begin of line
+				// This served as a workaround
+				if (type === 'mathBlock') {
+					fragment.surface.setSelection( new ve.Range(range.start, range.start) );
+				}
 			}
 		}, this);
 };
@@ -231,7 +242,7 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 				)
 		];
 		fragment.change(txs);
-		// WORKAROUND: ATM the edit field for the inline element
+		// WORKAROUND: ATM the input field for the inline element
 		// looses focus after each keystroke.
 		this.mathInput.focus();
 	}
