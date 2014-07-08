@@ -106,8 +106,12 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 			// Create a new node if it does not exist
 			// this is the case when inserting a new math node via toolbar
 			if (!this.node) {
-				this.node = this.insertMathNode();
-				fragment.select(this.node.getOuterRange());
+				var node = this.insertMathNode();
+				if (!node) {
+					window.console.error("Could not create MathNode.");
+					return;
+				}
+				this.node = node;
 			}
 
 			var format = this.node.getFormat();
@@ -159,7 +163,19 @@ ve.ui.MathInspector.prototype.insertMathNode = function() {
 		}
 	], false ).collapseRangeToEnd().select();
 
-	return fragment.getSelectedNode();
+	// HACK: I could find a convenient way to immediately retrieve the inserted node
+	// ATM, fragment.getSelectedNode() -- which worked earlier -- does not return
+	// the node when type is 'mathBlock'.
+	// As a workaround we get all covered nodes and look for the correct one ourselves
+	var nodes = fragment.getCoveredNodes();
+	for (var i = 0; i < nodes.length; i++) {
+		var node = nodes[i].node;
+		if (node.type === type) {
+			return node;
+		}
+	}
+
+	throw new Error('Could not retrieve node!');
 };
 
 /**
@@ -192,7 +208,7 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 
 			if ( shouldDelete ) {
 				var fragment = this.getFragment();
-				fragment.removeContent([this.node]);
+				fragment.change( ve.dm.Transaction.newFromRemoval( fragment.document, this.node.getOuterRange() ) );
 			}
 
 			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
@@ -204,15 +220,24 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 ve.ui.MathInspector.prototype.onFormulaChange = function() {
 	var newFormula = this.mathInput.getValue();
 	var fragment = this.getFragment();
-
 	if (fragment) {
 		this.$errorEl.text('');
-		fragment.changeAttributes(
-			{
-				'formula': newFormula
-			},
-			this.node.getType()
-		);
+		// Note: the API provided by ve.dm.SurfaceFragment has been changed
+		// breaking this implementation
+		// The low-level API seems to be more stable
+		var doc = fragment.document;
+		var txs = [
+			ve.dm.Transaction.newFromAttributeChanges(
+					doc, this.node.getOuterRange().start,
+					{
+						'formula': newFormula
+					}
+				)
+		];
+		fragment.change(txs);
+		// WORKAROUND: ATM the edit field for the inline element
+		// looses focus after each keystroke.
+		this.mathInput.focus();
 	}
 };
 
