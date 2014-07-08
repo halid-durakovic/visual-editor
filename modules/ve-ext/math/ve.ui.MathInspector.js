@@ -94,9 +94,9 @@ ve.ui.MathInspector.prototype.initialize = function () {
 ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 	return ve.ui.MathInspector.super.prototype.getSetupProcess.call( this, data )
 		.next( function () {
+			// add a custom class so that the overriding CSS rules are applied
 			this.$contextOverlay.addClass("math-inspector");
 
-			// console.log("ve.ui.MathInspector.getReadyProcess()");
 			var fragment = this.getFragment();
 			if (!fragment) {
 				return false;
@@ -118,26 +118,24 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 			this.formatSelect.selectItem(
 				this.formatSelect.getItemFromData( format )
 			);
-
 			this.mathInput.$input.val(this.node.getFormula());
 
-			// HACK: as we have a want the popup to be positioned in
-			// a non-floating way, we have to position the popup-tail now manually
-			// Unfortunately, we have not found a way to access the ce.MathNode
-			// from within this class.
-			// Thus we are doing a search on the DOM instead.
-			var $surface = $('.ve-ce-surface');
+			// HACK: as we want the popup to be positioned in
+			// a non-floating way, we have overridden the CSS styles to position
+			// the popup statically.
+			// On the other side, we have to position the popup-tail now manually.
+			// As there is no way to access the ce.MathNode from within this class,
+			// we are selecting the element via DOM.
 			var $mathCe = $('.ve-ce-surface .ve-ce-documentNode .ve-ce-mathNode .ve-ce-node-focused');
 			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
 			if ($mathCe.length && $tail.length) {
-				var surfaceOffset = $surface.offset();
 				var popupOffset = this.$contextOverlay.offset();
 				var nodeOffset = $mathCe.offset();
 				var width = $mathCe.width();
 				var left = nodeOffset.left - popupOffset.left + width/2;
-				console.log('####', surfaceOffset, popupOffset, nodeOffset);
-				// ATTENTION: we have to clear this style when this inspector is
-				// teared down
+				// ATTENTION: it is important to clear this style when this inspector is
+				// teared down as otherwise the tail position will be screwed up for other
+				// inspectors
 				$tail.css( { 'left': left, 'top': nodeOffset.top } );
 			}
 
@@ -196,24 +194,22 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 		.first( function () {
 			// console.log("ve.ui.MathInspector.getTeardownProcess()", data);
 			this.$contextOverlay.removeClass("math-inspector");
-			// Configuration initialization
-			data = data || {};
+			// Note: clear the positioning style as the tail is shared among all
+			// inspectors
+			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
+			$tail.css( { 'left': '', 'top': '' } );
 
 			// delete the node if the user has clicked the remove button
 			// or if the formula is empty
+			data = data || {};
 			var shouldDelete = (
 				this.node &&
 				(data.action === "remove" || this.node.getFormula().match(/^\s*$/))
 			);
-
 			if ( shouldDelete ) {
 				var fragment = this.getFragment();
 				fragment.change( ve.dm.Transaction.newFromRemoval( fragment.document, this.node.getOuterRange() ) );
 			}
-
-			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
-			$tail.css( { 'left': '', 'top': '' } );
-
 		}, this);
 };
 
@@ -258,7 +254,7 @@ ve.ui.MathInspector.prototype.onFormatChange = function() {
 };
 
 ve.ui.MathInspector.prototype.onParseError = function(message) {
-	console.error("MathInspector.onParseError", message);
+	window.console.error("MathInspector.onParseError", message);
 	this.$errorEl.text(message[1]);
 };
 
