@@ -17,7 +17,6 @@ ve.ce.MathNode = function VeCeMathNode( model, config ) {
 
   // Mixin constructors
   ve.ce.FocusableNode.call( this );
-  ve.ce.ClickableNode.call( this );
 
   // DOM changes
   this.$element.addClass( 've-ce-mathNode' );
@@ -38,7 +37,6 @@ ve.ce.MathNode = function VeCeMathNode( model, config ) {
 OO.inheritClass( ve.ce.MathNode, ve.ce.LeafNode );
 
 OO.mixinClass( ve.ce.MathNode, ve.ce.FocusableNode );
-OO.mixinClass( ve.ce.MathNode, ve.ce.ClickableNode );
 
 /* Static Properties */
 
