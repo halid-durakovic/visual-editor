@@ -91,6 +91,45 @@ ve.ce.MathNode.prototype.render = function () {
 };
 
 /**
+ * Positions highlights.
+ *
+ * The base implementation is not give adequate results so it is overridden here.
+ */
+ve.ce.MathNode.prototype.positionHighlights = function () {
+  if ( !this.highlighted ) {
+    return;
+  }
+
+  var top, left, bottom, right,
+    outerRect,
+    surfaceOffset = this.surface.getSurface().$element[0].getClientRects()[0];
+
+  this.$highlights.empty();
+
+  outerRect = this.$element[0].getClientRects()[0];
+  top = outerRect.top - surfaceOffset.top;
+  left = outerRect.left - surfaceOffset.left;
+  bottom = outerRect.bottom - surfaceOffset.top;
+  right = outerRect.right - surfaceOffset.left;
+
+  this.$highlights.append(
+    this.createHighlight().css( {
+      'top': top,
+      'left': left,
+      'height': outerRect.height,
+      'width': outerRect.width
+    } )
+  );
+  this.boundingRect = {
+    top: top,
+    left: left,
+    bottom: bottom,
+    right: right
+  };
+};
+
+
+/**
  * Rerenders the formula according to the current model.
  *
  * This is called on each model change.
