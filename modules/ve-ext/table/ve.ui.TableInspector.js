@@ -10,6 +10,8 @@
 ve.ui.TableInspector = function VeUiTableInspector( config ) {
   // Parent constructor
   ve.ui.Inspector.call( this, config );
+
+
 };
 
 /* Inheritance */
@@ -33,10 +35,65 @@ ve.ui.TableInspector.static.modelClasses = [ ve.dm.TableNode ];
  * @inheritdoc
  */
 ve.ui.TableInspector.prototype.initialize = function () {
-  console.log("ve.ui.TableInspector.initialize()");
+  // console.log("ve.ui.TableInspector.initialize()");
 
   // Parent method
   ve.ui.TableInspector.super.prototype.initialize.call( this );
+
+  var insertRowAfter = new OO.ui.ButtonWidget({
+    '$': this.$,
+    'frameless': true,
+    'icon': 'table-insert-row-after',
+    'label': 'Below'
+  });
+  var insertRowBefore = new OO.ui.ButtonWidget({
+    '$': this.$,
+    'frameless': true,
+    'icon': 'table-insert-row-before',
+    'label': 'Above'
+  });
+  var insertColumnAfter = new OO.ui.ButtonWidget({
+    '$': this.$,
+    'frameless': true,
+    'icon': 'table-insert-column-after',
+    'label': 'Right'
+  });
+  var insertColumnBefore = new OO.ui.ButtonWidget({
+    '$': this.$,
+    'frameless': true,
+    'icon': 'table-insert-column-before',
+    'label': 'Left'
+  });
+  var deleteRow = new OO.ui.ButtonWidget({
+    '$': this.$,
+    'frameless': true,
+    'icon': 'table-delete-row',
+    'label': 'Delete'
+  });
+  var deleteColumn = new OO.ui.ButtonWidget({
+    '$': this.$,
+    'frameless': true,
+    'icon': 'table-delete-column',
+    'label': 'Delete'
+  });
+
+  var rowButtons = new OO.ui.GroupElement($('<div>').addClass('ve-ui-tableInspector-buttons'), {} );
+  rowButtons.addItems([
+      insertRowBefore,
+      insertRowAfter,
+      deleteRow
+    ] );
+  var columnButtons = new OO.ui.GroupElement($('<div>').addClass('ve-ui-tableInspector-buttons'), {} );
+  columnButtons.addItems([
+      insertColumnBefore,
+      insertColumnAfter,
+      deleteColumn
+    ] );
+
+  this.$body.append( [
+      rowButtons.$group,
+      columnButtons.$group
+    ] );
 };
 
 /**

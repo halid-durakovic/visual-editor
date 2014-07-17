@@ -2,6 +2,55 @@
   background-image: /* @embed */ url(table.svg);
 }
 
+.oo-ui-icon-table-insert-row-before {
+  background-image: /* @embed */ url(table-insert-row-before.svg);
+}
+
+.oo-ui-icon-table-insert-row-after {
+  background-image: /* @embed */ url(table-insert-row-after.svg);
+}
+
+.oo-ui-icon-table-delete-row {
+  background-image: /* @embed */ url(table-delete-row.svg);
+}
+
+.oo-ui-icon-table-insert-column-before {
+  background-image: /* @embed */ url(table-insert-column-before.svg);
+}
+
+.oo-ui-icon-table-insert-column-after {
+  background-image: /* @embed */ url(table-insert-column-after.svg);
+}
+
+.oo-ui-icon-table-delete-column {
+  background-image: /* @embed */ url(table-delete-column.svg);
+}
+
+.ve-ui-inspector.ve-ui-tableInspector .oo-ui-frame {
+  width: 10em;
+  height: 6em;
+}
+
+.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons {
+  padding-top: 5px;
+}
+
+.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons .oo-ui-buttonWidget {
+  padding-left: 5px;
+  min-width: 40px;
+}
+
+.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons .oo-ui-buttonWidget .oo-ui-iconedElement-icon {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons .oo-ui-buttonWidget .oo-ui-labeledElement-label {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .ve-ce-tableNode {
   margin-top: 30px;
   margin-bottom: 30px;
