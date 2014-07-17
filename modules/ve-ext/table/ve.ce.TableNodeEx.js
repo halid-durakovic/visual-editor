@@ -16,6 +16,7 @@ ve.ce.TableNodeEx = function VeCeTableNodeEx( model, config ) {
     'teardown': 'onTableNodeTeardown',
   } );
 
+  this.focussed = false;
 };
 
 /* Inheritance */
@@ -38,9 +39,6 @@ ve.ce.TableNodeEx.prototype.onTableNodeSetup = function() {
     .addClass( 've-ce-tableNodeEx' );
 
   // Events
-  // this.$element.on( {
-  //   'mouseenter.ve-ce-tableNodeEx': ve.bind( this.onTableMouseEnter, this )
-  // } );
 
   this.surfaceModel.connect( this,
     { 'select': 'onSurfaceModelSelect' }
@@ -52,16 +50,26 @@ ve.ce.TableNodeEx.prototype.onTableNodeTeardown = function() {
   this.surfaceModel.disconnect( this );
 };
 
-ve.ce.TableNodeEx.prototype.onTableMouseEnter = function(e) {
-  console.log('TableNodeEx.onTableMouseEnter...', e);
-};
-
 ve.ce.TableNodeEx.prototype.onSurfaceModelSelect = function(selection) {
   // console.log('TableNodeEx.onSurfaceModelSelect...', selection, this.model.getRange());
   var range = this.model.getRange();
   if (range.containsOffset(selection.from) && range.containsOffset(selection.to)) {
-    console.log('TableNodeEx: is focussed.');
+    if (!this.focussed) {
+      this.$element.addClass('focussed');
+      this.focussed = true;
+      this.surfaceModel.emit( 'table-focus-changed', this);
+    }
+  } else {
+    if (this.focussed) {
+      this.$element.removeClass('focussed');
+      this.focussed = false;
+      this.surfaceModel.emit( 'table-focus-changed', this);
+    }
   }
+};
+
+ve.ce.TableNodeEx.prototype.isFocussed = function() {
+  return this.focussed;
 };
 
 /* Static Properties */
