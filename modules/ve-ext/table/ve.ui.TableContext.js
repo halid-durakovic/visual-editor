@@ -42,7 +42,7 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
   this.popup.$body.append(
     this.$menu.addClass( 've-ui-tableContext-menu' ),
     this.inspector.$element
-      .addClass( 've-ui-tableContext-inspector' )
+      .addClass( 've-ui-tableInspector' )
       .hide()
   );
   // don't use the tail
@@ -99,6 +99,12 @@ ve.ui.TableContext.prototype.show = function() {
     self.popup.show();
   }
   window.setTimeout(updateDimensions, 0);
+  window.setTimeout(function() {
+    if (self.showInspector) {
+      self.inspector.fitHeightToContents();
+      self.inspector.fitWidthToContents();
+    }
+  }, 200);
 };
 
 ve.ui.TableContext.prototype.update = function() {

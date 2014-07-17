@@ -1,18 +1,133 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="22px" height="22px" viewBox="0 0 22 22" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
-    <!-- Generator: Sketch Beta 3.0.4 (8053) - http://www.bohemiancoding.com/sketch -->
-    <title>Slice 2</title>
-    <desc>Created with Sketch Beta.</desc>
-    <defs></defs>
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
-        <rect id="Rectangle-83" stroke="#979797" fill="#D8D8D8" sketch:type="MSShapeGroup" x="14" y="7" width="8" height="8"></rect>
-        <rect id="Rectangle-81" stroke="#979797" fill="#D8D8D8" sketch:type="MSShapeGroup" x="0" y="7" width="8" height="8"></rect>
-        <rect id="Rectangle-82" stroke="#979797" fill="#D8D8D8" sketch:type="MSShapeGroup" x="7" y="7" width="8" height="8"></rect>
-        <rect id="Rectangle-86" stroke="#979797" fill="#D8D8D8" sketch:type="MSShapeGroup" x="14" y="14" width="8" height="8"></rect>
-        <rect id="Rectangle-72" stroke="#3D76B8" fill="#4990E2" sketch:type="MSShapeGroup" x="14" y="0" width="8" height="8"></rect>
-        <rect id="Rectangle-73" stroke="#3D76B8" fill="#4990E2" sketch:type="MSShapeGroup" x="0" y="0" width="8" height="8"></rect>
-        <rect id="Rectangle-74" stroke="#3D76B8" fill="#4990E2" sketch:type="MSShapeGroup" x="7" y="0" width="8" height="8"></rect>
-        <rect id="Rectangle-84" stroke="#979797" fill="#D8D8D8" sketch:type="MSShapeGroup" x="0" y="14" width="8" height="8"></rect>
-        <rect id="Rectangle-85" stroke="#979797" fill="#D8D8D8" sketch:type="MSShapeGroup" x="7" y="14" width="8" height="8"></rect>
-    </g>
+<svg
+   xmlns:sketch="http://www.bohemiancoding.com/sketch/ns"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="22.423672"
+   height="22.338526"
+   viewBox="0 0 22.423672 22.338526"
+   version="1.1"
+   id="svg2"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="table.svg">
+  <metadata
+     id="metadata22">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Slice 2</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1600"
+     inkscape:window-height="838"
+     id="namedview20"
+     showgrid="false"
+     inkscape:zoom="10.727273"
+     inkscape:cx="-16.06783"
+     inkscape:cy="11.292388"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <!-- Generator: Sketch Beta 3.0.4 (8053) - http://www.bohemiancoding.com/sketch -->
+  <title
+     id="title4">Slice 2</title>
+  <desc
+     id="desc6">Created with Sketch Beta.</desc>
+  <defs
+     id="defs8" />
+  <rect
+     style="color:#000000;fill:#d8d8d8;fill-opacity:1;fill-rule:evenodd;stroke:#979797;stroke-width:0.8888889;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.1111112"
+     width="7.1111112"
+     y="7.6304092"
+     x="0.4698427"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-9" />
+  <rect
+     style="color:#000000;fill:#d8d8d8;fill-opacity:1;fill-rule:evenodd;stroke:#979797;stroke-width:0.8888889;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.1111112"
+     width="7.1111112"
+     y="7.6049862"
+     x="7.6901984"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-4-4" />
+  <rect
+     style="color:#000000;fill:#d8d8d8;fill-opacity:1;fill-rule:evenodd;stroke:#979797;stroke-width:0.8888889;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.1111112"
+     width="7.1111112"
+     y="7.5880375"
+     x="14.868116"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-4-0-8" />
+  <rect
+     style="color:#000000;fill:#d8d8d8;fill-opacity:1;fill-rule:evenodd;stroke:#979797;stroke-width:0.8888889;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.1111112"
+     width="7.1111112"
+     y="14.782971"
+     x="0.44444445"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-8" />
+  <rect
+     style="color:#000000;fill:#d8d8d8;fill-opacity:1;fill-rule:evenodd;stroke:#979797;stroke-width:0.8888889;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.1111112"
+     width="7.1111112"
+     y="14.757545"
+     x="7.6648002"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-4-2" />
+  <rect
+     style="color:#000000;fill:#d8d8d8;fill-opacity:1;fill-rule:evenodd;stroke:#979797;stroke-width:0.8888889;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.1111112"
+     width="7.1111112"
+     y="14.740597"
+     x="14.842716"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-4-0-4" />
+  <rect
+     style="color:#000000;fill:#4990e2;fill-opacity:1;fill-rule:evenodd;stroke:#3d76b8;stroke-width:0.98630136;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.0136991"
+     width="7.0136986"
+     y="0.49315068"
+     x="0.50959373"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73" />
+  <rect
+     style="color:#000000;fill:#4990e2;fill-opacity:1;fill-rule:evenodd;stroke:#3d76b8;stroke-width:0.98630136;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.0136986"
+     width="7.0136991"
+     y="0.49315068"
+     x="7.7299495"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-4" />
+  <rect
+     style="color:#000000;fill:#4990e2;fill-opacity:1;fill-rule:evenodd;stroke:#3d76b8;stroke-width:0.98630136;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     height="7.0136986"
+     width="7.0136991"
+     y="0.49315068"
+     x="14.907867"
+     sketch:type="MSShapeGroup"
+     id="Rectangle-73-4-0" />
 </svg>
