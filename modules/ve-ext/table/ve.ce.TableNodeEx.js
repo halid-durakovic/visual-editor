@@ -72,6 +72,42 @@ ve.ce.TableNodeEx.prototype.isFocussed = function() {
   return this.focussed;
 };
 
+ve.ce.TableNodeEx.prototype.deleteRow = function() {
+console.log('ve.ce.TableNodeEx.deleteRow');
+};
+
+ve.ce.TableNodeEx.prototype.getRowForOffset = function ( offset ) {
+  var node = this.model.getNodeFromOffset(offset);
+  // find the according table row
+  // FIXME: this assumes, that there is only one table nesting level
+  while (node && node.type !== 'tableRow') {
+    node = node.parent;
+  }
+  if (node) {
+    return node;
+  } else {
+    return null;
+  }
+};
+
+ve.ce.TableNodeEx.prototype.getNumberOfColumns = function() {
+  var cols = 0,
+      rows, row, child;
+
+  for (var i = 0; i < this.children.length; i++) {
+    child = this.children[i];
+    if (child.type === 'tableSection') {
+      rows = child.children;
+      for (var j = 0; j < rows.length; j++) {
+        row = rows[j].getModel();
+        cols = Math.max(cols, row.getNumberOfColumns());
+      }
+    }
+  }
+
+  return cols;
+};
+
 /* Static Properties */
 
 ve.ce.TableNodeEx.static.name = 'table';

@@ -46,6 +46,15 @@ ve.dm.TableCellNode.static.toDomElements = function ( dataElement, doc ) {
 	return [ doc.createElement( tag ) ];
 };
 
+ve.dm.TableCellNode.prototype.getSpan = function () {
+  var span = this.getAttribute('span');
+  if (!span) {
+    return 1;
+  } else {
+    return parseInt(span, 10);
+  }
+};
+
 /* Registration */
 
 ve.dm.modelRegistry.register( ve.dm.TableCellNode );

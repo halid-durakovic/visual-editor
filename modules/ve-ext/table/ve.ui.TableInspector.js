@@ -7,11 +7,11 @@
  * @constructor
  * @param {Object} [config] Configuration options
  */
-ve.ui.TableInspector = function VeUiTableInspector( config ) {
+ve.ui.TableInspector = function VeUiTableInspector( config, tableContext ) {
   // Parent constructor
   ve.ui.Inspector.call( this, config );
 
-
+  this.tableContext = tableContext;
 };
 
 /* Inheritance */
@@ -35,8 +35,6 @@ ve.ui.TableInspector.static.modelClasses = [ ve.dm.TableNode ];
  * @inheritdoc
  */
 ve.ui.TableInspector.prototype.initialize = function () {
-  // console.log("ve.ui.TableInspector.initialize()");
-
   // Parent method
   ve.ui.TableInspector.super.prototype.initialize.call( this );
 
@@ -94,6 +92,15 @@ ve.ui.TableInspector.prototype.initialize = function () {
       rowButtons.$group,
       columnButtons.$group
     ] );
+
+  insertColumnBefore.connect( this, {'click': 'onInsertColumnBefore'} );
+  insertColumnAfter.connect( this, {'click': 'onInsertColumnAfter'} );
+  deleteColumn.connect( this, {'click': 'onDeleteColumn'} );
+
+  insertRowBefore.connect( this, {'click': 'onInsertRowBefore'} );
+  insertRowAfter.connect( this, {'click': 'onInsertRowAfter'} );
+  deleteRow.connect( this, {'click': 'onDeleteRow'} );
+
 };
 
 /**
@@ -123,6 +130,73 @@ ve.ui.TableInspector.prototype.getTeardownProcess = function ( data ) {
     }, this);
 };
 
+ve.ui.TableInspector.prototype.onInsertColumnBefore = function () {
+  console.log("ve.ui.TableInspector.prototype.onInsertColumnBefore");
+};
+
+ve.ui.TableInspector.prototype.onInsertColumnAfter = function () {
+  console.log("ve.ui.TableInspector.prototype.onInsertColumnAfter");
+};
+
+ve.ui.TableInspector.prototype.onDeleteColumn = function () {
+  console.log("ve.ui.TableInspector.prototype.onDeleteColumn");
+};
+
+ve.ui.TableInspector.prototype.insertRow = function ( tableCe, offset ) {
+  var numberOfCols, data, fragment, i;
+  fragment = this.getFragment();
+
+  numberOfCols = tableCe.getNumberOfColumns();
+  data = [];
+  data.push({ type: 'tableRow'});
+  for (i = 0; i < numberOfCols; i++) {
+    data.push({type: 'tableCell', 'attributes': { 'style': 'data' } });
+    data.push({type: 'paragraph'});
+    data.push('a');
+    data.push({type: '/paragraph'});
+    data.push({type: '/tableCell'});
+  }
+  data.push({ type: '/tableRow'});
+  fragment.change( ve.dm.Transaction.newFromInsertion( fragment.document, offset, data ) );
+};
+
+ve.ui.TableInspector.prototype.onInsertRowBefore = function () {
+  var tableCe, selectedOffset, selectedRow, offset,
+      fragment = this.getFragment();
+
+  tableCe = this.tableContext.getCurrentTableNode();
+  // using the left boundary of the selection to determine the previous row index
+  selectedOffset = fragment.getRange().start - tableCe.model.getRange().start;
+  selectedRow = tableCe.getRowForOffset(selectedOffset);
+  offset = selectedRow.getOuterRange().start;
+  this.insertRow(tableCe, offset);
+};
+
+ve.ui.TableInspector.prototype.onInsertRowAfter = function () {
+  var tableCe, selectedOffset, selectedRow, offset,
+      fragment = this.getFragment();
+
+  tableCe = this.tableContext.getCurrentTableNode();
+  // using the right boundary of the selection to determine the next row index
+  selectedOffset = fragment.getRange().start - tableCe.model.getRange().start;
+  selectedOffset = fragment.getRange().end - tableCe.model.getRange().start;
+  selectedRow = tableCe.getRowForOffset(selectedOffset);
+  offset = selectedRow.getOuterRange().end;
+
+  this.insertRow(tableCe, offset);
+};
+
+ve.ui.TableInspector.prototype.onDeleteRow = function () {
+  var tableCe, row, range, offset,
+      fragment = this.getFragment();
+
+  tableCe = this.tableContext.getCurrentTableNode();
+  offset = fragment.getRange().start - tableCe.model.getRange().start;
+  row = tableCe.getRowForOffset(offset);
+
+  range = row.getOuterRange();
+  fragment.change( ve.dm.Transaction.newFromRemoval( fragment.document, range ) );
+};
 
 /* Registration */
 
