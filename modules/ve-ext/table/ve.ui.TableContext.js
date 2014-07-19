@@ -23,7 +23,7 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
   this.inspector = new ve.ui.TableInspector({
     '$': this.$,
     '$contextOverlay': this.context.$element
-  });
+  }, this);
   this.showInspector = false;
   this.inspector.connect( this, {
     'setup': 'onInspectorSetup',
@@ -150,6 +150,10 @@ ve.ui.TableContext.prototype.onInspectorTeardown = function () {
       self.show();
     }
   }, 0);
+};
+
+ve.ui.TableContext.prototype.getCurrentTableNode = function () {
+  return this.focussedNode;
 };
 
 /**

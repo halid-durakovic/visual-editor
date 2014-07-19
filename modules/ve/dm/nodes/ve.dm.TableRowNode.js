@@ -34,6 +34,20 @@ ve.dm.TableRowNode.static.parentNodeTypes = [ 'tableSection' ];
 
 ve.dm.TableRowNode.static.matchTagNames = [ 'tr' ];
 
+/* Prototype functions */
+
+ve.dm.TableRowNode.prototype.getNumberOfColumns = function() {
+  var children,
+      cols = 0;
+
+  children = this.children;
+  for (var i = 0; i < children.length; i++) {
+    cols += children[i].getSpan();
+  }
+
+  return cols;
+};
+
 /* Registration */
 
 ve.dm.modelRegistry.register( ve.dm.TableRowNode );
