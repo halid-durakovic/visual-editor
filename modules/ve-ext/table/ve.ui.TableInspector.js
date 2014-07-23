@@ -130,21 +130,77 @@ ve.ui.TableInspector.prototype.getTeardownProcess = function ( data ) {
     }, this);
 };
 
+ve.ui.TableInspector.prototype.insertColumn = function (mode) {
+  var surface, selection, fragment, tableCe,
+      selectedOffset, cells, offset, cell, data, txs, i;
+
+  surface = this.fragment.getSurface();
+  selection = surface.getSelection();
+  fragment = surface.getFragment(selection);
+
+  if (!selection.isCollapsed()) {
+    window.console.error("FIXME: this should only be active when the selection is collapsed.");
+    return;
+  }
+
+  tableCe = this.tableContext.getCurrentTableNode();
+  selectedOffset = fragment.getRange().start - tableCe.model.getRange().start;
+  cells = tableCe.getColumnForOffset(selectedOffset);
+
+  txs = [];
+  for (i = cells.length - 1; i >= 0; i--) {
+    cell = cells[i];
+    data = [];
+    data.push({type: 'tableCell', 'attributes': { 'style': 'data' } });
+    data.push({type: 'paragraph'});
+    data.push('');
+    data.push({type: '/paragraph'});
+    data.push({type: '/tableCell'});
+    offset = mode === 'before' ? cell.getOuterRange().start : cell.getOuterRange().end;
+    txs.push(
+      ve.dm.Transaction.newFromInsertion( fragment.document, offset, data )
+    );
+  }
+  fragment.change(txs);
+};
+
 ve.ui.TableInspector.prototype.onInsertColumnBefore = function () {
-  console.log("ve.ui.TableInspector.prototype.onInsertColumnBefore");
+  this.insertColumn('before');
 };
 
 ve.ui.TableInspector.prototype.onInsertColumnAfter = function () {
-  console.log("ve.ui.TableInspector.prototype.onInsertColumnAfter");
+  this.insertColumn('after');
 };
 
 ve.ui.TableInspector.prototype.onDeleteColumn = function () {
-  console.log("ve.ui.TableInspector.prototype.onDeleteColumn");
+  var surface, selection, fragment, tableCe,
+      selectedOffset, cells, txs, i, cell;
+
+  surface = this.fragment.getSurface();
+  selection = surface.getSelection();
+  fragment = surface.getFragment(selection);
+
+  if (!selection.isCollapsed()) {
+    window.console.error("FIXME: this should only be active when the selection is collapsed.");
+    return;
+  }
+
+  tableCe = this.tableContext.getCurrentTableNode();
+  selectedOffset = fragment.getRange().start - tableCe.model.getRange().start;
+  cells = tableCe.getColumnForOffset(selectedOffset);
+
+  txs = [];
+  for (i = cells.length - 1; i >= 0; i--) {
+    cell = cells[i];
+    txs.push(
+      ve.dm.Transaction.newFromRemoval( fragment.document, cell.getOuterRange() )
+    );
+  }
+  fragment.change(txs);
 };
 
-ve.ui.TableInspector.prototype.insertRow = function ( tableCe, offset ) {
-  var numberOfCols, data, fragment, i;
-  fragment = this.getFragment();
+ve.ui.TableInspector.prototype.insertRow = function ( fragment, tableCe, offset ) {
+  var numberOfCols, data, i;
 
   numberOfCols = tableCe.getNumberOfColumns();
   data = [];
@@ -152,7 +208,7 @@ ve.ui.TableInspector.prototype.insertRow = function ( tableCe, offset ) {
   for (i = 0; i < numberOfCols; i++) {
     data.push({type: 'tableCell', 'attributes': { 'style': 'data' } });
     data.push({type: 'paragraph'});
-    data.push('a');
+    data.push('');
     data.push({type: '/paragraph'});
     data.push({type: '/tableCell'});
   }
@@ -162,19 +218,37 @@ ve.ui.TableInspector.prototype.insertRow = function ( tableCe, offset ) {
 
 ve.ui.TableInspector.prototype.onInsertRowBefore = function () {
   var tableCe, selectedOffset, selectedRow, offset,
-      fragment = this.getFragment();
+      surface, selection, fragment;
+
+  surface = this.fragment.getSurface();
+  selection = surface.getSelection();
+  fragment = surface.getFragment(selection);
+
+  if (!selection.isCollapsed()) {
+    window.console.error("FIXME: this should only be active when the selection is collapsed.");
+    return;
+  }
 
   tableCe = this.tableContext.getCurrentTableNode();
   // using the left boundary of the selection to determine the previous row index
   selectedOffset = fragment.getRange().start - tableCe.model.getRange().start;
   selectedRow = tableCe.getRowForOffset(selectedOffset);
   offset = selectedRow.getOuterRange().start;
-  this.insertRow(tableCe, offset);
+  this.insertRow(fragment, tableCe, offset);
 };
 
 ve.ui.TableInspector.prototype.onInsertRowAfter = function () {
   var tableCe, selectedOffset, selectedRow, offset,
-      fragment = this.getFragment();
+      surface, fragment, selection;
+
+  surface = this.fragment.getSurface();
+  selection = surface.getSelection();
+  fragment = surface.getFragment(selection);
+
+  if (!selection.isCollapsed()) {
+    window.console.error("FIXME: this should only be active when the selection is collapsed.");
+    return;
+  }
 
   tableCe = this.tableContext.getCurrentTableNode();
   // using the right boundary of the selection to determine the next row index
@@ -183,12 +257,21 @@ ve.ui.TableInspector.prototype.onInsertRowAfter = function () {
   selectedRow = tableCe.getRowForOffset(selectedOffset);
   offset = selectedRow.getOuterRange().end;
 
-  this.insertRow(tableCe, offset);
+  this.insertRow(fragment, tableCe, offset);
 };
 
 ve.ui.TableInspector.prototype.onDeleteRow = function () {
   var tableCe, row, range, offset,
-      fragment = this.getFragment();
+      surface, fragment, selection;
+
+  surface = this.fragment.getSurface();
+  selection = surface.getSelection();
+  fragment = surface.getFragment(selection);
+
+  if (!selection.isCollapsed()) {
+    window.console.error("FIXME: this should only be active when the selection is collapsed.");
+    return;
+  }
 
   tableCe = this.tableContext.getCurrentTableNode();
   offset = fragment.getRange().start - tableCe.model.getRange().start;

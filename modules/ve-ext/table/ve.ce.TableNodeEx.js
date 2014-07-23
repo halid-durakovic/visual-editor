@@ -90,6 +90,30 @@ ve.ce.TableNodeEx.prototype.getRowForOffset = function ( offset ) {
   }
 };
 
+ve.ce.TableNodeEx.prototype.getColumnForOffset = function ( offset ) {
+  var node = this.model.getNodeFromOffset(offset),
+      rowNode, cellNode,
+      col = 0,
+      cell,
+      columnCells = [];
+
+  // TODO: this must be done in a more robust way... e.g. the
+  cellNode = node.parent;
+  rowNode = cellNode.parent;
+
+  for (var i = 0; i < rowNode.children.length; i++) {
+    cell = rowNode.children[i];
+    if (cell === cellNode) break;
+    col += cell.getSpan();
+  }
+
+  if (col > 0) {
+    columnCells = this.getColumnCells(col);
+  }
+
+  return columnCells;
+};
+
 ve.ce.TableNodeEx.prototype.getNumberOfColumns = function() {
   var cols = 0,
       rows, row, child;
@@ -106,6 +130,23 @@ ve.ce.TableNodeEx.prototype.getNumberOfColumns = function() {
   }
 
   return cols;
+};
+
+ve.ce.TableNodeEx.prototype.getColumnCells = function(colIdx) {
+  var cells = [],
+      rows, row, child, cell;
+  for (var i = 0; i < this.children.length; i++) {
+    child = this.children[i];
+    if (child.type === 'tableSection') {
+      rows = child.children;
+      for (var j = 0; j < rows.length; j++) {
+        row = rows[j].getModel();
+        cell = row.getCellAt(colIdx);
+        if (cell) cells.push(cell);
+      }
+    }
+  }
+  return cells;
 };
 
 /* Static Properties */
