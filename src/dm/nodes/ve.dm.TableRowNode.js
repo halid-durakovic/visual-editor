@@ -39,14 +39,26 @@ ve.dm.TableRowNode.static.matchTagNames = [ 'tr' ];
 ve.dm.TableRowNode.prototype.getNumberOfColumns = function() {
   var children,
       cols = 0;
-
   children = this.children;
   for (var i = 0; i < children.length; i++) {
     cols += children[i].getSpan();
   }
-
   return cols;
 };
+
+ve.dm.TableRowNode.prototype.getCellAt = function(colIdx) {
+  var children, cell,
+      pos = -1;
+  children = this.children;
+  for (var i = 0; i < children.length; i++) {
+    cell = children[i];
+    pos += cell.getSpan();
+    if (pos >= colIdx) {
+      return cell;
+    }
+  }
+  return null;
+}
 
 /* Registration */
 
