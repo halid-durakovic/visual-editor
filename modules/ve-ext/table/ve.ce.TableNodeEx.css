@@ -56,7 +56,19 @@
   margin-bottom: 30px;
   margin-left:auto;
   margin-right:auto;
+  border-spacing: 0;
+  border-collapse: collapse;
 }
+
+.ve-ce-tableCellNode {
+  border: 1px solid #ccc;
+  padding: 5px 10px 5px 10px;
+}
+
+thead .ve-ce-tableCellNode {
+  background-color: #EEE;
+}
+
 
 .ve-ce-tableNodeEx.focussed {
   border: 1px dashed;
