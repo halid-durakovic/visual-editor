@@ -136,7 +136,8 @@ ve.ui.TableInspector.prototype.getTeardownProcess = function ( data ) {
 
 ve.ui.TableInspector.prototype.insertColumn = function (mode) {
   var surface, selection, fragment, tableCe,
-      selectedOffset, cells, offset, cell, data, txs, i;
+      selectedOffset, cells, offset, cell, data, txs, i,
+      offsetAfterInsertion;
 
   surface = this.fragment.getSurface();
   selection = surface.getSelection();
@@ -151,11 +152,13 @@ ve.ui.TableInspector.prototype.insertColumn = function (mode) {
   selectedOffset = fragment.getRange().start - tableCe.model.getRange().start;
   cells = tableCe.getColumnForOffset(selectedOffset);
 
+  offsetAfterInsertion = selectedOffset;
+
   txs = [];
   for (i = cells.length - 1; i >= 0; i--) {
     cell = cells[i];
     data = [];
-    data.push({type: 'tableCell', 'attributes': { 'style': 'data' } });
+    data.push({type: 'tableCell', 'attributes': { 'style': cell.getAttribute('style') } });
     data.push({type: 'paragraph'});
     data.push('');
     data.push({type: '/paragraph'});
@@ -164,8 +167,16 @@ ve.ui.TableInspector.prototype.insertColumn = function (mode) {
     txs.push(
       ve.dm.Transaction.newFromInsertion( fragment.document, offset, data )
     );
+
+    if (i === 0) {
+      // Note: We want to place the cursor into the first new cell.
+      // In any case, before or after, the insertion offset is the start of a
+      // new cell node -- and the paragraph inside the cell has an relative offset of 2.
+      offsetAfterInsertion = offset + 2;
+    }
   }
-  fragment.change(txs);
+
+  surface.change(txs, new ve.Range(offsetAfterInsertion));
 };
 
 ve.ui.TableInspector.prototype.onInsertColumnBefore = function () {
