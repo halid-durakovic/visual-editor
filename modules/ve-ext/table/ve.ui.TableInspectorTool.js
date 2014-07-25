@@ -22,5 +22,8 @@ ve.ui.TableInspectorTool.static.commandName = 'table';
 ve.ui.toolFactory.register( ve.ui.TableInspectorTool );
 
 ve.ui.commandRegistry.register(
-  new ve.ui.Command( 'table', 'window', 'open', 'table' )
+  new ve.ui.Command( 'table', 'table', 'create', {
+    'rows': 5,
+    'cols': 5
+  } )
 );
