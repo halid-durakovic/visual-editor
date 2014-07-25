@@ -2073,6 +2073,13 @@ ve.ce.Surface.prototype.handleDelete = function ( e, backspace ) {
 			if ( startNode.isFocusable() ) {
 				model.setSelection( startNode.getModel().getOuterRange() );
 				return;
+			} else if ( !startNode.mergeOnDelete() ) {
+				model.setSelection(
+					this.getDocument().getRelativeRange(
+						model.getSelection(), direction, 'character', false
+					)
+				);
+				return;
 			}
 		}
 		if ( rangeToRemove.isCollapsed() ) {

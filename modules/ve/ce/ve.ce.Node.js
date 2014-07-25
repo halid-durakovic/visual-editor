@@ -47,6 +47,9 @@ OO.mixinClass( ve.ce.Node, ve.Node );
  */
 ve.ce.Node.static.splitOnEnter = false;
 
+ve.ce.Node.static.mergeOnDelete = true;
+
+
 /**
  * Whether this node type can be focused.
  *
@@ -246,6 +249,15 @@ ve.ce.Node.prototype.getOffset = function () {
  */
 ve.ce.Node.prototype.splitOnEnter = function () {
 	return this.constructor.static.splitOnEnter;
+};
+
+/**
+ * Check if a node can be merged via delete.
+ *
+ * @returns {boolean} Node can be merged
+ */
+ve.ce.Node.prototype.mergeOnDelete = function () {
+	return this.constructor.static.mergeOnDelete;
 };
 
 /**
