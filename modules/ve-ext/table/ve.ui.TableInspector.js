@@ -107,12 +107,8 @@ ve.ui.TableInspector.prototype.initialize = function () {
  * @inheritdoc
  */
 ve.ui.TableInspector.prototype.getSetupProcess = function ( data ) {
-  var tableCe;
   return ve.ui.TableInspector.super.prototype.getSetupProcess.call( this, data )
     .next( function () {
-      if (!this.tableContext || !this.tableContext.getCurrentTableNode()) {
-        this.createTable();
-      }
     }, this );
 };
 
@@ -298,41 +294,6 @@ ve.ui.TableInspector.prototype.deleteTable = function() {
   fragment = this.getFragment();
   fragment.change( ve.dm.Transaction.newFromRemoval( fragment.document, tableCe.model.getOuterRange() ) );
 };
-
-ve.ui.TableInspector.prototype.createTable = function() {
-  var numberOfCols = 5,
-      numberOfRows = 5,
-      data;
-
-  data = [];
-
-  function _addRow(style) {
-    data.push({ type: 'tableRow'});
-    for (var i = 0; i < numberOfCols; i++) {
-      data.push({type: 'tableCell', 'attributes': { 'style': style } });
-      data.push({type: 'paragraph'});
-      if (style === 'header') {
-        data.push('Column ' + (i+1) );
-      }
-      data.push({type: '/paragraph'});
-      data.push({type: '/tableCell'});
-    }
-    data.push({ type: '/tableRow'});
-  }
-
-  data.push({type: 'table'})
-  data.push({type: 'tableSection', 'attributes': {'style': 'header'} });
-  _addRow('header');
-  data.push({type: '/tableSection'});
-  data.push({type: 'tableSection', 'attributes': {'style': 'body'} });
-  for (var i = 0; i < numberOfRows; i++) {
-    _addRow('data');
-  }
-  data.push({type: '/tableSection'});
-  data.push({type: '/table'})
-
-  this.fragment.insertContent(data, false ).collapseRangeToStart().select();
-}
 
 /* Registration */
 
