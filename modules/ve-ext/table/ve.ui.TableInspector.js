@@ -160,7 +160,6 @@ ve.ui.TableInspector.prototype.insertColumn = function (mode) {
     data = [];
     data.push({type: 'tableCell', 'attributes': { 'style': cell.getAttribute('style') } });
     data.push({type: 'paragraph'});
-    data.push('');
     data.push({type: '/paragraph'});
     data.push({type: '/tableCell'});
     offset = mode === 'before' ? cell.getOuterRange().start : cell.getOuterRange().end;
@@ -214,8 +213,9 @@ ve.ui.TableInspector.prototype.onDeleteColumn = function () {
   fragment.change(txs);
 };
 
-ve.ui.TableInspector.prototype.insertRow = function ( fragment, tableCe, offset ) {
-  var numberOfCols, data, i;
+ve.ui.TableInspector.prototype.insertRow = function ( surface, tableCe, offset ) {
+  var numberOfCols, data, i,
+    offsetAfterInsertion;
 
   numberOfCols = tableCe.getNumberOfColumns();
   data = [];
@@ -223,12 +223,16 @@ ve.ui.TableInspector.prototype.insertRow = function ( fragment, tableCe, offset 
   for (i = 0; i < numberOfCols; i++) {
     data.push({type: 'tableCell', 'attributes': { 'style': 'data' } });
     data.push({type: 'paragraph'});
-    data.push('');
     data.push({type: '/paragraph'});
     data.push({type: '/tableCell'});
   }
   data.push({ type: '/tableRow'});
-  fragment.change( ve.dm.Transaction.newFromInsertion( fragment.document, offset, data ) );
+
+  var tx = [];
+  tx.push(ve.dm.Transaction.newFromInsertion( surface.documentModel, offset, data ));
+
+  offsetAfterInsertion = offset + 3;
+  surface.change( tx, new ve.Range(offsetAfterInsertion, offsetAfterInsertion));
 };
 
 ve.ui.TableInspector.prototype.onInsertRowBefore = function () {
@@ -249,7 +253,7 @@ ve.ui.TableInspector.prototype.onInsertRowBefore = function () {
   selectedOffset = fragment.getRange().start - tableCe.model.getRange().start;
   selectedRow = tableCe.getRowForOffset(selectedOffset);
   offset = selectedRow.getOuterRange().start;
-  this.insertRow(fragment, tableCe, offset);
+  this.insertRow(surface, tableCe, offset);
 };
 
 ve.ui.TableInspector.prototype.onInsertRowAfter = function () {
@@ -272,7 +276,7 @@ ve.ui.TableInspector.prototype.onInsertRowAfter = function () {
   selectedRow = tableCe.getRowForOffset(selectedOffset);
   offset = selectedRow.getOuterRange().end;
 
-  this.insertRow(fragment, tableCe, offset);
+  this.insertRow(surface, tableCe, offset);
 };
 
 ve.ui.TableInspector.prototype.onDeleteRow = function () {
