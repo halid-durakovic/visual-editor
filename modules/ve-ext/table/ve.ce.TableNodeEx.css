@@ -26,27 +26,44 @@
   background-image: /* @embed */ url(table-delete-column.svg);
 }
 
-.ve-ui-inspector.ve-ui-tableInspector .oo-ui-frame {
+.ve-ui-tableInspector {
   width: 10em;
-  height: 6em;
 }
 
-.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons {
-  padding-top: 5px;
+.ve-ui-tableInspector .header {
+  display: inline-block;
+  width: 100%;
+  padding: 5px 5px 5px 5px;
 }
 
-.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons .oo-ui-buttonWidget {
+.ve-ui-tableInspector .header .oo-ui-buttonWidget {
+  float:left;
+}
+
+.ve-ui-tableInspector .header .oo-ui-window-icon {
+  padding-left: 0.5em;
+  margin-left: 0.25em;
+  border-left: solid 1px #eee;
+}
+
+.ve-ui-tableInspector .ve-ui-tableInspector-buttons {
+  padding: 5px 5px 5px 5px;
+  display: table-row;
+}
+
+.ve-ui-tableInspector .ve-ui-tableInspector-buttons .oo-ui-buttonWidget {
   padding-left: 5px;
   min-width: 40px;
+  display: table-cell;
 }
 
-.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons .oo-ui-buttonWidget .oo-ui-iconedElement-icon {
+.ve-ui-tableInspector .ve-ui-tableInspector-buttons .oo-ui-buttonWidget .oo-ui-iconedElement-icon {
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
 
-.ve-ui-inspector-content .oo-ui-window-body .ve-ui-tableInspector-buttons .oo-ui-buttonWidget .oo-ui-labeledElement-label {
+.ve-ui-tableInspector .ve-ui-tableInspector-buttons .oo-ui-buttonWidget .oo-ui-labeledElement-label {
   margin-left: auto;
   margin-right: auto;
 }
