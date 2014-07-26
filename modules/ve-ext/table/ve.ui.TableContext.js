@@ -43,13 +43,22 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
     this.inspector.$element.hide()
   );
 
+  this.$rulerTop = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-horizontal top');
+  this.$rulerBottom = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-horizontal bottom');
+  this.$rulerLeft = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-vertical left');
+  this.$rulerRight = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-vertical right');
+
+  this.$rulers = $('<div>').append([
+    this.$rulerTop, this.$rulerBottom,
+    this.$rulerLeft, this.$rulerRight
+  ] );
+
   this.$element.addClass('ve-ui-tableContext')
-    .append( [ this.popup.$element ])
+    .append( [ this.popup.$element, this.$rulers ])
     .css( {
       'visibility': 'hidden',
       'position': 'absolute'
-    });
-
+    } );
 
   // Event listeners
   // ---------------
@@ -58,6 +67,8 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
   surface.connect(this, {'destroy': 'destroy'} );
   surfaceModel.connect(this, { 'table-focus-changed': 'onTableFocusChange' });
   surfaceModel.connect(this, { 'documentUpdate': 'onDocumentUpdate' });
+  surfaceModel.connect( this, { 'select': 'onSurfaceModelSelect' });
+
 };
 
 OO.inheritClass( ve.ui.TableContext, ve.ui.Context );
@@ -96,15 +107,84 @@ ve.ui.TableContext.prototype.onDocumentUpdate = function() {
   }
 };
 
+ve.ui.TableContext.prototype.onSurfaceModelSelect = function() {
+  // Note: the execution is postponed so that the table node can register
+  // with this context first
+  window.setTimeout( ve.bind( function() {
+    if (this.currentTable) {
+      this.computeSelectedArea();
+    }
+  }, this), 0);
+};
+
+ve.ui.TableContext.prototype.computeSelectedArea = function() {
+  var surfaceModel = this.surface.model,
+    cells, cell, offset, width, height,
+    top, left, bottom, right,
+    tableOffset, tableHeight, tableWidth;
+
+  cells = this.currentTable.getSelectedCells(surfaceModel.getSelection());
+
+  top = 10000;
+  bottom = 0;
+  left = 10000;
+  right = 0;
+
+  // compute a bounding box for the given cell elements
+  for (var i = 0; i < cells.length; i++) {
+    cell = cells[i];
+    offset = cell.$element.offset();
+    width = cell.$element.outerWidth();
+    height = cell.$element.outerHeight();
+
+    top = Math.min(top, offset.top);
+    bottom = Math.max(bottom, offset.top + height);
+    left = Math.min(left, offset.left);
+    right = Math.max(right, offset.left + width);
+  }
+
+  var surfaceOffset = this.surface.$element.offset();
+  var elOffset = this.$element.offset();
+  tableOffset = this.currentTable.$element.offset();
+  tableHeight = this.currentTable.$element.height();
+  tableWidth = this.currentTable.$element.width();
+
+  this.$rulerTop.css({
+    'top': top - elOffset.top,
+    'width': tableWidth
+  } );
+  this.$rulerBottom.css({
+    'top': bottom - elOffset.top,
+    'width': tableWidth
+  } );
+  this.$rulerLeft.css({
+    'left': left - elOffset.left,
+    'height': tableHeight
+  } );
+  this.$rulerRight.css({
+    'left': right - elOffset.left,
+    'height': tableHeight
+  } );
+
+};
+
 ve.ui.TableContext.prototype.reposition = function() {
   var surfaceOffset = this.surface.$element.offset();
   var offset = this.currentTable.$element.offset();
   var width = this.currentTable.$element.width();
-  var position = {
+  var height = this.currentTable.$element.height();
+  this.$element.css({
+    'position': 'absolute',
     'top': offset.top - surfaceOffset.top,
-    'left': offset.left + width + 10 - surfaceOffset.left
-  };
-  this.$element.css(position);
+    'left': offset.left - surfaceOffset.left,
+    'width': 0,
+    'height': 0,
+    // 'border': 'solid 2px green'
+  });
+  this.popup.$element.css({
+    'position': 'absolute',
+    'left': width + 10
+  });
 };
 
 ve.ui.TableContext.prototype.update = function() {
@@ -218,7 +298,7 @@ ve.ui.TableContext.prototype.deleteRow = function () {
   );
 };
 
-ve.ui.TableWidget.prototype.insertColumn = function (mode) {
+ve.ui.TableContext.prototype.insertColumn = function (mode) {
   var surface, selection, tableCe,
       selectedOffset, cells, offset, cell, data, txs, i,
       offsetAfterInsertion;

@@ -149,6 +149,50 @@ ve.ce.TableNodeEx.prototype.getColumnCells = function(colIdx) {
   return cells;
 };
 
+/**
+ * Finds all cells that are covered by a given selection
+ *
+ * This is gets called by the context, whenever the selection changes within a focussed table node.
+ */
+ve.ce.TableNodeEx.prototype.getSelectedCells = function(selection) {
+  var cells = [],
+      section, rows, row, cell;
+  for (var i = 0; i < this.children.length; i++) {
+    section = this.children[i];
+    // The ranges of the traversed nodes are increasing linear
+    // and we can stop searching, as soon a range match fails after the first found cell
+    var stopOnNextFail = false;
+
+    if (section.type === 'tableSection') {
+      var range = section.model.getRange();
+      if (range.start > selection.to || range.end < selection.from) {
+        if (stopOnNextFail) return cells;
+        continue;
+      }
+      rows = section.children;
+      for (var j = 0; j < rows.length; j++) {
+        row = rows[j];
+        range = row.model.getRange();
+        if (range.start > selection.to || range.end < selection.from) {
+          if (stopOnNextFail) return cells;
+          continue;
+        }
+        for (var k = 0; k < row.children.length; k++) {
+          cell = row.children[k];
+          range = cell.model.getRange();
+          if (range.start > selection.to || range.end < selection.from) {
+            if (stopOnNextFail) return cells;
+            continue;
+          }
+          cells.push(cell);
+          stopOnNextFail = true;
+        }
+      }
+    }
+  }
+  return cells;
+};
+
 /* Static Properties */
 
 ve.ce.TableNodeEx.static.name = 'table';
