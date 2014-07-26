@@ -1,29 +1,36 @@
 .oo-ui-icon-table {
   background-image: /* @embed */ url(table.svg);
+  background-position: center;
 }
 
 .oo-ui-icon-table-insert-row-before {
   background-image: /* @embed */ url(table-insert-row-before.svg);
+  background-position: center;
 }
 
 .oo-ui-icon-table-insert-row-after {
   background-image: /* @embed */ url(table-insert-row-after.svg);
+  background-position: center;
 }
 
 .oo-ui-icon-table-delete-row {
   background-image: /* @embed */ url(table-delete-row.svg);
+  background-position: center;
 }
 
 .oo-ui-icon-table-insert-column-before {
   background-image: /* @embed */ url(table-insert-column-before.svg);
+  background-position: center;
 }
 
 .oo-ui-icon-table-insert-column-after {
   background-image: /* @embed */ url(table-insert-column-after.svg);
+  background-position: center;
 }
 
 .oo-ui-icon-table-delete-column {
   background-image: /* @embed */ url(table-delete-column.svg);
+  background-position: center;
 }
 
 .ve-ui-tableInspector {
@@ -67,6 +74,22 @@
   margin-left: auto;
   margin-right: auto;
 }
+
+.ve-ui-tableContext .ve-ui-tableContext-ruler {
+  position: absolute;
+  background-color: #ccc;
+}
+
+.ve-ui-tableContext .ve-ui-tableContext-ruler.ve-ui-tableContext-ruler-horizontal {
+  left: 0px;
+  height: 2px;
+}
+
+.ve-ui-tableContext .ve-ui-tableContext-ruler.ve-ui-tableContext-ruler-vertical {
+  top: 0px;
+  width: 2px;
+}
+
 
 .ve-ce-tableNode {
   margin-top: 30px;
