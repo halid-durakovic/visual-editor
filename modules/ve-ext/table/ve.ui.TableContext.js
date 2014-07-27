@@ -261,6 +261,8 @@ ve.ui.TableContext.prototype.deleteTable = function() {
   );
   // TODO: set a proper selection after deletion
   surface.change( txs );
+
+  this.hide();
 };
 
 ve.ui.TableContext.prototype.insertRow = function ( mode ) {
