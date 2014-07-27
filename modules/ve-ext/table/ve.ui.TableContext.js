@@ -13,6 +13,14 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
 
   this.context.addItems([ new ve.ui.ContextItemWidget('table', ve.ui.TableTool, null, { '$': this.$ }) ]);
 
+  var self = this;
+  $( window ).resize(function() {
+    window.setTimeout(function() {
+      self.update();
+      self.computeSelectedArea();
+    }, 0);
+  } );
+
   // DOM elements
   // ------------
 
