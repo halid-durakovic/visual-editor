@@ -33,6 +33,33 @@
   background-position: center;
 }
 
+.ve-ce-tableNode {
+  margin-top: 30px;
+  margin-bottom: 30px;
+  margin-left:auto;
+  margin-right:auto;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+.ve-ce-tableCellNode {
+  border: 1px solid #ccc;
+  padding: 5px 10px 5px 10px;
+}
+
+.ve-ce-tableCellNode .ve-ce-paragraphNode {
+  min-width: 10px
+}
+
+thead .ve-ce-tableCellNode {
+  background-color: #EEE;
+}
+
+
+.ve-ce-tableNodeEx.focussed {
+  border: 1px dashed;
+}
+
 .ve-ui-tableInspector {
   width: 10em;
 }
@@ -75,45 +102,60 @@
   margin-right: auto;
 }
 
-.ve-ui-tableContext .ve-ui-tableContext-ruler {
+
+.ve-ui-tableContext .ve-ui-tableContext-overlay {
+  display: none;
+  pointer-events: none;
+}
+
+.ve-ui-tableContext.show-controls .ve-ui-tableContext-overlay {
+  display:block;
+}
+
+.ve-ui-tableContext .ruler {
   position: absolute;
-  background-color: #ccc;
 }
 
-.ve-ui-tableContext .ve-ui-tableContext-ruler.ve-ui-tableContext-ruler-horizontal {
+.ve-ui-tableContext .ruler.horizontal {
   left: 0px;
-  height: 2px;
+  height: 0px;
+  border-bottom: dotted 1px #00ffff;
+  opacity: 0.5;
 }
 
-.ve-ui-tableContext .ve-ui-tableContext-ruler.ve-ui-tableContext-ruler-vertical {
+.ve-ui-tableContext .ruler.vertical {
   top: 0px;
-  width: 2px;
+  width: 0px;
+  border-right: dotted 1px #00ffff;
+  opacity: 0.5;
 }
 
-
-.ve-ce-tableNode {
-  margin-top: 30px;
-  margin-bottom: 30px;
-  margin-left:auto;
-  margin-right:auto;
-  border-spacing: 0;
-  border-collapse: collapse;
+.ve-ui-tableContext .selection-box {
+  position: absolute;
+  border: solid 2px #008080;
+  opacity: 0.3;
 }
 
-.ve-ce-tableCellNode {
-  border: 1px solid #ccc;
-  padding: 5px 10px 5px 10px;
+.ve-ui-tableContext .row-bracket {
+  position: absolute;
+  left: -10px;
+  width: 3px;
+  border-style: solid;
+  border-color: #008080;
+  border-right: 0px;
+/*  border-top: 0px;
+  border-bottom: 0px;
+*/  opacity: 0.3;
 }
 
-.ve-ce-tableCellNode .ve-ce-paragraphNode {
-  min-width: 10px
-}
-
-thead .ve-ce-tableCellNode {
-  background-color: #EEE;
-}
-
-
-.ve-ce-tableNodeEx.focussed {
-  border: 1px dashed;
+.ve-ui-tableContext .column-bracket {
+  position: absolute;
+  top: -10px;
+  height: 3px;
+  border-style: solid;
+  border-color: #008080;
+  border-bottom: 0px;
+/*  border-right: 0px;
+  border-left: 0px;
+*/  opacity: 0.3;
 }

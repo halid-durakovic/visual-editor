@@ -43,18 +43,26 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
     this.inspector.$element.hide()
   );
 
-  this.$rulerTop = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-horizontal top');
-  this.$rulerBottom = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-horizontal bottom');
-  this.$rulerLeft = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-vertical left');
-  this.$rulerRight = $('<div>').addClass('ve-ui-tableContext-ruler ve-ui-tableContext-ruler-vertical right');
+  this.$rulerTop = $('<div>').addClass('ruler horizontal top');
+  this.$rulerBottom = $('<div>').addClass('ruler horizontal bottom');
+  this.$rulerLeft = $('<div>').addClass('ruler vertical left');
+  this.$rulerRight = $('<div>').addClass('ruler vertical right');
+  this.$bbox = $('<div>').addClass('selection-box');
+  this.$rowBracket = $('<div>').addClass('row-bracket');
+  this.$colBracket = $('<div>').addClass('column-bracket');
 
-  this.$rulers = $('<div>').append([
-    this.$rulerTop, this.$rulerBottom,
-    this.$rulerLeft, this.$rulerRight
-  ] );
+  this.$overlay = $('<div>')
+    .addClass('ve-ui-tableContext-overlay')
+    .append([
+      this.$rulerTop, this.$rulerBottom,
+      this.$rulerLeft, this.$rulerRight,
+      this.$bbox,
+      this.$rowBracket,
+      this.$colBracket
+    ] );
 
   this.$element.addClass('ve-ui-tableContext')
-    .append( [ this.popup.$element, this.$rulers ])
+    .append( [ this.popup.$element, this.$overlay ])
     .css( {
       'visibility': 'hidden',
       'position': 'absolute'
@@ -165,6 +173,22 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
     'left': right - elOffset.left,
     'height': tableHeight
   } );
+  this.$bbox.css({
+    'left': left - elOffset.left,
+    'top': top - elOffset.top,
+    // Note: can we get the border strength (last subtractor) from the element?
+    'height': bottom - top - 2,
+    'width': right - left - 2,
+  } );
+  this.$rowBracket.css({
+    'top': top - elOffset.top - 2,
+    // Note: can we get the border strength (last subtractor) from the element?
+    'height': bottom - top,
+  } );
+  this.$colBracket.css({
+    'left': left - elOffset.left - 2,
+    'width': right - left,
+  } );
 
 };
 
@@ -191,9 +215,11 @@ ve.ui.TableContext.prototype.update = function() {
   if ( this.showInspector ) {
     this.$menu.hide();
     this.inspector.$element.show();
+    this.$element.addClass('show-controls');
   } else {
     this.$menu.show();
     this.inspector.$element.hide();
+    this.$element.removeClass('show-controls');
   }
   // compute the current position
   this.reposition();
@@ -206,6 +232,7 @@ ve.ui.TableContext.prototype.update = function() {
 ve.ui.TableContext.prototype.hide = function() {
   this.$element.css( 'visibility', 'hidden' );
   this.showInspector = false;
+  this.$element.removeClass('show-controls');
 };
 
 ve.ui.TableContext.prototype.onContextItemChoose = function () {
