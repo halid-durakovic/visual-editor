@@ -157,6 +157,9 @@ ve.ce.TableNodeEx.prototype.getColumnCells = function(colIdx) {
 ve.ce.TableNodeEx.prototype.getSelectedCells = function(selection) {
   var cells = [],
       section, rows, row, cell;
+  if (selection.isBackwards()) {
+    selection = selection.flip();
+  }
   for (var i = 0; i < this.children.length; i++) {
     section = this.children[i];
     // The ranges of the traversed nodes are increasing linear
