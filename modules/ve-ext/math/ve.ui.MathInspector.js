@@ -7,9 +7,9 @@
  * @constructor
  * @param {Object} [config] Configuration options
  */
-ve.ui.MathInspector = function VeUiMathInspector( config ) {
+ve.ui.MathInspector = function VeUiMathInspector( manager, config ) {
 	// Parent constructor
-	ve.ui.Inspector.call( this, config );
+	ve.ui.NodeInspector.call( this, manager, config );
 
 	// Register a message hook to show parse errors
 	window.MathJax.Hub.Register.MessageHook("TeX Jax - parse error", ve.bind(this.onParseError, this));
@@ -17,7 +17,7 @@ ve.ui.MathInspector = function VeUiMathInspector( config ) {
 
 /* Inheritance */
 
-OO.inheritClass( ve.ui.MathInspector, ve.ui.Inspector );
+OO.inheritClass( ve.ui.MathInspector, ve.ui.NodeInspector );
 
 /* Static properties */
 
@@ -29,6 +29,24 @@ ve.ui.MathInspector.static.icon = 'math';
 ve.ui.MathInspector.static.title = 'Math';
 
 ve.ui.MathInspector.static.modelClasses = [ ve.dm.MathNode ];
+
+ve.ui.MathInspector.static.size = 'large';
+
+ve.ui.MathInspector.static.actions = [
+	{
+		action: 'done',
+		label: OO.ui.deferMsg( 'visualeditor-dialog-action-done' ),
+		flags: 'primary',
+		modes: 'edit'
+	},
+	{
+		action: 'remove',
+		label: OO.ui.deferMsg( 'visualeditor-inspector-remove-tooltip' ),
+		flags: 'destructive',
+		modes: 'edit'
+	}
+];
+
 
 /* Methods */
 
@@ -72,20 +90,34 @@ ve.ui.MathInspector.prototype.initialize = function () {
 	this.formatSelect.connect( this, {'select': 'onFormatChange'} );
 	this.mathInput.connect( this, {'change': 'onFormulaChange'} );
 
+	var $toolbar = $('<div>').addClass('ve-ui-mathInspector-tools');
+
 	var $formatButtonGroup = $('<div>')
 		.addClass('ve-ui-mathInspector-format-buttons')
 		.append(this.formatSelect.$element);
 
-	this.$head.append( [
-			$formatButtonGroup
-		] );
+	$toolbar.append( [
+		$formatButtonGroup
+	])
 
-	this.$form.append( [
-			this.mathInput.$element
-		] );
-	this.$body.append( [
+	this.form.$element.append( [
+			$toolbar,
+			this.mathInput.$element,
 			this.$errorEl
 		] );
+	this.$body.append( [
+		] );
+
+	this.$contextOverlay = this.manager.overlay.$element.find('.ve-ui-context');
+};
+
+ve.ui.MathInspector.prototype.getActionProcess = function ( action ) {
+	if ( action === 'remove' ) {
+		return new OO.ui.Process( function () {
+			this.close( { action: action } );
+		}, this );
+	}
+	return ve.ui.MathInspector.super.prototype.getActionProcess.call( this, action );
 };
 
 /**
@@ -94,14 +126,12 @@ ve.ui.MathInspector.prototype.initialize = function () {
 ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 	return ve.ui.MathInspector.super.prototype.getSetupProcess.call( this, data )
 		.next( function () {
-			// add a custom class so that the overriding CSS rules are applied
-			this.$contextOverlay.addClass("math-inspector");
+			// put the surface into staging mode. Otherwise there context changes
+			// which get emitted on every transaction and finally
+			// lead to the inspector getting closed.
+			this.getFragment().getSurface().pushStaging();
 
-			var fragment = this.getFragment();
-			if (!fragment) {
-				return false;
-			}
-			this.node = fragment.getSelectedNode();
+			this.node = this.getSelectedNode();
 
 			// Create a new node if it does not exist
 			// this is the case when inserting a new math node via toolbar
@@ -119,25 +149,6 @@ ve.ui.MathInspector.prototype.getSetupProcess = function ( data ) {
 				this.formatSelect.getItemFromData( format )
 			);
 			this.mathInput.$input.val(this.node.getFormula());
-
-			// HACK: as we want the popup to be positioned in
-			// a non-floating way, we have overridden the CSS styles to position
-			// the popup statically.
-			// On the other side, we have to position the popup-tail now manually.
-			// As there is no way to access the ce.MathNode from within this class,
-			// we are selecting the element via DOM.
-			var $mathCe = $('.ve-ce-surface .ve-ce-documentNode .ve-ce-mathNode .ve-ce-node-focused');
-			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
-			if ($mathCe.length && $tail.length) {
-				var popupOffset = this.$contextOverlay.offset();
-				var nodeOffset = $mathCe.offset();
-				var width = $mathCe.width();
-				var left = nodeOffset.left - popupOffset.left + width/2;
-				// ATTENTION: it is important to clear this style when this inspector is
-				// teared down as otherwise the tail position will be screwed up for other
-				// inspectors
-				$tail.css( { 'left': left, 'top': nodeOffset.top } );
-			}
 
 		}, this );
 };
@@ -161,9 +172,8 @@ ve.ui.MathInspector.prototype.insertMathNode = function() {
 		}
 	], false ).collapseRangeToEnd().select();
 
-	// HACK: I could find a convenient way to immediately retrieve the inserted node
-	// ATM, fragment.getSelectedNode() -- which worked earlier -- does not return
-	// the node when type is 'mathBlock'.
+	// HACK: I could find a convenient way to immediately retrieve the inserted node.
+	// fragment.getSelectedNode() returns null.
 	// As a workaround we get all covered nodes and look for the correct one ourselves
 	var nodes = fragment.getCoveredNodes();
 	for (var i = 0; i < nodes.length; i++) {
@@ -192,13 +202,6 @@ ve.ui.MathInspector.prototype.getReadyProcess = function (/*data*/) {
 ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 	return ve.ui.MathInspector.super.prototype.getTeardownProcess.call( this, data )
 		.first( function () {
-			// console.log("ve.ui.MathInspector.getTeardownProcess()", data);
-			this.$contextOverlay.removeClass("math-inspector");
-			// Note: clear the positioning style as the tail is shared among all
-			// inspectors
-			var $tail = this.$contextOverlay.find('.oo-ui-popupWidget-tail');
-			$tail.css( { 'left': '', 'top': '' } );
-
 			// delete the node if the user has clicked the remove button
 			// or if the formula is empty
 			data = data || {};
@@ -210,7 +213,6 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 				var fragment = this.getFragment();
 				var type = this.node.type;
 				var range = this.node.getRange();
-
 				fragment.change( ve.dm.Transaction.newFromRemoval( fragment.document, this.node.getOuterRange() ) );
 
 				// HACK: there is a glitch with the selection after removal for MathBlocks:
@@ -221,6 +223,10 @@ ve.ui.MathInspector.prototype.getTeardownProcess = function ( data ) {
 					fragment.surface.setSelection( new ve.Range(range.start, range.start) );
 				}
 			}
+
+			// leave staging mode
+			this.getFragment().getSurface().applyStaging();
+
 		}, this);
 };
 
@@ -229,9 +235,6 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 	var fragment = this.getFragment();
 	if (fragment) {
 		this.$errorEl.text('');
-		// Note: the API provided by ve.dm.SurfaceFragment has been changed
-		// breaking this implementation
-		// The low-level API seems to be more stable
 		var doc = fragment.document;
 		var txs = [
 			ve.dm.Transaction.newFromAttributeChanges(
@@ -242,9 +245,6 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 				)
 		];
 		fragment.change(txs);
-		// WORKAROUND: ATM the input field for the inline element
-		// looses focus after each keystroke.
-		this.mathInput.focus();
 	}
 };
 
@@ -269,12 +269,6 @@ ve.ui.MathInspector.prototype.onParseError = function(message) {
 	this.$errorEl.text(message[1]);
 };
 
-/**
- * @inheritdoc
- */
-ve.ui.MathInspector.prototype.isEmbeddable = function() {
-	return false;
-};
 
 /* Registration */
 

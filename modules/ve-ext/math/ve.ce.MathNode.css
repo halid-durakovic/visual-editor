@@ -14,7 +14,6 @@
 
 .ve-ce-mathBlockNode .mathjax-wrapper {
   width: 50%;
-  /*width: 30px;*/
 }
 
 /* Note: there are two rendered formulas which are controlled
@@ -39,35 +38,8 @@
 
 /* These are hacks to make the popup stretch over the whole width for math input */
 
-.ve-ui-desktopContext.math-inspector {
-  left: 5px !important;
-  right: 5px !important;
-}
-
-.ve-ui-mathInspector-formatSelect {
-  float:right;
-}
-
-.ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-popup {
-  position: static !important;
-  width: auto !important;
-}
-
-.ve-ui-desktopContext.math-inspector .ve-ui-inspector .oo-ui-frame {
-  width: 100% !important;
-}
-
-.ve-ui-desktopContext.math-inspector .ve-ui-inspector .oo-ui-window-frame {
-  /*background: #EEE;*/
-}
-
-.ve-ui-desktopContext.math-inspector .ve-ui-desktopContext-inspectors {
-  left: 0px !important;
-  right: 0px !important;
-}
-
 .oo-ui-textInputWidget.ve-ui-mathInputWidget {
-  width: auto !important;
+  width: auto;
 }
 
 .oo-ui-textInputWidget.ve-ui-mathInputWidget input {
@@ -76,15 +48,17 @@
   font-family: 'Consolas', 'Liberation Mono', 'Menlo', 'Courier', 'Monospace';
 }
 
-.ve-ui-desktopContext.math-inspector .oo-ui-popupWidget-tailed .oo-ui-popupWidget-tail {
-  position: absolute !important;
-  top: 0px !important;
+.ve-ui-mathInspector-tools {
+  width: 100%;
+  height: 50px;
+}
+
+.ve-ui-mathInspector-formatSelect {
+  float:right;
 }
 
 .ve-ui-mathInspector-format-buttons {
-  display: inline-block;
   float: right;
-  margin-right: 20px;
 }
 
 .ve-ui-mathInspector-parseError {
