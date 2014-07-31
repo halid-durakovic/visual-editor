@@ -50,7 +50,7 @@
 
 .ve-ui-mathInspector-tools {
   width: 100%;
-  height: 50px;
+  overflow: hidden;
 }
 
 .ve-ui-mathInspector-formatSelect {
