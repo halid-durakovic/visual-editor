@@ -47,7 +47,6 @@ ve.ui.MathInspector.static.actions = [
 	}
 ];
 
-
 /* Methods */
 
 /**
@@ -70,7 +69,7 @@ ve.ui.MathInspector.prototype.initialize = function () {
 
 	this.mathInput = new OO.ui.TextInputWidget({
 		'$': this.$,
-		'$overlay': this.$contextOverlay || this.$overlay,
+		'$overlay': this.$overlay,
 		'classes': ['ve-ui-mathInputWidget']
 	} );
 
@@ -98,17 +97,13 @@ ve.ui.MathInspector.prototype.initialize = function () {
 
 	$toolbar.append( [
 		$formatButtonGroup
-	])
-
+	]);
 	this.form.$element.append( [
 			$toolbar,
 			this.mathInput.$element,
 			this.$errorEl
 		] );
-	this.$body.append( [
-		] );
 
-	this.$contextOverlay = this.manager.overlay.$element.find('.ve-ui-context');
 };
 
 ve.ui.MathInspector.prototype.getActionProcess = function ( action ) {
@@ -234,7 +229,7 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 	var newFormula = this.mathInput.getValue();
 	var fragment = this.getFragment();
 	if (fragment) {
-		this.$errorEl.text('');
+		var surface = fragment.getSurface();
 		var doc = fragment.document;
 		var txs = [
 			ve.dm.Transaction.newFromAttributeChanges(
@@ -244,7 +239,9 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 					}
 				)
 		];
-		fragment.change(txs);
+		surface.change(txs);
+		// remove a previously displayed error message
+		this.$errorEl.text('');
 	}
 };
 
@@ -254,13 +251,19 @@ ve.ui.MathInspector.prototype.onFormatChange = function() {
 
 	var fragment = this.getFragment();
 	if (fragment && this.node) {
+		var surface = fragment.getSurface();
+		var doc = fragment.document;
+		var txs = [
+			ve.dm.Transaction.newFromAttributeChanges(
+					doc, this.node.getOuterRange().start,
+					{
+						'format': formatType
+					}
+				)
+		];
+		surface.change(txs);
+		// remove a previously displayed error message
 		this.$errorEl.text('');
-		fragment.changeAttributes(
-			{
-				'format': formatType
-			},
-			this.node.getType()
-		);
 	}
 };
 
@@ -273,3 +276,4 @@ ve.ui.MathInspector.prototype.onParseError = function(message) {
 /* Registration */
 
 ve.ui.windowFactory.register( ve.ui.MathInspector );
+
