@@ -55,6 +55,10 @@ ve.dm.TableCellNode.prototype.getSpan = function () {
   }
 };
 
+ve.dm.TableCellNode.prototype.canBeMergedWith = function() {
+  return false;
+};
+
 /* Registration */
 
 ve.dm.modelRegistry.register( ve.dm.TableCellNode );

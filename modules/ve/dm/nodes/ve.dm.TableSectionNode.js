@@ -57,6 +57,11 @@ ve.dm.TableSectionNode.static.toDomElements = function ( dataElement, doc ) {
 		tag = tags[dataElement.attributes && dataElement.attributes.style || 'body'];
 	return [ doc.createElement( tag ) ];
 };
+
+ve.dm.TableSectionNode.prototype.canBeMergedWith = function() {
+  return false;
+};
+
 /* Registration */
 
 ve.dm.modelRegistry.register( ve.dm.TableSectionNode );

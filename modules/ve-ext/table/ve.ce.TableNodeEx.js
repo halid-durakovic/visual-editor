@@ -43,7 +43,6 @@ ve.ce.TableNodeEx.prototype.onTableNodeSetup = function() {
   this.surfaceModel.connect( this,
     { 'select': 'onSurfaceModelSelect' }
   );
-
 };
 
 ve.ce.TableNodeEx.prototype.onTableNodeTeardown = function() {
@@ -72,45 +71,96 @@ ve.ce.TableNodeEx.prototype.isFocussed = function() {
   return this.focussed;
 };
 
-ve.ce.TableNodeEx.prototype.deleteRow = function() {
-console.log('ve.ce.TableNodeEx.deleteRow');
-};
+ve.ce.TableNodeEx.prototype.locateNode = function (node) {
+  var result, section, row, cell;
 
-ve.ce.TableNodeEx.prototype.getRowForOffset = function ( offset ) {
-  var node = this.model.getNodeFromOffset(offset);
-  // find the according table row
-  // FIXME: this assumes, that there is only one table nesting level
-  while (node && node.type !== 'tableRow') {
+  while (true) {
+    switch (node.type) {
+      case 'tableCell':
+        cell = node;
+        break;
+      case 'tableRow':
+        row = node;
+        break;
+      case 'tableSection':
+        section = node;
+        break;
+    }
     node = node.parent;
+    if (node === this) break;
+    if (!node) return null;
   }
-  if (node) {
-    return node;
-  } else {
+
+  // HACK: fallback if this is called with a top-level node
+  if (!row || !cell) {
     return null;
   }
+
+  result = {
+    sectionNode: section,
+    rowNode: row,
+    cellNode: cell
+  };
+
+  return result;
 };
 
-ve.ce.TableNodeEx.prototype.getColumnForOffset = function ( offset ) {
-  var node = this.model.getNodeFromOffset(offset),
-      rowNode, cellNode,
-      col = 0,
-      cell,
-      columnCells = [];
+/**
+ *
+ * returns {
+ *   'sectionNode': ve.dm.TableSectionNode
+ *   'rowNode': ve.dm.TableRowNode
+ *   'cellNode': ve.dm.TableCellNode
+ *   'sectionIndex': optional
+ *   'rowIndex': optional
+ *   'cellIndex': optional
+ *   'col': optional
+ * }
+ * options:
+ *   - 'indexes': determine child element indexes for section, row, and cell
+ *   - 'globalOffset': the given offset is global
+ */
+ve.ce.TableNodeEx.prototype.getLocationForOffset = function ( offset, options ) {
+  var node, location;
 
-  // TODO: this must be done in a more robust way... e.g. the
-  cellNode = node.parent;
-  rowNode = cellNode.parent;
+  options = options || {};
 
-  for (var i = 0; i < rowNode.children.length; i++) {
-    cell = rowNode.children[i];
-    if (cell === cellNode) break;
-    col += cell.getSpan();
+  if (options.globalOffset) {
+    offset -= this.model.getRange().start;
   }
 
-  if (col > 0) {
-    columnCells = this.getColumnCells(col);
+  node = this.getNodeFromOffset(offset);
+  location = this.locateNode(node);
+
+  if (!location) return null;
+
+  if (options.indexes) {
+    this.computeNodeIndexes(location);
   }
 
+  return location;
+};
+
+ve.ce.TableNodeEx.prototype.computeNodeIndexes = function( location ) {
+  var cell;
+
+  location.sectionIndex = this.children.indexOf(location.sectionNode);
+  location.rowIndex = location.sectionNode.children.indexOf(location.rowNode);
+
+  location.col = -1;
+  location.cellIndex = -1;
+
+  for (var i = 0; i < location.rowNode.children.length; i++) {
+    cell = location.rowNode.children[i];
+    location.col += cell.model.getSpan();
+    location.cellIndex = i;
+    if (cell === location.cellNode) break;
+  }
+};
+
+ve.ce.TableNodeEx.prototype.getColumn = function ( location ) {
+  var node, location, columnCells;
+  columnCells = this.getColumnCells(location.col);
   return columnCells;
 };
 
@@ -130,6 +180,19 @@ ve.ce.TableNodeEx.prototype.getNumberOfColumns = function() {
   }
 
   return cols;
+};
+
+ve.ce.TableNodeEx.prototype.getRowForOffset = function ( offset ) {
+  var node, location;
+
+  node = this.model.getNodeFromOffset(offset);
+  location = this.locateNode(node);
+
+  if (location) {
+    return location.rowNode;
+  } else {
+    return null;
+  }
 };
 
 ve.ce.TableNodeEx.prototype.getColumnCells = function(colIdx) {
@@ -154,36 +217,36 @@ ve.ce.TableNodeEx.prototype.getColumnCells = function(colIdx) {
  *
  * This is gets called by the context, whenever the selection changes within a focussed table node.
  */
-ve.ce.TableNodeEx.prototype.getSelectedCells = function(selection) {
+ve.ce.TableNodeEx.prototype.getCellsForRange = function(range) {
   var cells = [],
       section, rows, row, cell;
-  if (selection.isBackwards()) {
-    selection = selection.flip();
+  if (range.isBackwards()) {
+    range = range.flip();
   }
   for (var i = 0; i < this.children.length; i++) {
     section = this.children[i];
-    // The ranges of the traversed nodes are increasing linear
-    // and we can stop searching, as soon a range match fails after the first found cell
+    // The modelRanges of the traversed nodes are increasing linear
+    // and we can stop searching, as soon a modelRange match fails after the first found cell
     var stopOnNextFail = false;
 
     if (section.type === 'tableSection') {
-      var range = section.model.getRange();
-      if (range.start > selection.to || range.end < selection.from) {
+      var modelRange = section.model.getRange();
+      if (modelRange.start > range.to || modelRange.end < range.from) {
         if (stopOnNextFail) return cells;
         continue;
       }
       rows = section.children;
       for (var j = 0; j < rows.length; j++) {
         row = rows[j];
-        range = row.model.getRange();
-        if (range.start > selection.to || range.end < selection.from) {
+        modelRange = row.model.getRange();
+        if (modelRange.start > range.to || modelRange.end < range.from) {
           if (stopOnNextFail) return cells;
           continue;
         }
         for (var k = 0; k < row.children.length; k++) {
           cell = row.children[k];
-          range = cell.model.getRange();
-          if (range.start > selection.to || range.end < selection.from) {
+          modelRange = cell.model.getRange();
+          if (modelRange.start > range.to || modelRange.end < range.from) {
             if (stopOnNextFail) return cells;
             continue;
           }
@@ -195,6 +258,90 @@ ve.ce.TableNodeEx.prototype.getSelectedCells = function(selection) {
   }
   return cells;
 };
+
+ve.ce.TableNodeEx.prototype.getSelectedCells = function(ranges) {
+  var cells = [];
+  if (ve.isArray(ranges)) {
+    for (var i = 0; i < ranges.length; i++) {
+      cells = Array.concat(cells, this.getCellsForRange(ranges[i]));
+    }
+  } else {
+    cells = this.getCellsForRange(ranges);
+  }
+
+  return cells;
+};
+
+ve.ce.TableNodeEx.prototype.getCellsForRectangle = function( startLocation, endLocation ) {
+  var table, cells, iterator, minCol, maxCol;
+
+  table = this;
+  cells = [];
+
+  minCol = Math.min(startLocation.col, endLocation.col);
+  maxCol = Math.max(startLocation.col, endLocation.col);
+
+  iterator = OO.cloneObject(startLocation);
+  iterator.col = 0;
+  iterator.cellIndex = 0;
+  iterator.cellNode = iterator.rowNode.children[0];
+
+  function nextSection() {
+    iterator.sectionIndex++;
+    iterator.sectionNode = table.children[iterator.sectionIndex];
+
+    if (!iterator.sectionNode) {
+      throw new Error("End of iteration.");
+    }
+
+    iterator.rowIndex = 0;
+    iterator.rowNode = iterator.sectionNode.children[0];
+  }
+
+  function nextRow() {
+    iterator.row++;
+    iterator.rowIndex++;
+    iterator.rowNode = iterator.sectionNode.children[iterator.rowIndex];
+
+    while (!iterator.rowNode) {
+      nextSection();
+    }
+
+    iterator.col = 0;
+    iterator.cellIndex = 0;
+    iterator.cellNode = iterator.rowNode.children[0];
+  }
+
+  function nextCell() {
+    iterator.col += iterator.cellNode.model.getSpan();
+    iterator.cellIndex++;
+    iterator.cellNode = iterator.rowNode.children[iterator.cellIndex];
+
+    // step into the next row if there is no next cell or if the column is
+    // beyond the rectangle boundaries
+    while (!iterator.cellNode || iterator.col > maxCol) {
+      nextRow();
+    }
+  }
+
+  while (true) {
+    if (iterator.col >= minCol && iterator.col <= maxCol) {
+      cells.push(OO.cloneObject(iterator));
+    }
+
+    if (iterator.cellNode === endLocation.cellNode) break;
+
+    try {
+      nextCell();
+    } catch (err) {
+      window.console.error("ve.ce.TableNode: could not extract cells.");
+      return [];
+    }
+  }
+
+  return cells;
+};
+
 
 /* Static Properties */
 

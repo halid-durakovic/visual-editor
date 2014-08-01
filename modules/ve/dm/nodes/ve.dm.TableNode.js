@@ -32,6 +32,10 @@ ve.dm.TableNode.static.childNodeTypes = [ 'tableSection', 'tableCaption' ];
 
 ve.dm.TableNode.static.matchTagNames = [ 'table' ];
 
+ve.dm.TableNode.prototype.canBeMergedWith = function() {
+  return false;
+};
+
 /* Registration */
 
 ve.dm.modelRegistry.register( ve.dm.TableNode );
