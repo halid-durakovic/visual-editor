@@ -58,7 +58,11 @@ ve.dm.TableRowNode.prototype.getCellAt = function(colIdx) {
     }
   }
   return null;
-}
+};
+
+ve.dm.TableRowNode.prototype.canBeMergedWith = function() {
+  return false;
+};
 
 /* Registration */
 
