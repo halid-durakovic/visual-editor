@@ -87,8 +87,13 @@ ve.ce.TableNodeEx.prototype.locateNode = function (node) {
         break;
     }
     node = node.parent;
-    if (node === this.model) break;
+    if (node === this) break;
     if (!node) return null;
+  }
+
+  // HACK: fallback if this is called with a top-level node
+  if (!row || !cell) {
+    return null;
   }
 
   result = {
@@ -108,7 +113,8 @@ ve.ce.TableNodeEx.prototype.locateNode = function (node) {
  *   'cellNode': ve.dm.TableCellNode
  *   'sectionIndex': optional
  *   'rowIndex': optional
- *   'colIndex': optional
+ *   'cellIndex': optional
+ *   'col': optional
  * }
  * options:
  *   - 'indexes': determine child element indexes for section, row, and cell
@@ -123,8 +129,10 @@ ve.ce.TableNodeEx.prototype.getLocationForOffset = function ( offset, options ) 
     offset -= this.model.getRange().start;
   }
 
-  node = this.model.getNodeFromOffset(offset);
+  node = this.getNodeFromOffset(offset);
   location = this.locateNode(node);
+
+  if (!location) return null;
 
   if (options.indexes) {
     this.computeNodeIndexes(location);
@@ -133,33 +141,26 @@ ve.ce.TableNodeEx.prototype.getLocationForOffset = function ( offset, options ) 
   return location;
 };
 
-this.computeNodeIndexes = function( location ) {
-  location.sectionIndex = this.model.children.indexOf(location.sectionNode);
+ve.ce.TableNodeEx.prototype.computeNodeIndexes = function( location ) {
+  var cell;
+
+  location.sectionIndex = this.children.indexOf(location.sectionNode);
   location.rowIndex = location.sectionNode.children.indexOf(location.rowNode);
-  location.colIndex = this.getColumnIndex(location);
-}
 
-ve.ce.TableNodeEx.prototype.getColumnIndex = function ( location ) {
-  var rowNode, cell, col;
+  location.col = -1;
+  location.cellIndex = -1;
 
-  col = 0;
-  for (var i = 0; i < rowNode.children.length; i++) {
-    cell = rowNode.children[i];
-    if (cell === cellNode) break;
-    col += cell.getSpan();
+  for (var i = 0; i < location.rowNode.children.length; i++) {
+    cell = location.rowNode.children[i];
+    location.col += cell.model.getSpan();
+    location.cellIndex = i;
+    if (cell === location.cellNode) break;
   }
-
-  return col;
 };
 
-ve.ce.TableNodeEx.prototype.getColumnForOffset = function ( offset ) {
-  var node, location, rowNode, cellNode, col, cell, columnCells;
-
-  node = this.model.getNodeFromOffset(offset);
-  location = this.locateNode(node);
-  col = getColumnIndex(location);
-  columnCells = this.getColumnCells(col);
-
+ve.ce.TableNodeEx.prototype.getColumn = function ( location ) {
+  var node, location, columnCells;
+  columnCells = this.getColumnCells(location.col);
   return columnCells;
 };
 
@@ -188,7 +189,7 @@ ve.ce.TableNodeEx.prototype.getRowForOffset = function ( offset ) {
   location = this.locateNode(node);
 
   if (location) {
-    return location.row;
+    return location.rowNode;
   } else {
     return null;
   }
@@ -269,28 +270,32 @@ ve.ce.TableNodeEx.prototype.getSelectedCells = function(ranges) {
   }
 
   return cells;
-}
+};
 
 ve.ce.TableNodeEx.prototype.getCellsForRectangle = function( startLocation, endLocation ) {
-
   var table, cells, iterator, minCol, maxCol;
 
-  table = this.model;
+  table = this;
   cells = [];
-  iterator = cloneObject(startLocation);
-  minCol = startLocation.col;
-  maxCol = endLocation.col;
+
+  minCol = Math.min(startLocation.col, endLocation.col);
+  maxCol = Math.max(startLocation.col, endLocation.col);
+
+  iterator = OO.cloneObject(startLocation);
+  iterator.col = 0;
+  iterator.cellIndex = 0;
+  iterator.cellNode = iterator.rowNode.children[0];
 
   function nextSection() {
     iterator.sectionIndex++;
     iterator.sectionNode = table.children[iterator.sectionIndex];
 
-    if (!iterator.selectionNode) {
+    if (!iterator.sectionNode) {
       throw new Error("End of iteration.");
     }
 
     iterator.rowIndex = 0;
-    iterator.rowNode = iterator.selectionNode.children[0];
+    iterator.rowNode = iterator.sectionNode.children[0];
   }
 
   function nextRow() {
@@ -303,31 +308,38 @@ ve.ce.TableNodeEx.prototype.getCellsForRectangle = function( startLocation, endL
     }
 
     iterator.col = 0;
-    iterator.colIndex = 0;
-    iterator.cell = iterator.rowNode.children[0];
+    iterator.cellIndex = 0;
+    iterator.cellNode = iterator.rowNode.children[0];
   }
 
   function nextCell() {
-    // step: increase the iterator columnIndex
-    iterator.col += iterator.cell.getSpan();
-    iterator.colIndex++;
-    iterator.cell = iterator.rowNode.children[iterator.colIndex];
+    iterator.col += iterator.cellNode.model.getSpan();
+    iterator.cellIndex++;
+    iterator.cellNode = iterator.rowNode.children[iterator.cellIndex];
 
     // step into the next row if there is no next cell or if the column is
     // beyond the rectangle boundaries
-    while (!iterator.cell || iterator.col > maxCol) {
+    while (!iterator.cellNode || iterator.col > maxCol) {
       nextRow();
     }
-  };
+  }
 
-  while (iterator.cell !== endLocation.cell) {
+  while (true) {
     if (iterator.col >= minCol && iterator.col <= maxCol) {
-      cells.push(iterator.cell);
+      cells.push(OO.cloneObject(iterator));
     }
-    nextCell();
-  };
 
-  cells.push(endLocation.cell);
+    if (iterator.cellNode === endLocation.cellNode) break;
+
+    try {
+      nextCell();
+    } catch (err) {
+      window.console.error("ve.ce.TableNode: could not extract cells.");
+      return [];
+    }
+  }
+
+  return cells;
 };
 
 

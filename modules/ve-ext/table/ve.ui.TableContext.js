@@ -130,13 +130,27 @@ ve.ui.TableContext.prototype.onSurfaceModelSelect = function() {
 
     // TODO: Firefox has a nice table selection which results
     // in multi-range selection which is not yet supported by ve.
-    var selection = this.surface.getSelection();
+    var selection = this.surface.model.getSelection();
     if (selection.isBackwards()) {
       selection = selection.flip();
     }
 
-    this.startLoc = this.currentTable.getLocationForOffset( selection.start, { globalOffset: true, rowIndex: true, columnIndex: true } )
-    this.endLoc = this.currentTable.getLocationForOffset( selection.start, { globalOffset: true, rowIndex: true, columnIndex: true } )
+    this.startLoc = this.currentTable.getLocationForOffset( selection.start, { globalOffset: true, indexes: true } );
+
+    if (!this.startLoc) {
+      this.startLoc = null;
+      this.endLoc = null;
+      this.$overlay.css({visibility: 'hidden'});
+      return;
+    }
+
+    if (selection.isCollapsed()) {
+      this.endLoc = this.startLoc;
+    } else {
+      this.endLoc = this.currentTable.getLocationForOffset( selection.end, { globalOffset: true, indexes: true } );
+    }
+
+    this.$overlay.css({visibility: 'visible'});
 
     // Note: the execution is postponed so that the table node can register
     // with this context first
@@ -147,12 +161,11 @@ ve.ui.TableContext.prototype.onSurfaceModelSelect = function() {
 };
 
 ve.ui.TableContext.prototype.computeSelectedArea = function() {
-  var surfaceModel = this.surface.model,
-    cells, cell, offset, width, height,
+  var cells, cell, offset, width, height,
     top, left, bottom, right,
     tableOffset, tableHeight, tableWidth;
 
-  cells = this.currentTable.getSelectedCells(surfaceModel.getSelection());
+  cells = this.currentTable.getCellsForRectangle(this.startLoc, this.endLoc);
 
   top = 10000;
   bottom = 0;
@@ -161,7 +174,7 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
 
   // compute a bounding box for the given cell elements
   for (var i = 0; i < cells.length; i++) {
-    cell = cells[i];
+    cell = cells[i].cellNode;
     offset = cell.$element.offset();
     width = cell.$element.outerWidth();
     height = cell.$element.outerHeight();
@@ -172,7 +185,7 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
     right = Math.max(right, offset.left + width);
   }
 
-  var surfaceOffset = this.surface.$element.offset();
+  // var surfaceOffset = this.surface.$element.offset();
   var elOffset = this.$element.offset();
   tableOffset = this.currentTable.$element.offset();
   tableHeight = this.currentTable.$element.height();
@@ -217,7 +230,7 @@ ve.ui.TableContext.prototype.reposition = function() {
   var surfaceOffset = this.surface.$element.offset();
   var offset = this.currentTable.$element.offset();
   var width = this.currentTable.$element.width();
-  var height = this.currentTable.$element.height();
+  // var height = this.currentTable.$element.height();
   this.$element.css({
     'position': 'absolute',
     'top': offset.top - surfaceOffset.top,
@@ -288,17 +301,16 @@ ve.ui.TableContext.prototype.deleteTable = function() {
 
 ve.ui.TableContext.prototype.insertRow = function ( mode ) {
   var surface = this.surface.model,
-    selection = surface.getSelection(),
     offset, row,
     numberOfCols, data, i,
     offsetAfterInsertion;
 
   // using the left boundary of the selection to determine the previous row index
   if (mode === 'before') {
-    row = this.currentTable.getRowForOffset(selection.start - this.currentTable.model.getRange().start);
+    row = this.startLoc.rowNode;
     offset = row.getOuterRange().start;
   } else {
-    row = this.currentTable.getRowForOffset(selection.end - this.currentTable.model.getRange().start);
+    row = this.endLoc.rowNode;
     offset = row.getOuterRange().end;
   }
 
@@ -321,36 +333,26 @@ ve.ui.TableContext.prototype.insertRow = function ( mode ) {
 };
 
 ve.ui.TableContext.prototype.deleteRow = function () {
-  var tableCe, row, range, offset,
-      surface, selection, caret;
+  var tableCe, cells, range,
+      surface, deletedRows;
 
   surface = this.surface.model;
-  selection = surface.getSelection();
   tableCe = this.currentTable;
 
-  offset = selection.start - tableCe.model.getRange().start;
-
-  var start = tableCe.getLocationForOffset( selection.start, { 'rowIndex': true, 'columnIndex': true , 'globalOffset': true} );
-  var end = tableCe.getLocationForOffset( selection.end, { 'rowIndex': true, 'columnIndex': true , 'globalOffset': true} );
-
+  cells = this.currentTable.getCellsForRectangle(this.startLoc, this.endLoc);
+  deletedRows = {};
   // remove in inverse order
   var txs = [];
-  for (var i = end.rowIndex; i >= start.rowIndex; i--) {
-
-    ve.dm.Transaction.newFromRemoval( surface.documentModel, range );
+  for (var i = cells.length - 1; i >= 0; i--) {
+    var loc = cells[i];
+    range = loc.rowNode.getOuterRange();
+    if (!deletedRows[range.start]) {
+      txs.push( ve.dm.Transaction.newFromRemoval( surface.documentModel, range ) );
+      deletedRows[range.start] = true;
+    }
   }
-
-  range = row.getOuterRange();
   // TODO: set an appropriate selection after deleting the row
-  surface.change(
-  );
-
-
-  if (range.containsOffset(caret)) {
-    var node = ;
-    surface.setSelection(new ve.Range(node.getRange().start));
-  }
-
+  surface.change(txs);
 };
 
 ve.ui.TableContext.prototype.insertColumn = function (mode) {
@@ -363,10 +365,17 @@ ve.ui.TableContext.prototype.insertColumn = function (mode) {
   tableCe = this.currentTable;
 
   selectedOffset = selection.start - tableCe.model.getRange().start;
-  cells = tableCe.getColumnForOffset(selectedOffset);
+
+  var location;
+  if (mode === 'before') {
+    location = (this.startLoc.col < this.endLoc.col) ? this.startLoc : this.endLoc;
+  } else {
+    location = (this.startLoc.col > this.endLoc.col) ? this.startLoc : this.endLoc;
+  }
+  cells = tableCe.getColumn(location);
 
   if (cells.length === 0) {
-    console.error("FIXME: could not lookup cells for given offset.")
+    window.console.error("FIXME: could not lookup cells for given offset.");
     return;
   }
 
@@ -397,21 +406,38 @@ ve.ui.TableContext.prototype.insertColumn = function (mode) {
 };
 
 ve.ui.TableContext.prototype.deleteColumn = function () {
-  var surface, selection, tableCe,
-      selectedOffset, cells, txs, i, cell;
+  var surface, tableCe,
+      selectedCells, cells, txs, i, cell, deletedCells;
 
   surface = this.surface.model;
-  selection = surface.getSelection();
   tableCe = this.currentTable;
+  selectedCells = tableCe.getCellsForRectangle(this.startLoc, this.endLoc);
 
-  selectedOffset = selection.start - tableCe.model.getRange().start;
-  cells = tableCe.getColumnForOffset(selectedOffset);
+  deletedCells = {};
+  cells = [];
+
+  for (i = 0; i < selectedCells.length; i++) {
+    cell = selectedCells[i];
+    var colCells = tableCe.getColumn(cell);
+    for (var i = 0; i < colCells.length; i++) {
+      var _cell = colCells[i]
+      var pos = _cell.getRange().start;
+      if (!deletedCells[pos]) {
+        cells.push(_cell);
+        deletedCells[pos] = true;
+      }
+    };
+  }
+
+  cells = cells.sort( function(a,b) {
+    return a.getRange().start - b.getRange().start
+  });
 
   txs = [];
   for (i = cells.length - 1; i >= 0; i--) {
-    cell = cells[i];
+    console.log(cells[i].getOuterRange());
     txs.push(
-      ve.dm.Transaction.newFromRemoval( surface.documentModel, cell.getOuterRange() )
+      ve.dm.Transaction.newFromRemoval( surface.documentModel, cells[i].getOuterRange() )
     );
   }
 
