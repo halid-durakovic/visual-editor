@@ -366,6 +366,9 @@
 		<!-- visualEditor.desktop.standalone.demo -->
 		<script src="../../demos/ve/demo.desktop.js"></script>
 
+		<!-- Note: MathMacro depends on ve.globalEvents which is created in demo.js -->
+		<script src="../../modules/ve-ext/math/ve.ce.MathMacro.js"></script>
+
 		<script>ve.init.platform.setModulesUrl( '../../modules' );</script>
 
 		<script>
@@ -378,7 +381,8 @@
 			"image": "pages/image.html",
 			"isolation": "pages/isolation.html",
 			"rtl": "pages/rtl.html",
-			"simple": "pages/simple.html"
+			"simple": "pages/simple.html",
+			"math": "pages/math.html",
 		};
 		</script>
 

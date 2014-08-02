@@ -5,6 +5,8 @@
  * @license The MIT License (MIT); see LICENSE.txt
  */
 
+ve.globalEvents = new OO.EventEmitter();
+
 $( function () {
 
 	function getDemoPageItems() {
@@ -249,6 +251,9 @@ $( function () {
 
 		currentTarget.on( 'surfaceReady', function () {
 			var surfaceView = currentTarget.getSurface().getView();
+
+			ve.globalEvents.emit('surfaceReady', surfaceView);
+
 			// Container must be properly hidden before slideDown animation
 			$targetContainer.removeAttr( 'style' ).hide()
 				// Restore directionality
