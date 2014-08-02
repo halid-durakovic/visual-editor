@@ -102,10 +102,14 @@ thead .ve-ce-tableCellNode {
   margin-right: auto;
 }
 
-
 .ve-ui-tableContext .ve-ui-tableContext-overlay {
   display: none;
   pointer-events: none;
+}
+
+.ve-ui-tableContext .oo-ui-popupWidget-popup .oo-ui-popupWidget-body {
+  width: auto !important;
+  overflow: hidden !important;
 }
 
 .ve-ui-tableContext.show-controls .ve-ui-tableContext-overlay {
