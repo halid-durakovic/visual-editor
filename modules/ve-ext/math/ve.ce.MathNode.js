@@ -153,13 +153,17 @@ ve.ce.MathNode.prototype.onUpdate = function () {
   // Update the formula of the specific element
   var math = window.MathJax.Hub.getAllJax($mathEl[0])[0];
 
-  window.MathJax.Hub.Queue(
-    ["Text", math, formula],
-    function() {
-      // Make sure that the bounding box is rendered properly
-      self.redrawHighlights();
-    }
-  );
+  // HACK: in certain cases (particularly, after undo) there is no cached mathjax container.
+  // We ignore this as it does not seem to be critical.
+  if (math) {
+    window.MathJax.Hub.Queue(
+      ["Text", math, formula],
+      function() {
+        // Make sure that the bounding box is rendered properly
+        self.redrawHighlights();
+      }
+    );
+  }
 };
 
 ve.ce.MathNode.prototype.onClick = function ( e ) {

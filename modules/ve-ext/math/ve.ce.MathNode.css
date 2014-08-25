@@ -1,6 +1,5 @@
-.ve-ce-mathNode .mathjax-wrapper {
+.ve-ce-mathInlineNode {
   display: inline-block;
-  min-width: 5px;
 }
 
 .ve-ce-mathBlockNode {
@@ -8,16 +7,18 @@
   text-align: center;
 }
 
-.ve-ce-mathInlineNode {
+.ve-ce-mathNode .mathjax-wrapper {
   display: inline-block;
+  min-width: 5px;
 }
 
 .ve-ce-mathBlockNode .mathjax-wrapper {
   width: 50%;
 }
 
-/* Note: there are two rendered formulas which are controlled
-   by adding a class to the .mathjax-wrapper
+/*
+  Note: there are two rendered formulas which are controlled
+        by adding a class to the .mathjax-wrapper
  */
 .ve-ce-mathNode .mathjax-wrapper .math-container {
   display: none;
@@ -35,8 +36,6 @@
 .oo-ui-icon-math {
   background-image: /* @embed */ url(math.svg);
 }
-
-/* These are hacks to make the popup stretch over the whole width for math input */
 
 .oo-ui-textInputWidget.ve-ui-mathInputWidget {
   width: auto;
