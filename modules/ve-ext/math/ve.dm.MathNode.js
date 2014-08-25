@@ -50,6 +50,9 @@ ve.dm.MathNode.static.defaultAttributes = {
   'format': 'tex'
 };
 
+// Change this if you want to have a rendered MML output when saving
+ve.dm.MathNode.static.storeMML = false;
+
 ve.dm.MathNode.static.toDataElement = function ( domElements, converter ) {
   var isInline, type, $node, $formulaEl,
     formula = '',
@@ -75,6 +78,29 @@ ve.dm.MathNode.static.toDataElement = function ( domElements, converter ) {
   };
 };
 
+ve.dm.MathNode.static.renderMathML = function(formula, outputEl, callback) {
+  function getMML(jax, callback) {
+    try {
+      var mml = jax.root.toMathML("");
+      window.MathJax.Callback(callback)(mml);
+    } catch(err) {
+      if (!err.restart) {
+        throw err;
+      }
+      return window.MathJax.Callback.After([jax.root.toMathML, jax, callback], err.restart);
+    }
+  }
+  outputEl.innerHTML = "\\(" + formula + "\\)";
+  window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, outputEl],
+    function() {
+      var jax = window.MathJax.Hub.getAllJax(outputEl)[0];
+      getMML(jax, function(mml) {
+        outputEl.innerHTML = mml;
+      });
+    }
+  );
+};
+
 ve.dm.MathNode.static.toDomElements = function ( dataElement, doc ) {
   var el, sourceEl, format, formula;
 
@@ -95,6 +121,17 @@ ve.dm.MathNode.static.toDomElements = function ( dataElement, doc ) {
 
   el.appendChild(sourceEl);
 
+  // TODO: append rendered mml, html, and svg output according to
+
+  if (ve.dm.MathNode.static.storeMML) {
+    var mmlEl = doc.createElement('span');
+    mmlEl.setAttribute('property', 'output');
+    mmlEl.setAttribute('data-format', 'mml');
+    ve.dm.MathNode.static.renderMathML(formula, mmlEl, function() {
+      // HACK: we hope that the asynchronous call is finished before the conversion ends.
+    });
+    el.appendChild(mmlEl);
+  }
 
   return [ el ];
 };
