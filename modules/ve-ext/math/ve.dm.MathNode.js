@@ -51,13 +51,20 @@ ve.dm.MathNode.static.defaultAttributes = {
 };
 
 ve.dm.MathNode.static.toDataElement = function ( domElements, converter ) {
-  window.console.log("MathNode.toDataElement", domElements, converter);
+  var isInline, type, $node, $formulaEl,
+    formula = '',
+    format = 'tex';
 
-  var formula = domElements[0].textContent;
-  var format = domElements[0].getAttribute('data-format') || 'tex';
+  isInline = this.isHybridInline( domElements, converter );
+  type = isInline ? 'mathInline' : 'mathBlock';
 
-  var isInline = this.isHybridInline( domElements, converter ),
-    type = isInline ? 'mathInline' : 'mathBlock';
+  $node = $( domElements[0]);
+  $formulaEl = $node.find('span[property=source]');
+
+  if ($formulaEl.length > 0) {
+    formula = $formulaEl[0].textContent;
+    format = $formulaEl[0].getAttribute('data-format') || 'tex';
+  }
 
   return {
     'type': type,
@@ -69,17 +76,25 @@ ve.dm.MathNode.static.toDataElement = function ( domElements, converter ) {
 };
 
 ve.dm.MathNode.static.toDomElements = function ( dataElement, doc ) {
-  window.console.log("MathNode.toDomElement", dataElement, doc);
+  var el, sourceEl, format, formula;
 
-  var el;
   if (dataElement.type === "mathInline") {
     el = doc.createElement('span');
   } else {
     el = doc.createElement('div');
   }
-  el.setAttribute('rel', 'ext:math');
-  el.setAttribute('data-format', dataElement.attributes.format);
-  el.innerHTML = dataElement.attributes.formula;
+  el.setAttribute('typeof', 'math');
+
+  formula = dataElement.attributes.formula;
+  format = dataElement.attributes.format;
+
+  sourceEl = doc.createElement('span');
+  sourceEl.setAttribute('property', 'source');
+  sourceEl.setAttribute('data-format', format);
+  sourceEl.innerHTML = formula;
+
+  el.appendChild(sourceEl);
+
 
   return [ el ];
 };
@@ -105,7 +120,7 @@ OO.inheritClass( ve.dm.MathBlockNode, ve.dm.MathNode );
 ve.dm.MathBlockNode.static.name = 'mathBlock';
 
 ve.dm.MathBlockNode.static.matchTagNames = ['div'];
-ve.dm.MathBlockNode.static.matchRdfaTypes = ['ext:math'];
+ve.dm.MathBlockNode.static.matchRdfaTypes = ['math'];
 
 /**
  * DataModel mathInline node.
@@ -126,7 +141,7 @@ OO.inheritClass( ve.dm.MathInlineNode, ve.dm.MathNode );
 ve.dm.MathInlineNode.static.name = 'mathInline';
 
 ve.dm.MathInlineNode.static.matchTagNames = ['span'];
-ve.dm.MathInlineNode.static.matchRdfaTypes = ['ext:math'];
+ve.dm.MathInlineNode.static.matchRdfaTypes = ['math'];
 
 ve.dm.MathInlineNode.static.isContent = true;
 
