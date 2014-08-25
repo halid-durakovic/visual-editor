@@ -229,6 +229,9 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 	var newFormula = this.mathInput.getValue();
 	var fragment = this.getFragment();
 	if (fragment) {
+		// remove a previously displayed error message
+		this.$errorEl.text('');
+
 		var surface = fragment.getSurface();
 		var doc = fragment.document;
 		var txs = [
@@ -240,8 +243,6 @@ ve.ui.MathInspector.prototype.onFormulaChange = function() {
 				)
 		];
 		surface.change(txs);
-		// remove a previously displayed error message
-		this.$errorEl.text('');
 	}
 };
 
@@ -251,6 +252,9 @@ ve.ui.MathInspector.prototype.onFormatChange = function() {
 
 	var fragment = this.getFragment();
 	if (fragment && this.node) {
+		// remove a previously displayed error message
+		this.$errorEl.text('');
+
 		var surface = fragment.getSurface();
 		var doc = fragment.document;
 		var txs = [
@@ -262,8 +266,6 @@ ve.ui.MathInspector.prototype.onFormatChange = function() {
 				)
 		];
 		surface.change(txs);
-		// remove a previously displayed error message
-		this.$errorEl.text('');
 	}
 };
 
