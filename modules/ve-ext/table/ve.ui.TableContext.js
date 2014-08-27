@@ -7,14 +7,16 @@
  * Beyond that, we try to resemble the behavior of the global context.
  */
 ve.ui.TableContext = function VeUiTableContext(surface, config) {
-  ve.ui.Context.call( this, surface, config );
+  // Parent constructor
+  OO.ui.Element.call( this, config );
 
-  this.currentTable = null;
-  this.startLoc = null;
-  this.endLoc = null;
+  this.surface = surface;
 
-  this.context.addItems([ new ve.ui.ContextItemWidget('table', ve.ui.TableTool, null, { '$': this.$ }) ]);
+  this.focussedTable = null;
+  this.startCell = null;
+  this.endCell = null;
 
+  // update the overlay when the window is resized
   var self = this;
   $( window ).resize(function() {
     window.setTimeout(function() {
@@ -25,33 +27,6 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
 
   // DOM elements
   // ------------
-
-  // a div containing the context tool
-  this.$menu = this.$( '<div>' )
-    .addClass( 've-ui-tableContext-menu' )
-    .append(this.context.$element);
-
-  // A widget containing controls for editing a table node.
-  // Note:This corresponds to the concept of an Inspector.
-  // However, as the Inspector mechanism turned out to be more in the way than helpful
-  // in this case, we decided to use a stream-lined custom widget instead.
-  this.inspector = new ve.ui.TableWidget({
-    '$': this.$,
-    '$contextOverlay': this.context.$element
-  }, this);
-  this.showInspector = false;
-
-  // A popup that contains both, the tool menu and the inspector widget
-  // where only one will be visible at a moment in time.
-  this.popup = new OO.ui.PopupWidget( {
-    '$': this.$,
-    '$container': this.surface.$element,
-    'tail': false
-  } );
-  this.popup.$body.append(
-    this.$menu,
-    this.inspector.$element.hide()
-  );
 
   this.$rulerTop = $('<div>').addClass('ruler horizontal top');
   this.$rulerBottom = $('<div>').addClass('ruler horizontal bottom');
@@ -72,7 +47,7 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
     ] );
 
   this.$element.addClass('ve-ui-tableContext')
-    .append( [ this.popup.$element, this.$overlay ])
+    .append( [ this.$overlay ])
     .css( {
       'visibility': 'hidden',
       'position': 'absolute'
@@ -89,10 +64,13 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
 
 };
 
-OO.inheritClass( ve.ui.TableContext, ve.ui.Context );
+OO.inheritClass( ve.ui.TableContext, OO.ui.Element );
 
-ve.ui.TableContext.prototype.afterModelChange = function() {
-  // this is obligatory, but not needed here
+ve.ui.TableContext.prototype.destroy = function () {
+  // Disconnect events
+  this.surface.getModel().disconnect( this );
+  this.$element.remove();
+  return this;
 };
 
 /**
@@ -100,18 +78,14 @@ ve.ui.TableContext.prototype.afterModelChange = function() {
  * or if the selection leaves a table node (blur).
  */
 ve.ui.TableContext.prototype.onTableFocusChange = function(veCeTableNode) {
-  if (this.currentTable === veCeTableNode) {
-    // dectivate the popup when the active table node is un-focussed
+  if (this.focussedTable === veCeTableNode) {
     if (!veCeTableNode.isFocussed()) {
       this.hide();
-      this.currentTable = null;
+      this.focussedTable = null;
     }
   } else {
-    // deactivate the inspector when switching between tables
-    // we want to enable the controls only when explicitly desired by the user
     if (veCeTableNode.isFocussed()) {
-      this.currentTable = veCeTableNode;
-      this.showInspector = false;
+      this.focussedTable = veCeTableNode;
       this.update();
     }
   }
@@ -120,34 +94,34 @@ ve.ui.TableContext.prototype.onTableFocusChange = function(veCeTableNode) {
 ve.ui.TableContext.prototype.onDocumentUpdate = function() {
   // Note: we need to reposition as document changes might change the bounding box
   // of a tableNode
-  if (this.currentTable) {
+  if (this.focussedTable) {
     this.reposition();
   }
 };
 
 ve.ui.TableContext.prototype.onSurfaceModelSelect = function() {
-  if (this.currentTable) {
+  if (this.focussedTable) {
 
     // TODO: Firefox has a nice table selection which results
-    // in multi-range selection which is not yet supported by ve.
+    // in multi-range selection which is not yet supported by VE.
     var selection = this.surface.model.getSelection();
     if (selection.isBackwards()) {
       selection = selection.flip();
     }
 
-    this.startLoc = this.currentTable.getLocationForOffset( selection.start, { globalOffset: true, indexes: true } );
+    this.startCell = this.focussedTable.getCellContextForOffset( selection.start, { globalOffset: true, indexes: true } );
 
-    if (!this.startLoc) {
-      this.startLoc = null;
-      this.endLoc = null;
+    if (!this.startCell) {
+      this.startCell = null;
+      this.endCell = null;
       this.$overlay.css({visibility: 'hidden'});
       return;
     }
 
     if (selection.isCollapsed()) {
-      this.endLoc = this.startLoc;
+      this.endCell = this.startCell;
     } else {
-      this.endLoc = this.currentTable.getLocationForOffset( selection.end, { globalOffset: true, indexes: true } );
+      this.endCell = this.focussedTable.getCellContextForOffset( selection.end, { globalOffset: true, indexes: true } );
     }
 
     this.$overlay.css({visibility: 'visible'});
@@ -165,7 +139,7 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
     top, left, bottom, right,
     tableOffset, tableHeight, tableWidth;
 
-  cells = this.currentTable.getCellsForRectangle(this.startLoc, this.endLoc);
+  cells = this.focussedTable.getCellsForRectangle(this.startCell, this.endCell);
 
   top = 10000;
   bottom = 0;
@@ -187,9 +161,9 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
 
   // var surfaceOffset = this.surface.$element.offset();
   var elOffset = this.$element.offset();
-  tableOffset = this.currentTable.$element.offset();
-  tableHeight = this.currentTable.$element.height();
-  tableWidth = this.currentTable.$element.width();
+  tableOffset = this.focussedTable.$element.offset();
+  tableHeight = this.focussedTable.$element.height();
+  tableWidth = this.focussedTable.$element.width();
 
   this.$rulerTop.css({
     'top': top - elOffset.top,
@@ -228,9 +202,9 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
 
 ve.ui.TableContext.prototype.reposition = function() {
   var surfaceOffset = this.surface.$element.offset();
-  var offset = this.currentTable.$element.offset();
-  var width = this.currentTable.$element.width();
-  // var height = this.currentTable.$element.height();
+  var offset = this.focussedTable.$element.offset();
+  var width = this.focussedTable.$element.width();
+  // var height = this.focussedTable.$element.height();
   this.$element.css({
     'position': 'absolute',
     'top': offset.top - surfaceOffset.top,
@@ -239,45 +213,21 @@ ve.ui.TableContext.prototype.reposition = function() {
     'height': 0,
     // 'border': 'solid 2px green'
   });
-  this.popup.$element.css({
-    'position': 'absolute',
-    'left': width + 10
-  });
 };
 
 ve.ui.TableContext.prototype.update = function() {
-  if ( this.showInspector ) {
-    this.$menu.hide();
-    this.inspector.$element.show();
-    this.$element.addClass('show-controls');
-  } else {
-    this.$menu.show();
-    this.inspector.$element.hide();
-    this.$element.removeClass('show-controls');
-  }
+  this.$element.addClass('show-controls');
   // compute the current position
   this.reposition();
-
   // show the popup
-  this.popup.show();
   this.$element.css( 'visibility', '' );
 };
 
 ve.ui.TableContext.prototype.hide = function() {
   this.$element.css( 'visibility', 'hidden' );
-  this.showInspector = false;
   this.$element.removeClass('show-controls');
 };
 
-ve.ui.TableContext.prototype.onContextItemChoose = function () {
-  this.showInspector = true;
-  this.update();
-};
-
-ve.ui.TableContext.prototype.closeInspector = function() {
-  this.showInspector = false;
-  this.update();
-};
 
 // Table manipulation
 
@@ -285,12 +235,12 @@ ve.ui.TableContext.prototype.deleteTable = function() {
   var txs = [],
     surface = this.surface.model;
 
-  if (!this.currentTable) return;
+  if (!this.focussedTable) return;
 
   txs.push(
     ve.dm.Transaction.newFromRemoval(
       surface.documentModel,
-      this.currentTable.model.getOuterRange()
+      this.focussedTable.model.getOuterRange()
     )
   );
   // TODO: set a proper selection after deletion
@@ -307,14 +257,14 @@ ve.ui.TableContext.prototype.insertRow = function ( mode ) {
 
   // using the left boundary of the selection to determine the previous row index
   if (mode === 'before') {
-    row = this.startLoc.rowNode;
+    row = this.startCell.rowNode;
     offset = row.getOuterRange().start;
   } else {
-    row = this.endLoc.rowNode;
+    row = this.endCell.rowNode;
     offset = row.getOuterRange().end;
   }
 
-  numberOfCols = this.currentTable.getNumberOfColumns();
+  numberOfCols = this.focussedTable.getNumberOfColumns();
   data = [];
   data.push({ type: 'tableRow'});
   for (i = 0; i < numberOfCols; i++) {
@@ -337,9 +287,9 @@ ve.ui.TableContext.prototype.deleteRow = function () {
       surface, deletedRows;
 
   surface = this.surface.model;
-  tableCe = this.currentTable;
+  tableCe = this.focussedTable;
 
-  cells = this.currentTable.getCellsForRectangle(this.startLoc, this.endLoc);
+  cells = this.focussedTable.getCellsForRectangle(this.startCell, this.endCell);
   deletedRows = {};
   // remove in inverse order
   var txs = [];
@@ -362,17 +312,17 @@ ve.ui.TableContext.prototype.insertColumn = function (mode) {
 
   surface = this.surface.model;
   selection = surface.getSelection();
-  tableCe = this.currentTable;
+  tableCe = this.focussedTable;
 
   selectedOffset = selection.start - tableCe.model.getRange().start;
 
   var location;
   if (mode === 'before') {
-    location = (this.startLoc.col < this.endLoc.col) ? this.startLoc : this.endLoc;
+    location = (this.startCell.col < this.endCell.col) ? this.startCell : this.endCell;
   } else {
-    location = (this.startLoc.col > this.endLoc.col) ? this.startLoc : this.endLoc;
+    location = (this.startCell.col > this.endCell.col) ? this.startCell : this.endCell;
   }
-  cells = tableCe.getColumn(location);
+  cells = tableCe.getColumnCells(location);
 
   if (cells.length === 0) {
     window.console.error("FIXME: could not lookup cells for given offset.");
@@ -407,21 +357,21 @@ ve.ui.TableContext.prototype.insertColumn = function (mode) {
 
 ve.ui.TableContext.prototype.deleteColumn = function () {
   var surface, tableCe,
-      selectedCells, cells, txs, i, cell, deletedCells, minCol, maxCol;
+      cells, txs, i, minCol, maxCol;
 
   surface = this.surface.model;
-  tableCe = this.currentTable;
+  tableCe = this.focussedTable;
   cells = [];
 
-  minCol = Math.min(this.startLoc.col, this.endLoc.col);
-  maxCol = Math.max(this.startLoc.col, this.endLoc.col);
+  minCol = Math.min(this.startCell.col, this.endCell.col);
+  maxCol = Math.max(this.startCell.col, this.endCell.col);
 
   for (i = minCol; i <= maxCol; i++) {
     cells = cells.concat(tableCe.getColumnCells(i));
   }
 
   cells = cells.sort( function(a,b) {
-    return a.getRange().start - b.getRange().start
+    return a.getRange().start - b.getRange().start;
   });
 
   txs = [];
@@ -435,22 +385,3 @@ ve.ui.TableContext.prototype.deleteColumn = function () {
   surface.change(txs);
 };
 
-/**
- * We monkey-patch the surface setup here.
- * TODO: we need support in the core for that. E.g., this doesn't work for multiple surfaces or
- * if a surface is re-created.
- */
-$(function() {
-  function init() {
-    if(!ve.init.target) {
-      window.setTimeout(init, 0);
-    } else {
-      ve.init.target.on( 'surfaceReady', function() {
-        var surface = ve.init.target.getSurface();
-        var tableContext = new ve.ui.TableContext(surface, {});
-        surface.$localOverlay.append(tableContext.$element);
-      });
-    }
-  }
-  init();
-});

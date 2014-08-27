@@ -248,7 +248,8 @@ $( function () {
 			);
 
 			currentTarget.on( 'surfaceReady', function () {
-				var surfaceView = currentTarget.getSurface().getView();
+				var surface = currentTarget.getSurface();
+				var surfaceView = surface.getView();
 				// Container must be properly hidden before slideDown animation
 				$targetContainer.removeAttr( 'style' ).hide()
 					// Restore directionality
@@ -257,6 +258,16 @@ $( function () {
 				$targetContainer.slideDown().promise().done( function () {
 					surfaceView.focus();
 				} );
+
+				var toolbar = currentTarget.getToolbar();
+				var $subToolbars = $('<div>').addClass('oo-ui-toolbar-subtoolbars');
+				$subToolbars.append( $('<div style="clear:both"></div>' ) );
+				$subToolbars.insertAfter(toolbar.$actions);
+        var tableContext = new ve.ui.TableToolbarContext(surface, {
+        	$toolbar: $subToolbars
+        });
+        surface.localOverlay.$element.append(tableContext.$element);
+
 			} );
 		}
 

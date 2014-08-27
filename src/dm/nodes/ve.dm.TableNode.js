@@ -24,6 +24,24 @@ ve.dm.TableNode = function VeDmTableNode() {
 
 OO.inheritClass( ve.dm.TableNode, ve.dm.BranchNode );
 
+ve.dm.TableNode.prototype.getNumberOfColumns = function() {
+  var cols = 0,
+      rows, row, child;
+
+  for (var i = 0; i < this.children.length; i++) {
+    child = this.children[i];
+    if (child.type === 'tableSection') {
+      rows = child.children;
+      for (var j = 0; j < rows.length; j++) {
+        row = rows[j];
+        cols = Math.max(cols, row.getNumberOfColumns());
+      }
+    }
+  }
+
+  return cols;
+};
+
 /* Static Properties */
 
 ve.dm.TableNode.static.name = 'table';

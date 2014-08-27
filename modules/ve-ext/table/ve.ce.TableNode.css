@@ -56,7 +56,7 @@ thead .ve-ce-tableCellNode {
 }
 
 
-.ve-ce-tableNodeEx.focussed {
+.ve-ce-tableNode.focussed {
   border: 1px dashed;
 }
 
@@ -162,4 +162,19 @@ thead .ve-ce-tableCellNode {
 /*  border-right: 0px;
   border-left: 0px;
 */  opacity: 0.3;
+}
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-header,
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons {
+  float: left;
+  padding-left: 20px;
+}
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-header {
+  vertical-align: middle;
+}
+
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons .oo-ui-labeledElement-label {
+  font-size: 0.8em;
 }
