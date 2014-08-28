@@ -65,7 +65,23 @@ ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
  */
 ve.ce.TableNode.prototype.onSurfaceModelSelect = function(selection) {
   var range = this.model.getRange();
-  if (selection && range.containsOffset(selection.from) && range.containsOffset(selection.to)) {
+  var focus;
+
+  // first check if the selection is within this table's range
+  focus = (selection && range.containsOffset(selection.from) && range.containsOffset(selection.to));
+  // tables may be nested, so it is important to check that the selection is not within a sub-table
+  if (focus) {
+    var node = this.getNodeFromOffset(selection.start - range.start);
+    while (true) {
+      if (node.type === 'table' || !node) {
+        focus = (node === this);
+        break;
+      }
+      node = node.parent;
+    }
+  }
+
+  if (focus) {
     if (!this.focussed) {
       this.$element.addClass('focussed');
       this.focussed = true;
@@ -96,6 +112,8 @@ ve.ce.TableNode.prototype.isFocussed = function() {
 ve.ce.TableNode.prototype.getCellContext = function (node, options) {
   var cellContext, section, row, cell;
   options = options || {};
+
+  if (!node) return null;
 
   while (true) {
     switch (node.type) {
