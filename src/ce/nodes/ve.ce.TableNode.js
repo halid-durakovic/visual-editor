@@ -27,6 +27,10 @@ ve.ce.TableNode = function VeCeTableNode( model, config ) {
   } );
 
   this.focussed = false;
+
+  this.startCell = null;
+  this.endCell = null;
+
 };
 
 /* Inheritance */
@@ -50,13 +54,15 @@ ve.ce.TableNode.prototype.onTableNodeSetup = function() {
 
   // Events
 
-  this.surfaceModel.connect( this,
-    { 'select': 'onSurfaceModelSelect' }
-  );
+  this.surfaceModel.connect( this, { 'select': 'onSurfaceModelSelect' });
+
+  this.surfaceModel.emit( 'table-node-created', this );
 };
 
 ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
   this.surfaceModel.disconnect( this );
+
+  this.surfaceModel.emit( 'table-node-removed', this );
 };
 
 /**
@@ -67,37 +73,32 @@ ve.ce.TableNode.prototype.onSurfaceModelSelect = function(selection) {
   var range = this.model.getRange();
   var focus;
 
-  // first check if the selection is within this table's range
+  // consider this table focussed when the selection is fully within the range
   focus = (selection && range.containsOffset(selection.from) && range.containsOffset(selection.to));
-  // tables may be nested, so it is important to check that the selection is not within a sub-table
-  if (focus) {
-    var node = this.getNodeFromOffset(selection.start - range.start);
-    while (true) {
-      if (node.type === 'table' || !node) {
-        focus = (node === this);
-        break;
-      }
-      node = node.parent;
-    }
+
+  if (focus && !this.focussed) {
+    this.focus();
+  } else if (!focus && this.focussed) {
+    this.unfocus();
   }
 
-  if (focus) {
-    if (!this.focussed) {
-      this.$element.addClass('focussed');
-      this.focussed = true;
-      this.surfaceModel.emit('table-focus-changed', this);
-    }
-  } else {
-    if (this.focussed) {
-      this.$element.removeClass('focussed');
-      this.focussed = false;
-      this.surfaceModel.emit('table-focus-changed', this);
-    }
-  }
+  this.updateSelectedRectangle(selection);
 };
 
 ve.ce.TableNode.prototype.isFocussed = function() {
   return this.focussed;
+};
+
+ve.ce.TableNode.prototype.focus = function() {
+  this.$element.addClass('focussed');
+  this.focussed = true;
+  this.surfaceModel.emit('table-focus-changed', this);
+};
+
+ve.ce.TableNode.prototype.unfocus = function() {
+  this.$element.removeClass('focussed');
+  this.focussed = false;
+  this.surfaceModel.emit('table-focus-changed', this);
 };
 
 /**
@@ -227,16 +228,41 @@ ve.ce.TableNode.prototype.getColumnCells = function(columnIdx) {
   return cells;
 };
 
-ve.ce.TableNode.prototype.getCellsForRectangle = function( startLocation, endLocation ) {
-  var table, cells, iterator, minCol, maxCol;
+ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
+  var startCell, endCell;
+  if (selection.isBackwards()) {
+    selection = selection.flip();
+  }
+  startCell = this.getCellContextForOffset( selection.start, { globalOffset: true, indexes: true } );
+  if (!startCell) {
+    endCell = null;
+  } else if (selection.isCollapsed()) {
+    endCell = startCell;
+  } else {
+    endCell = this.getCellContextForOffset( selection.end, { globalOffset: true, indexes: true } );
+  }
+  if (!startCell || !endCell) {
+    this.startCell  = null;
+    this.endCell = null;
+    this.unfocus();
+  } else {
+    this.startCell = startCell;
+    this.endCell = endCell;
+  }
+};
+
+ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
+  var table, cells, iterator, minCol, maxCol, startCell, endCell;
 
   table = this;
+  startCell = this.startCell;
+  endCell = this.endCell;
   cells = [];
 
-  minCol = Math.min(startLocation.col, endLocation.col);
-  maxCol = Math.max(startLocation.col, endLocation.col);
+  minCol = Math.min(startCell.col, endCell.col);
+  maxCol = Math.max(startCell.col, endCell.col);
 
-  iterator = OO.cloneObject(startLocation);
+  iterator = OO.cloneObject(startCell);
   iterator.col = 0;
   iterator.cellIndex = 0;
   iterator.cellNode = iterator.rowNode.children[0];
@@ -284,7 +310,7 @@ ve.ce.TableNode.prototype.getCellsForRectangle = function( startLocation, endLoc
       cells.push(OO.cloneObject(iterator));
     }
 
-    if (iterator.cellNode === endLocation.cellNode) break;
+    if (iterator.cellNode === endCell.cellNode) break;
 
     try {
       nextCell();

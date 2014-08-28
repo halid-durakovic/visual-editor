@@ -12,9 +12,8 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
 
   this.surface = surface;
 
+  this.tableNodes = [];
   this.focussedTable = null;
-  this.startCell = null;
-  this.endCell = null;
 
   // update the overlay when the window is resized
   var self = this;
@@ -24,6 +23,14 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
       self.computeSelectedArea();
     }, 0);
   } );
+
+  // Collect all existing table nodes
+  surface.view.documentView.getDocumentNode().traversePreOrder(function(n) {
+    if (n.type === 'table') {
+      this.tableNodes.push(n);
+    }
+  }, this);
+  this.tableNodes.sort(ve.ui.TableContext.static.sortTableNodesByRangeSizeAscending);
 
   // DOM elements
   // ------------
@@ -58,37 +65,21 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
   var surfaceModel = surface.getModel();
 
   surface.connect(this, {'destroy': 'destroy'} );
-  surfaceModel.connect(this, { 'table-focus-changed': 'onTableFocusChange' });
+  // surfaceModel.connect(this, { 'table-focus-changed': 'onTableFocusChange' });
   surfaceModel.connect(this, { 'documentUpdate': 'onDocumentUpdate' });
   surfaceModel.connect( this, { 'select': 'onSurfaceModelSelect' });
+
+  surfaceModel.connect(this, { 'table-node-created': 'onTableNodeCreated' });
+  surfaceModel.connect(this, { 'table-node-removed': 'onTableNodeRemoved' });
 
 };
 
 OO.inheritClass( ve.ui.TableContext, OO.ui.Element );
 
 ve.ui.TableContext.prototype.destroy = function () {
-  // Disconnect events
   this.surface.getModel().disconnect( this );
   this.$element.remove();
   return this;
-};
-
-/**
- * This gets called whenever the selection changes and lies within a table node (focus)
- * or if the selection leaves a table node (blur).
- */
-ve.ui.TableContext.prototype.onTableFocusChange = function(veCeTableNode) {
-  if (this.focussedTable === veCeTableNode) {
-    if (!veCeTableNode.isFocussed()) {
-      this.hide();
-      this.focussedTable = null;
-    }
-  } else {
-    if (veCeTableNode.isFocussed()) {
-      this.focussedTable = veCeTableNode;
-      this.update();
-    }
-  }
 };
 
 ve.ui.TableContext.prototype.onDocumentUpdate = function() {
@@ -100,37 +91,40 @@ ve.ui.TableContext.prototype.onDocumentUpdate = function() {
 };
 
 ve.ui.TableContext.prototype.onSurfaceModelSelect = function() {
-  if (this.focussedTable) {
-
-    // TODO: Firefox has a nice table selection which results
-    // in multi-range selection which is not yet supported by VE.
-    var selection = this.surface.model.getSelection();
-    if (selection.isBackwards()) {
-      selection = selection.flip();
+  // Note: the execution is postponed so that all table nodes can update their
+  // focus state first
+  window.setTimeout( ve.bind( function() {
+    this.focussedTable = null;
+    for (var i = 0; i < this.tableNodes.length; i++) {
+      var node = this.tableNodes[i];
+      if (node.isFocussed()) {
+        this.focussedTable = node;
+        break;
+      }
     }
+    this.update();
+  }, this), 0);
+};
 
-    this.startCell = this.focussedTable.getCellContextForOffset( selection.start, { globalOffset: true, indexes: true } );
+ve.ui.TableContext.static.sortTableNodesByRangeSizeAscending = function(n1, n2) {
+  var r1 = n1.getOuterRange();
+  var r2 = n2.getOuterRange();
+  var l1 = Math.abs(r1.end - r1.start);
+  var l2 = Math.abs(r2.end - r2.start);
+  return l1 - l2;
+};
 
-    if (!this.startCell) {
-      this.startCell = null;
-      this.endCell = null;
-      this.$overlay.css({visibility: 'hidden'});
-      return;
-    }
+ve.ui.TableContext.prototype.onTableNodeCreated = function(tableNode) {
+  if (this.tableNodes.indexOf(tableNode) < 0) {
+    this.tableNodes.push(tableNode);
+    this.tableNodes.sort(ve.ui.TableContext.static.sortTableNodesByRangeSizeAscending);
+  }
+};
 
-    if (selection.isCollapsed()) {
-      this.endCell = this.startCell;
-    } else {
-      this.endCell = this.focussedTable.getCellContextForOffset( selection.end, { globalOffset: true, indexes: true } );
-    }
-
-    this.$overlay.css({visibility: 'visible'});
-
-    // Note: the execution is postponed so that the table node can register
-    // with this context first
-    window.setTimeout( ve.bind( function() {
-      this.computeSelectedArea();
-    }, this), 0);
+ve.ui.TableContext.prototype.onTableNodeRemoved = function(tableNode) {
+  var index = this.tableNodes.indexOf(tableNode);
+  if ( index >= 0) {
+    this.tableNodes.splice(index, 1);
   }
 };
 
@@ -139,7 +133,7 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
     top, left, bottom, right,
     tableOffset, tableHeight, tableWidth;
 
-  cells = this.focussedTable.getCellsForRectangle(this.startCell, this.endCell);
+  cells = this.focussedTable.getCellsForSelectedRectangle();
 
   top = 10000;
   bottom = 0;
@@ -218,11 +212,18 @@ ve.ui.TableContext.prototype.reposition = function() {
 };
 
 ve.ui.TableContext.prototype.update = function() {
-  this.$element.addClass('show-controls');
-  // compute the current position
-  this.reposition();
-  // show the popup
-  this.$element.css( 'visibility', '' );
+  if (this.focussedTable) {
+    this.$overlay.css({visibility: 'visible'});
+    this.computeSelectedArea();
+
+    this.$element.addClass('show-controls');
+    // compute the current position
+    this.reposition();
+    // show the popup
+    this.$element.css( 'visibility', '' );
+  } else {
+    this.hide();
+  }
 };
 
 ve.ui.TableContext.prototype.hide = function() {
@@ -259,10 +260,10 @@ ve.ui.TableContext.prototype.insertRow = function ( mode ) {
 
   // using the left boundary of the selection to determine the previous row index
   if (mode === 'before') {
-    row = this.startCell.rowNode;
+    row = this.focussedTable.startCell.rowNode;
     offset = row.getOuterRange().start;
   } else {
-    row = this.endCell.rowNode;
+    row = this.focussedTable.endCell.rowNode;
     offset = row.getOuterRange().end;
   }
 
@@ -291,7 +292,7 @@ ve.ui.TableContext.prototype.deleteRow = function () {
   surface = this.surface.model;
   tableCe = this.focussedTable;
 
-  cells = this.focussedTable.getCellsForRectangle(this.startCell, this.endCell);
+  cells = this.focussedTable.getCellsForSelectedRectangle();
   deletedRows = {};
   // remove in inverse order
   var txs = [];
@@ -310,21 +311,23 @@ ve.ui.TableContext.prototype.deleteRow = function () {
 ve.ui.TableContext.prototype.insertColumn = function (mode) {
   var surface, selection, tableCe,
       selectedOffset, cells, offset, cell, data, txs, i,
-      offsetAfterInsertion;
+      offsetAfterInsertion, startCell, endCell;
 
   surface = this.surface.model;
   selection = surface.getSelection();
   tableCe = this.focussedTable;
+  startCell = this.focussedTable.startCell;
+  endCell = this.focussedTable.endCell;
 
   selectedOffset = selection.start - tableCe.model.getRange().start;
 
   var location;
   if (mode === 'before') {
-    location = (this.startCell.col < this.endCell.col) ? this.startCell : this.endCell;
+    location = (startCell.col < endCell.col) ? startCell : endCell;
   } else {
-    location = (this.startCell.col > this.endCell.col) ? this.startCell : this.endCell;
+    location = (startCell.col > endCell.col) ? startCell : endCell;
   }
-  cells = tableCe.getColumnCells(location);
+  cells = tableCe.getColumnCells(location.col);
 
   if (cells.length === 0) {
     window.console.error("FIXME: could not lookup cells for given offset.");
@@ -359,14 +362,16 @@ ve.ui.TableContext.prototype.insertColumn = function (mode) {
 
 ve.ui.TableContext.prototype.deleteColumn = function () {
   var surface, tableCe,
-      cells, txs, i, minCol, maxCol;
+      cells, txs, i, minCol, maxCol, startCell, endCell;
 
   surface = this.surface.model;
   tableCe = this.focussedTable;
+  startCell = this.focussedTable.startCell;
+  endCell = this.focussedTable.endCell;
   cells = [];
 
-  minCol = Math.min(this.startCell.col, this.endCell.col);
-  maxCol = Math.max(this.startCell.col, this.endCell.col);
+  minCol = Math.min(startCell.col, endCell.col);
+  maxCol = Math.max(startCell.col, endCell.col);
 
   for (i = minCol; i <= maxCol; i++) {
     cells = cells.concat(tableCe.getColumnCells(i));
