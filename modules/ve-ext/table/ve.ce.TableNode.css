@@ -167,7 +167,12 @@ thead .ve-ce-tableCellNode {
 .ve-ui-tableToolbar .ve-ui-tableToolbar-header,
 .ve-ui-tableToolbar .ve-ui-tableToolbar-buttons {
   float: left;
-  padding-left: 20px;
+  margin-left: 10px;
+  padding-left: 10px;
+}
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons {
+  border-left: solid 1px #ccc;
 }
 
 .ve-ui-tableToolbar .ve-ui-tableToolbar-header {
@@ -177,4 +182,8 @@ thead .ve-ce-tableCellNode {
 
 .ve-ui-tableToolbar .ve-ui-tableToolbar-buttons .oo-ui-labeledElement-label {
   font-size: 0.8em;
+}
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons .oo-ui-buttonedElement-button {
+  padding-left: 5px;
 }

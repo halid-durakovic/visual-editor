@@ -201,18 +201,20 @@ ve.ui.TableContext.prototype.computeSelectedArea = function() {
 };
 
 ve.ui.TableContext.prototype.reposition = function() {
-  var surfaceOffset = this.surface.$element.offset();
-  var offset = this.focussedTable.$element.offset();
-  var width = this.focussedTable.$element.width();
-  // var height = this.focussedTable.$element.height();
-  this.$element.css({
-    'position': 'absolute',
-    'top': offset.top - surfaceOffset.top,
-    'left': offset.left - surfaceOffset.left,
-    'width': 0,
-    'height': 0,
-    // 'border': 'solid 2px green'
-  });
+  if (this.focussedTable) {
+    var surfaceOffset = this.surface.$element.offset();
+    var offset = this.focussedTable.$element.offset();
+    var width = this.focussedTable.$element.width();
+    // var height = this.focussedTable.$element.height();
+    this.$element.css({
+      'position': 'absolute',
+      'top': offset.top - surfaceOffset.top,
+      'left': offset.left - surfaceOffset.left,
+      'width': 0,
+      'height': 0,
+      // 'border': 'solid 2px green'
+    });
+  }
 };
 
 ve.ui.TableContext.prototype.update = function() {

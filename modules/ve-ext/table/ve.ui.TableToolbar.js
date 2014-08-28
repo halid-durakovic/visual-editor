@@ -5,7 +5,6 @@ ve.ui.TableToolbar = function VeUiTableToolbar( tableContext, config ) {
 
   var $header = $('<div>').addClass('ve-ui-tableToolbar-header')
     .append( [
-      this.icon.$element,
       this.label.$element
     ] );
 
