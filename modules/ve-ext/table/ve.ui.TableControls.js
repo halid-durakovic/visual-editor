@@ -1,4 +1,3 @@
-
 ve.ui.TableControls = function VeUiTableControls( tableContext, config ) {
   // Parent constructor
   OO.ui.Element.call( this, config );
@@ -74,33 +73,50 @@ OO.inheritClass( ve.ui.TableControls, OO.ui.Element );
 /* Methods */
 
 ve.ui.TableControls.prototype.onInsertColumnBefore = function () {
-  this.tableContext.insertColumn('before');
+  var table = this.tableContext.getTable();
+  if (table) {
+    table.insertColumn('before');
+  }
 };
 
 ve.ui.TableControls.prototype.onInsertColumnAfter = function () {
-  this.tableContext.insertColumn('after');
+  var table = this.tableContext.getTable();
+  if (table) {
+    table.insertColumn('after');
+  }
 };
 
 ve.ui.TableControls.prototype.onDeleteColumn = function () {
-  this.tableContext.deleteColumn();
+  var table = this.tableContext.getTable();
+  if (table) {
+    table.deleteColumn();
+  }
 };
 
 ve.ui.TableControls.prototype.onInsertRowBefore = function () {
-  this.tableContext.insertRow('before');
+  var table = this.tableContext.getTable();
+  if (table) {
+    table.insertRow('before');
+  }
 };
 
 ve.ui.TableControls.prototype.onInsertRowAfter = function () {
-  this.tableContext.insertRow('after');
+  var table = this.tableContext.getTable();
+  if (table) {
+    table.insertRow('after');
+  }
 };
 
 ve.ui.TableControls.prototype.onDeleteRow = function () {
-  this.tableContext.deleteRow();
+  var table = this.tableContext.getTable();
+  if (table) {
+    table.deleteRow();
+  }
 };
 
 ve.ui.TableControls.prototype.onRemove = function() {
-  this.tableContext.deleteTable();
-};
-
-ve.ui.TableControls.prototype.onClose = function() {
-  this.tableContext.closeInspector();
+  var table = this.tableContext.getTable();
+  if (table) {
+    table.deleteTable();
+  }
 };
