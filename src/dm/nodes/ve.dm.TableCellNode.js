@@ -37,22 +37,25 @@ ve.dm.TableCellNode.static.defaultAttributes = {
 ve.dm.TableCellNode.static.matchTagNames = [ 'td', 'th' ];
 
 ve.dm.TableCellNode.static.toDataElement = function ( domElements ) {
-	var style = domElements[0].nodeName.toLowerCase() === 'th' ? 'header' : 'data';
-	return { type: this.name, attributes: { style: style } };
+  var attributes = {
+    style: domElements[0].nodeName.toLowerCase() === 'th' ? 'header' : 'data',
+    colspan: parseInt(domElements[0].getAttribute('colspan'), 10) || undefined,
+    rowspan: parseInt(domElements[0].getAttribute('rowspan'), 10) || undefined
+  };
+	return { type: this.name, attributes:  attributes};
 };
 
 ve.dm.TableCellNode.static.toDomElements = function ( dataElement, doc ) {
 	var tag = dataElement.attributes && dataElement.attributes.style === 'header' ? 'th' : 'td';
-	return [ doc.createElement( tag ) ];
+  var el = doc.createElement( tag );
+  el.setAttribute('colspan', dataElement.attributes.colspan);
+  el.setAttribute('rowspan', dataElement.attributes.rowspan);
+	return [ el ];
 };
 
-ve.dm.TableCellNode.prototype.getSpan = function () {
-  var span = this.getAttribute('span');
-  if (!span) {
-    return 1;
-  } else {
-    return parseInt(span, 10);
-  }
+ve.dm.TableCellNode.prototype.getSpan = function (rowOrCol) {
+  var key = (rowOrCol || 'col') + 'span';
+  return this.element.attributes[key] || 1;
 };
 
 ve.dm.TableCellNode.prototype.canBeMergedWith = function() {

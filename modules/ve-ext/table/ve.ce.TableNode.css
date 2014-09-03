@@ -55,6 +55,13 @@ thead .ve-ce-tableCellNode {
   background-color: #EEE;
 }
 
+.ve-ce-tableNode caption {
+  caption-side: bottom;
+}
+
+.ve-ce-tableNode td[data-type='placeholder'] {
+  display: none;
+}
 
 .ve-ce-tableNode.focussed {
   border: 1px dashed;

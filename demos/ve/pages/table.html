@@ -1,71 +1,43 @@
 <h1>Tables</h1>
 
-<h2>Fully specified table</h2>
-<p>A fully specified table contains separate sections for header and body.</p>
+<h2>Merged cells</h2>
+
+<p>Horizontally merged cells:</p>
 <table>
-  <thead>
-    <tr>
-      <th>Team</th>
-      <th>Matches played</th>
-      <th>Goals for</th>
-      <th>Total goals scored</th>
-      <th>Goals conceded</th>
-      <th>Penalty goals</th>
-      <th>Own goals for</th>
-      <th>Open play goals</th>
-      <th>Set piece goals</th>
-    </tr>
-  </thead>
   <tbody>
     <tr>
-      <td>Germany</td><td>6</td><td>17</td><td>17</td><td>4</td><td>1</td><td>0</td><td>14</td><td>3</td>
+      <td>A</td><td colspan=2>B C</td><td>D</td>
     </tr>
     <tr>
-      <td>Netherlands</td><td>5</td><td>12</td><td>12</td><td>4</td><td>1</td><td>0</td><td>11</td><td>1</td>
+      <td colspan=2>E F</td><td>G</td><td>H</td>
     </tr>
     <tr>
-      <td>Colombia</td><td>5</td><td>12</td><td>12</td><td>4</td><td>2</td><td>0</td><td>9</td><td>3</td>
-    </tr>
-    <tr>
-      <td>Brazil</td><td>6</td><td>11</td><td>11</td><td>11</td><td>1</td><td>0</td><td>8</td><td>3</td>
-    </tr>
-    <tr>
-      <td>France</td><td>5</td><td>10</td><td>8</td><td>3</td><td>1</td><td>2</td><td>8</td><td>2</td>
-    </tr>
-    <tr>
-      <td>Argentina</td><td>5</td><td>8</td><td>7</td><td>3</td><td>0</td><td>1</td><td>7</td><td>1</td>
-    </tr>
-    <tr>
-      <td>Algeria</td><td>4</td><td>7</td><td>7</td><td>7</td><td>1</td><td>0</td><td>4</td><td>3</td>
-    </tr>
-    <tr>
-      <td>Switzerland</td><td>4</td><td>7</td><td>7</td><td>7</td><td>0</td><td>0</td><td>5</td><td>2</td>
-    </tr>
-    <tr>
-      <td>Belgium</td><td>5</td><td>6</td><td>6</td><td>3</td><td>0</td><td>0</td><td>6</td><td>0</td>
+      <td>I</td><td>J</td><td>K</td><td>L</td>
     </tr>
   </tbody>
 </table>
 
-<h2>Simple table</h2>
-
-<p>Simple tables come without sections, and only have rows.</p>
-
-<table border="1">
-  <tr>
-    <td>cell 1 row 1</td>
-    <td>cell 2 row 1</td>
-  </tr>
-  <tr>
-    <td>cell 1 row 2</td>
-    <td>cell 2 row 2</td>
-  </tr>
+<p>Vertically merged cells:</p>
+<table>
+  <tbody>
+    <tr>
+      <td rowspan=2>A<br>E</td><td>B</td><td>C</td><td>D</td>
+    </tr>
+    <tr>
+      <td>F</td><td>G</td><td>H</td>
+    </tr>
+  </tbody>
 </table>
-
-<h2>Merged cells</h2>
-
-<p>TODO</p>
-
-<h2>Caption</h2>
-
-<p>TODO</p>
+<table>
+  <tbody>
+    <tr>
+      <td>A</td><td rowspan=3 colspan=2>B C<br>F G<br>J K</td><td>D</td>
+    </tr>
+    <tr>
+      <td>E</td><td>H</td>
+    </tr>
+    <tr>
+      <td>I</td><td>L</td>
+    </tr>
+  </tbody>
+</table>

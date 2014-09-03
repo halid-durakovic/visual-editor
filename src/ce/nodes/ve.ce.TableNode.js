@@ -31,6 +31,10 @@ ve.ce.TableNode = function VeCeTableNode( model, config ) {
   this.startCell = null;
   this.endCell = null;
 
+  // A cached matrix representation of the table's cells.
+  // Gets invalidated on each model update.
+  this.cellMatrix = null;
+  this.rowNodes = null;
 };
 
 /* Inheritance */
@@ -65,6 +69,12 @@ ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
   this.surfaceModel.emit( 'table-node-removed', this );
 };
 
+ve.ce.TableNode.prototype.onModelUpdate = function ( transaction ) {
+  ve.ce.TableNode.super.prototype.onModelUpdate.call(this, transaction);
+  this.cellMatrix = null;
+  this.rowNodes = null;
+};
+
 /**
  * Reacts on selection changes and detectes when the selection is fully within
  * the table.
@@ -83,6 +93,29 @@ ve.ce.TableNode.prototype.onSurfaceModelSelect = function(selection) {
   }
 
   this.updateSelectedRectangle(selection);
+};
+
+ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
+  var startCellContext, endCellContext;
+  if (selection.isBackwards()) {
+    selection = selection.flip();
+  }
+  startCellContext = this.getCellContextForOffset( selection.start );
+  if (!startCellContext) {
+    endCellContext = null;
+  } else if (selection.isCollapsed()) {
+    endCellContext = startCellContext;
+  } else {
+    endCellContext = this.getCellContextForOffset( selection.end );
+  }
+  if (!startCellContext || !endCellContext) {
+    this.startCell  = null;
+    this.endCell = null;
+    this.unfocus();
+  } else {
+    this.startCell = startCellContext.cellNode;
+    this.endCell = endCellContext.cellNode;
+  }
 };
 
 ve.ce.TableNode.prototype.isFocussed = function() {
@@ -105,222 +138,170 @@ ve.ce.TableNode.prototype.unfocus = function() {
  * Determines a cell node's context, in terms of table row and table section.
  *
  * To be able to deal with nested tables we identify a cell node's
- * context by examining the parent node types.
+ * context by examining the parent nodes.
  *
- * options:
- *   - 'indexes': determine child element indexes for section, row, and cell
+ * @param node a ve.ce.Node instance
+ * @returns null of the given node is not within this table, or an object with following properties:
+ *    - 'sectionNode': ve.dm.TableSectionNode
+ *    - 'rowNode': ve.dm.TableRowNode
+ *    - 'cellNode': ve.dm.TableCellNode
+ *    - 'sectionIndex': Number
+ *    - 'rowNodeIndex': Number
+ *    - 'cellNodeIndex': Number
  */
-ve.ce.TableNode.prototype.getCellContext = function (node, options) {
-  var cellContext, section, row, cell;
-  options = options || {};
-
+ve.ce.TableNode.prototype.getCellContext = function (node) {
+  var cellContext, sectionNode, rowNode, cellNode;
   if (!node) return null;
-
   while (true) {
     switch (node.type) {
       case 'tableCell':
-        cell = node;
+        cellNode = node;
         break;
       case 'tableRow':
-        row = node;
+        rowNode = node;
         break;
       case 'tableSection':
-        section = node;
+        sectionNode = node;
         break;
     }
     node = node.parent;
+    // stop when we reach the right the level of this node
+    // in that case, the last section and row should be the correct ones.
     if (node === this) break;
     if (!node) return null;
   }
-
   // fallback if this is called with a top-level node
-  if (!row || !cell) {
+  if (!rowNode || !cellNode) {
     return null;
   }
-
   cellContext = {
-    sectionNode: section,
-    rowNode: row,
-    cellNode: cell
+    sectionNode: sectionNode,
+    rowNode: rowNode,
+    cellNode: cellNode,
+    sectionNodeIndex: this.children.indexOf(sectionNode),
+    rowNodeIndex: sectionNode.children.indexOf(rowNode),
+    cellNodeIndex: rowNode.children.indexOf(cellNode)
   };
-
-  // Determines the section, row and cell indexes and the column index for a given cell.
-  // Note: column and cell index are not necessarily equal in presence of merged cells.
-  if (options.indexes) {
-    cellContext.sectionIndex = this.children.indexOf(cellContext.sectionNode);
-    cellContext.rowIndex = cellContext.sectionNode.children.indexOf(cellContext.rowNode);
-    cellContext.col = -1;
-    cellContext.cellIndex = -1;
-    for (var i = 0; i < cellContext.rowNode.children.length; i++) {
-      cell = cellContext.rowNode.children[i];
-      cellContext.col += cell.model.getSpan();
-      cellContext.cellIndex = i;
-      if (cell === cellContext.cellNode) break;
-    }
-  }
-
   return cellContext;
 };
 
 /**
- *
- * options:
- *   - 'indexes': determine child element indexes for section, row, and cell
- *   - 'globalOffset': the given offset is global
- * returns {
- *   'sectionNode': ve.dm.TableSectionNode
- *   'rowNode': ve.dm.TableRowNode
- *   'cellNode': ve.dm.TableCellNode
- *   'sectionIndex': optional
- *   'rowIndex': optional
- *   'cellIndex': optional
- *   'col': optional
- * }
+ * @param offset: the global offset of a cell
+ * @returns an object with following properties:
+ *    - 'sectionNode': ve.dm.TableSectionNode
+ *    - 'rowNode': ve.dm.TableRowNode
+ *    - 'cellNode': ve.dm.TableCellNode
+ *    - 'sectionIndex': Number
+ *    - 'rowNodeIndex': Number
+ *    - 'cellNodeIndex': Number
  */
-ve.ce.TableNode.prototype.getCellContextForOffset = function ( offset, options ) {
+ve.ce.TableNode.prototype.getCellContextForOffset = function ( offset ) {
   var node, cellContext;
-
-  options = options || {};
-
-  if (options.globalOffset) {
-    offset -= this.model.getRange().start;
-  }
-
+  // treat the offset as global offset
+  offset -= this.model.getRange().start;
   node = this.getNodeFromOffset(offset);
-  cellContext = this.getCellContext(node, options);
-
+  cellContext = this.getCellContext(node);
   return cellContext;
 };
 
-// TODO: this should be in ve.dm.TableNode
 ve.ce.TableNode.prototype.getNumberOfColumns = function() {
-  var cols = 0,
-      rows, row, child;
-
-  for (var i = 0; i < this.children.length; i++) {
-    child = this.children[i];
-    if (child.type === 'tableSection') {
-      rows = child.children;
-      for (var j = 0; j < rows.length; j++) {
-        row = rows[j].getModel();
-        cols = Math.max(cols, row.getNumberOfColumns());
-      }
-    }
+  var cellMatrix = this.getCellMatrix();
+  if (cellMatrix.length > 0) {
+    return cellMatrix[0].length;
+  } else {
+    return 0;
   }
-
-  return cols;
 };
 
 ve.ce.TableNode.prototype.getColumnCells = function(columnIdx) {
   var cells = [],
-      rows, row, child, cell;
-  for (var i = 0; i < this.children.length; i++) {
-    child = this.children[i];
-    if (child.type === 'tableSection') {
-      rows = child.children;
-      for (var j = 0; j < rows.length; j++) {
-        row = rows[j].getModel();
-        cell = row.getCellAt(columnIdx);
-        if (cell) cells.push(cell);
-      }
-    }
+      cellMatrix = this.getCellMatrix();
+  for (var i = 0; i < cellMatrix.length; i++) {
+    cells.push(cellMatrix[i][columnIdx]);
   }
   return cells;
-};
-
-ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
-  var startCell, endCell;
-  if (selection.isBackwards()) {
-    selection = selection.flip();
-  }
-  startCell = this.getCellContextForOffset( selection.start, { globalOffset: true, indexes: true } );
-  if (!startCell) {
-    endCell = null;
-  } else if (selection.isCollapsed()) {
-    endCell = startCell;
-  } else {
-    endCell = this.getCellContextForOffset( selection.end, { globalOffset: true, indexes: true } );
-  }
-  if (!startCell || !endCell) {
-    this.startCell  = null;
-    this.endCell = null;
-    this.unfocus();
-  } else {
-    this.startCell = startCell;
-    this.endCell = endCell;
-  }
 };
 
 ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
-  var table, cells, iterator, minCol, maxCol, startCell, endCell;
+  var cells = [],
+      minCol, maxCol, minRow, maxRow, i, j;
 
-  table = this;
-  startCell = this.startCell;
-  endCell = this.endCell;
-  cells = [];
+  // HACK: depending on variables computed by getCellMatrix().
+  if (!this.cellMatrix) this.getCellMatrix();
 
-  minCol = Math.min(startCell.col, endCell.col);
-  maxCol = Math.max(startCell.col, endCell.col);
-
-  iterator = OO.cloneObject(startCell);
-  iterator.col = 0;
-  iterator.cellIndex = 0;
-  iterator.cellNode = iterator.rowNode.children[0];
-
-  function nextSection() {
-    iterator.sectionIndex++;
-    iterator.sectionNode = table.children[iterator.sectionIndex];
-
-    if (!iterator.sectionNode) {
-      throw new Error("End of iteration.");
-    }
-
-    iterator.rowIndex = 0;
-    iterator.rowNode = iterator.sectionNode.children[0];
-  }
-
-  function nextRow() {
-    iterator.row++;
-    iterator.rowIndex++;
-    iterator.rowNode = iterator.sectionNode.children[iterator.rowIndex];
-
-    while (!iterator.rowNode) {
-      nextSection();
-    }
-
-    iterator.col = 0;
-    iterator.cellIndex = 0;
-    iterator.cellNode = iterator.rowNode.children[0];
-  }
-
-  function nextCell() {
-    iterator.col += iterator.cellNode.model.getSpan();
-    iterator.cellIndex++;
-    iterator.cellNode = iterator.rowNode.children[iterator.cellIndex];
-
-    // step into the next row if there is no next cell or if the column is
-    // beyond the rectangle boundaries
-    while (!iterator.cellNode || iterator.col > maxCol) {
-      nextRow();
+  minCol = Math.min(this.startCell.col, this.endCell.col);
+  maxCol = Math.max(this.startCell.col, this.endCell.col);
+  minRow = Math.min(this.startCell.row, this.endCell.row);
+  maxRow = Math.max(this.startCell.row, this.endCell.row);
+  for (i = minRow; i <= maxRow; i++) {
+    for (j = minCol; j <= maxCol; j++) {
+      cells.push(this.cellMatrix[i][j]);
     }
   }
-
-  while (true) {
-    if (iterator.col >= minCol && iterator.col <= maxCol) {
-      cells.push(OO.cloneObject(iterator));
-    }
-
-    if (iterator.cellNode === endCell.cellNode) break;
-
-    try {
-      nextCell();
-    } catch (err) {
-      window.console.error("ve.ce.TableNode: could not extract cells.");
-      return [];
-    }
-  }
-
   return cells;
+};
+
+/**
+ * Inserts stub cells for merged cells.
+ * This is an optimization better to be able to deal with merged cells.
+ */
+ve.ce.TableNode.prototype.getCellMatrix = function() {
+  var iterator, rowNode, cellNode, row, col, rowSpan, colSpan, i, j;
+  // use the cached matrix if available
+  if (this.cellMatrix) {
+    return this.cellMatrix;
+  }
+  this.cellMatrix = [];
+  this.rowNodes = [];
+  rowNode = null;
+  row = -1;
+  col = -1;
+  iterator = new ve.ce.TableNode.CellIterator(this);
+  // react on row transitions
+  iterator.onNewRow = function(rowNode) {
+    row++;
+    col = -1;
+    // initialize a matrix row
+    this.cellMatrix[row] = this.cellMatrix[row] || [];
+    // store the row node
+    this.rowNodes.push(rowNode);
+  }.bind(this);
+
+  while ((cellNode = iterator.next()) !== null)  {
+    col++;
+    // skip present placeholders
+    while (this.cellMatrix[row][col]) {
+      col++;
+    }
+    // store the computed row and column for later use
+    cellNode.row = row;
+    cellNode.col = col;
+    // store the cellNode in the matrix
+    this.cellMatrix[row][col] = cellNode;
+
+    // add place holders for spanned cells
+    rowSpan = cellNode.getModel().getSpan('row');
+    colSpan = cellNode.getModel().getSpan('col');
+    if (rowSpan === 1 && colSpan === 1) continue;
+    for (i = 0; i < rowSpan; i++) {
+      for (j = 0; j < colSpan; j++) {
+        if (i===0 && j===0) continue;
+        // initialize the cell matrix row if not yet present
+        this.cellMatrix[row + i] = this.cellMatrix[row + i] || [];
+        this.cellMatrix[row + i][col + j] = {
+          type: 'placeholder',
+          owner: cellNode,
+          row: row + i,
+          col: col + j
+        };
+      }
+    }
+  }
+};
+
+ve.ce.TableNode.prototype.getRowNodeAt = function(row) {
+  if (!this.rowNodes) this.getCellMatrix();
+  return this.rowNodes[row];
 };
 
 /* Static Properties */
@@ -330,6 +311,77 @@ ve.ce.TableNode.static.name = 'table';
 ve.ce.TableNode.static.tagName = 'table';
 
 ve.ce.TableNode.static.mergeOnDelete = false;
+
+/**
+ * A helper class to iterate over the cells of a table node.
+ *
+ * It provides a unified interface to iterate cells in presence of table sections,
+ * e.g., providing consecutive row indexes.
+ */
+ve.ce.TableNode.CellIterator = function VeCeTableNodeCellIterator(tableNode) {
+  this.table = tableNode;
+
+  this.__it = {
+    sectionIndex: -1,
+    rowIndex: -1,
+    rowNode: null,
+    cellIndex: -1,
+    cellNode: null,
+    sectionNode: null,
+    finished: false
+  };
+
+  // hooks
+  this.onNewSection = function() {};
+  this.onNewRow = function() {};
+};
+
+ve.ce.TableNode.CellIterator.prototype.next = function() {
+  if (this.__it.finished) throw new Error("TableCellIterator has no more cells left.");
+  this.nextCell(this.__it);
+  if (this.__it.finished) return null;
+  else return this.__it.cellNode;
+};
+
+ve.ce.TableNode.CellIterator.prototype.nextSection = function(it) {
+  it.sectionIndex++;
+  it.sectionNode = this.table.children[it.sectionIndex];
+  if (!it.sectionNode) {
+    it.finished = true;
+  } else {
+    it.rowIndex = 0;
+    it.rowNode = it.sectionNode.children[0];
+    this.onNewSection(it.sectionNode);
+  }
+};
+
+ve.ce.TableNode.CellIterator.prototype.nextRow = function(it) {
+  it.rowIndex++;
+  if (it.sectionNode) {
+    it.rowNode = it.sectionNode.children[it.rowIndex];
+  }
+  while (!it.rowNode && !it.finished) {
+    this.nextSection(it);
+  }
+  if (it.rowNode) {
+    it.cellIndex = 0;
+    it.cellNode = it.rowNode.children[0];
+    this.onNewRow(it.rowNode);
+  }
+};
+
+ve.ce.TableNode.CellIterator.prototype.nextCell = function(it) {
+  if (it.cellNode) {
+    it.cellIndex++;
+    it.cellNode = it.rowNode.children[it.cellIndex];
+  }
+  // step into the next row if there is no next cell or if the column is
+  // beyond the rectangle boundaries
+  while (!it.cellNode && !it.finished) {
+    this.nextRow(it);
+  }
+};
+
 
 /* Registration */
 
