@@ -36,6 +36,11 @@ ve.dm.TableCellNode.static.defaultAttributes = {
 
 ve.dm.TableCellNode.static.matchTagNames = [ 'td', 'th' ];
 
+// blacklisting 'colspan' and 'rowspan' as they are managed explicitely
+ve.dm.TableCellNode.static.storeHtmlAttributes = {
+  blacklist: ['colspan', 'rowspan']
+};
+
 ve.dm.TableCellNode.static.toDataElement = function ( domElements ) {
   var attributes = {
     style: domElements[0].nodeName.toLowerCase() === 'th' ? 'header' : 'data',
@@ -46,10 +51,12 @@ ve.dm.TableCellNode.static.toDataElement = function ( domElements ) {
 };
 
 ve.dm.TableCellNode.static.toDomElements = function ( dataElement, doc ) {
-	var tag = dataElement.attributes && dataElement.attributes.style === 'header' ? 'th' : 'td';
-  var el = doc.createElement( tag );
-  el.setAttribute('colspan', dataElement.attributes.colspan);
-  el.setAttribute('rowspan', dataElement.attributes.rowspan);
+	var tag = dataElement.attributes && dataElement.attributes.style === 'header' ? 'th' : 'td',
+    colspan = dataElement.attributes.colspan,
+    rowspan = dataElement.attributes.rowspan,
+    el = doc.createElement( tag );
+  if (colspan && colspan > 1) el.setAttribute('colspan', colspan);
+  if (rowspan && rowspan > 1) el.setAttribute('rowspan', rowspan);
 	return [ el ];
 };
 
