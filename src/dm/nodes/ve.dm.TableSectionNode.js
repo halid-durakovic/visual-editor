@@ -18,6 +18,11 @@
 ve.dm.TableSectionNode = function VeDmTableSectionNode() {
 	// Parent constructor
 	ve.dm.BranchNode.apply( this, arguments );
+
+  this.connect( this, {
+    'attach': 'onAttach',
+    'detach': 'onDetach'
+  } );
 };
 
 /* Inheritance */
@@ -60,6 +65,21 @@ ve.dm.TableSectionNode.static.toDomElements = function ( dataElement, doc ) {
 
 ve.dm.TableSectionNode.prototype.canBeMergedWith = function() {
   return false;
+};
+
+ve.dm.TableSectionNode.prototype.onAttach = function(to) {
+	to.onStructureChange({ section: this });
+};
+
+ve.dm.TableSectionNode.prototype.onDetach = function(from) {
+	from.onStructureChange({ section: this });
+};
+
+ve.dm.TableSectionNode.prototype.onStructureChange = function(context) {
+	if ( this.parent ) {
+		context.section = this;
+		this.parent.onStructureChange(context);
+	}
 };
 
 /* Registration */

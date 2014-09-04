@@ -26,9 +26,7 @@ ve.ce.TableNode = function VeCeTableNode( model, config ) {
 
   // A cached matrix representation of the table's cells.
   // It is created initially and gets invalidated on each model update.
-  this.cellMatrix = null;
-  this.rowNodes = null;
-  this.getCellMatrix();
+  this.tableMatrix = new ve.dm.TableMatrix(this.model);
 };
 
 /* Inheritance */
@@ -59,20 +57,8 @@ ve.ce.TableNode.prototype.onTableNodeSetup = function() {
 
 ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
   this.surfaceModel.disconnect( this );
-
+  this.tableMatrix.destroy();
   this.surfaceModel.emit( 'table-node-removed', this );
-};
-
-/**
- * Invalidates the cached matrix representation of the table.
- * TODO: ATM we invalidate the matrix on every change. It would be better
- *       if that could be done only on *structural* changes.
- *       However, currently there does not seem to be a way to detect only those changes easily.
- */
-ve.ce.TableNode.prototype.onModelUpdate = function ( transaction ) {
-  ve.ce.TableNode.super.prototype.onModelUpdate.call(this, transaction);
-  this.cellMatrix = null;
-  this.rowNodes = null;
 };
 
 /**
@@ -117,8 +103,13 @@ ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
     this.endCell = null;
     this.unfocus();
   } else {
-    this.startCell = startCellContext.cellNode;
-    this.endCell = endCellContext.cellNode;
+    // TODO: this could also be solved in DM world
+    this.startCell = this.tableMatrix.lookupCell(startCellContext.rowNode.model, startCellContext.cellNode.model);
+    if (startCellContext === endCellContext) {
+      this.endCell = this.startCell;
+    } else {
+      this.endCell = this.tableMatrix.lookupCell(endCellContext.rowNode.model, endCellContext.cellNode.model);
+    }
   }
 };
 
@@ -204,108 +195,39 @@ ve.ce.TableNode.prototype.getCellContextForOffset = function ( offset ) {
   return cellContext;
 };
 
-ve.ce.TableNode.prototype.getColumnCells = function(columnIdx) {
-  var cells = [],
-      cellMatrix = this.getCellMatrix();
-  for (var i = 0; i < cellMatrix.length; i++) {
-    cells.push(cellMatrix[i][columnIdx]);
-  }
-  return cells;
+ve.ce.TableNode.prototype.getSelectedRectangle = function() {
+  if (!this.startCell || !this.endCell) return null;
+  return {
+    start: { row: Math.min(this.startCell.row, this.endCell.row), col: Math.min(this.startCell.col, this.endCell.col)},
+    end: { row: Math.max(this.startCell.row, this.endCell.row), col: Math.max(this.startCell.col, this.endCell.col) }
+  };
 };
 
+// NOTE: this is only used in CE world for visual stuff
 ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
-  var cells = [],
-      minCol, maxCol, minRow, maxRow, i, j;
-
-  // HACK: depending on variables computed by getCellMatrix().
-  if (!this.cellMatrix) this.getCellMatrix();
-
-  minCol = Math.min(this.startCell.col, this.endCell.col);
-  maxCol = Math.max(this.startCell.col, this.endCell.col);
-  minRow = Math.min(this.startCell.row, this.endCell.row);
-  maxRow = Math.max(this.startCell.row, this.endCell.row);
-  for (i = minRow; i <= maxRow; i++) {
-    for (j = minCol; j <= maxCol; j++) {
-      cells.push(this.cellMatrix[i][j]);
-    }
-  }
-  return cells;
-};
-
-/**
- * Inserts stub cells for merged cells.
- * This is an optimization better to be able to deal with merged cells.
- */
-ve.ce.TableNode.prototype.getCellMatrix = function() {
-  var iterator, rowNode, cellNode, row, col, rowSpan, colSpan, i, j;
-  // use the cached matrix if available
-  if (this.cellMatrix) {
-    return this.cellMatrix;
-  }
-  this.cellMatrix = [];
-  this.rowNodes = [];
-  rowNode = null;
-  row = -1;
-  col = -1;
-  iterator = new ve.ce.TableNode.CellIterator(this);
-  // react on row transitions
-  iterator.onNewRow = function(rowNode) {
-    row++;
-    col = -1;
-    // initialize a matrix row
-    this.cellMatrix[row] = this.cellMatrix[row] || [];
-    // store the row node
-    this.rowNodes.push(rowNode);
-  }.bind(this);
-
-  while ((cellNode = iterator.next()) !== null)  {
-    col++;
-    // skip present placeholders
-    while (this.cellMatrix[row][col]) {
-      col++;
-    }
-    // store the computed row and column for later use
-    cellNode.row = row;
-    cellNode.col = col;
-    // store the cellNode in the matrix
-    this.cellMatrix[row][col] = cellNode;
-
-    // add place holders for spanned cells
-    rowSpan = cellNode.getModel().getSpan('row');
-    colSpan = cellNode.getModel().getSpan('col');
-    if (rowSpan === 1 && colSpan === 1) continue;
-    for (i = 0; i < rowSpan; i++) {
-      for (j = 0; j < colSpan; j++) {
-        if (i===0 && j===0) continue;
-        // initialize the cell matrix row if not yet present
-        this.cellMatrix[row + i] = this.cellMatrix[row + i] || [];
-        this.cellMatrix[row + i][col + j] = new ve.ce.TableNode.PlaceHolder(cellNode);
+  var cells, i, j, rect, cell, ceCellNode, offset;
+  cells = [];
+  rect = this.getSelectedRectangle();
+  if (rect) {
+    for (i = rect.start.row; i <= rect.end.row; i++) {
+      for (j = rect.start.col; j <= rect.end.col; j++) {
+        cell = this.tableMatrix.matrix[i][j];
+        if (cell.type === 'cell') {
+          offset = cell.node.getRange().start - this.model.getRange().start;
+          ceCellNode = this.getNodeFromOffset(offset);
+          cells.push(ceCellNode);
+        }
       }
     }
   }
-};
-
-ve.ce.TableNode.prototype.getRowNodeAt = function(row) {
-  if (!this.rowNodes) this.getCellMatrix();
-  return this.rowNodes[row];
+  return cells;
 };
 
 /* Table manipulation */
 
-ve.ce.TableNode.prototype.createTableCellData = function(options) {
-  options = options || {};
-  var data = options.data || [];
-  data.push({type: 'tableCell', 'attributes': { 'style': options.style || 'data' } });
-  data.push({type: 'paragraph'});
-  data.push({type: '/paragraph'});
-  data.push({type: '/tableCell'});
-  return data;
-};
-
 ve.ce.TableNode.prototype.deleteTable = function() {
   var txs = [],
     surface = this.surfaceModel;
-
   txs.push(
     ve.dm.Transaction.newFromRemoval(
       surface.documentModel,
@@ -316,68 +238,167 @@ ve.ce.TableNode.prototype.deleteTable = function() {
   surface.change( txs );
 };
 
-ve.ce.TableNode.prototype.insertRow = function ( mode ) {
-  var surface = this.surfaceModel,
-    table = this,
-    offset, offsetAfterInsertion,
-    refRow, refRowNode, refCells, refCell, newRowIndex, key,
-    i, rowSpan, newRowSpan,
-    txs, data, adapted,
-    cellMatrix = table.getCellMatrix();
+ve.ce.TableNode.BEFORE = -1;
+ve.ce.TableNode.AFTER = 1;
 
-  // retrieve the reference row which is used to determine whether
-  // new cells need to be or the rowspan of an existing one needs to be updated
-  refRow = (mode === 'before') ? table.startCell.row : table.endCell.row;
-  refRowNode = table.getRowNodeAt(refRow);
-  refCells = cellMatrix[refRow];
-  newRowIndex = (mode === 'before') ? refRow - 1 : refRow + 1;
-  offset = (mode === 'before') ? refRowNode.getOuterRange().start : refRowNode.getOuterRange().end;
+/**
+ *
+ * Case 1: 'update span'
+ * ---------------------
+ * The span property needs to be updated when the cell and the reference cell have the same owner
+ * or one of the is owner of the other.
+ *
+ * Examples:
+ *
+ * | C* | P** |,  | C | P* | P** |
+ */
+ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, position ) {
+  var tableMatrix, pos, rect, index, refIndex, cells, refCells, rowNode,
+    offset, range, i, txs, updated, inserts, cell, refCell, data;
+
+  tableMatrix = this.tableMatrix;
+  rect = this.getSelectedRectangle();
+  pos = (position === ve.ce.TableNode.BEFORE) ? rect.start: rect.end;
+  // the index of the selected row or column
+  index = pos[mode];
+  // the index of the reference row or column
+  refIndex = index + position;
+  // cells of the selected row or column
+  if (mode === 'row') {
+    cells = tableMatrix.matrix[index];
+    refCells = tableMatrix.matrix[refIndex];
+    rowNode = tableMatrix.getRowNode(index);
+  } else {
+    cells = tableMatrix.getColumn(index);
+    refCells = tableMatrix.getColumn(refIndex);
+    rowNode = tableMatrix.getRowNode(pos.row);
+  }
 
   txs = [];
-  data = [];
-  adapted = {};
+  updated = {};
+  inserts = [];
 
-  // There are two different cases:
-  // 1. The new row is within the spanning range of the node (or the owner node for placeholders).
-  //    The rowspan attribute of the node must be adapted (only once).
-  // 2. The new row is outside the spanning range of the node.
-  //    A new node must be inserted.
+  for (i = 0; i < cells.length; i++) {
+    cell = cells[i];
+    refCell = refCells[i];
 
-  data.push({ type: 'tableRow'});
-  for (i = 0; i < refCells.length; i++) {
-    refCell = (refCells[i].type === 'placeholder') ? refCells[i].owner : refCells[i];
-    key = refCell.row + "_" + refCell.col;
-    rowSpan = refCell.getModel().getSpan('row');
-    newRowSpan = null;
-    // skip nodes that have been adapted already
-    if (adapted[key]) {
-      continue;
+    // detect if span update is necessary
+    if (cell.type === 'placeholder' || refCell.type === 'placeholder') {
+      if (cell.node === refCell.node) {
+        if (!updated[cell.key]) {
+          txs.push(this.incrementSpan(cell));
+        }
+        continue;
+      }
     }
-    // check if the node spans over the inserted row and needs to be adapted
-    if (newRowIndex > refCell.row && newRowIndex < refCell.row + rowSpan) {
-      newRowSpan = rowSpan + 1;
-    }
-    if (newRowSpan) {
-      txs.push( ve.dm.Transaction.newFromAttributeChanges(
-          surface.documentModel, refCell.getModel().getOuterRange().start,
-          {
-            'rowspan': newRowSpan
-          }
-        )
-      );
-      adapted[key] = true;
-    } else {
-      this.createTableCellData({ data: data, style: refCell.getModel().getAttribute('style') });
+    inserts.push(cell);
+  }
+
+  if (mode === 'row') {
+    data = ve.dm.TableRowNode.createData({
+      cellCount: inserts.length,
+      // taking the style of the first cell of the selected row
+      style: cells[0].node.getStyle()
+    });
+    range = rowNode.getOuterRange();
+    offset = (position === ve.ce.TableNode.BEFORE) ? range.start: range.end;
+    txs.push(ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data ));
+  } else {
+    // making sure that the inserts are in descending order
+    inserts.sort(ve.dm.TableMatrix.Cell.sortDescending);
+    for (i = 0; i < inserts.length; i++) {
+      cell = inserts[i];
+      refCell = tableMatrix.findNextCell(cell);
+      range = refCell.getOuterRange();
+      if ( refCell.col < cell.col  || ( refCell.col === cell.col && position === ve.ce.TableNode.AFTER ) ) {
+        offset = range.end;
+      } else {
+        offset = range.start;
+      }
+      txs.push(ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data ));
     }
   }
-  data.push({ type: '/tableRow'});
 
-  txs.push(ve.dm.Transaction.newFromInsertion( surface.documentModel, offset, data ));
-
-  // HACK: don't know how to compute valid cursor positions in advance. Thus doing this manually.
-  offsetAfterInsertion = offset + 3;
-  surface.change( txs, new ve.Range(offsetAfterInsertion));
+  this.surfaceModel.change(txs);
 };
+
+ve.ce.TableNode.prototype.incrementSpan = function(cell, mode) {
+  var attr = (mode === 'row') ? 'rowspan' : 'colspan',
+      data = {};
+  data[attr] = cell.node.getSpan(mode) + 1;
+  return ve.dm.Transaction.newFromAttributeChanges( this.surfaceModel.documentModel, cell.node.getOuterRange().start, data);
+};
+
+ve.ce.TableNode.prototype.insertRow = function ( position ) {
+  this.insertRowOrCol('row', position);
+};
+
+ve.ce.TableNode.prototype.insertColumn = function ( position ) {
+  this.insertRowOrCol('col', position);
+};
+
+// ve.ce.TableNode.prototype.insertRow = function ( mode ) {
+//   var surface = this.surfaceModel,
+//     table = this,
+//     offset, offsetAfterInsertion,
+//     refRow, refRowNode, refCells, refCell, newRowIndex, key,
+//     i, rowSpan, newRowSpan,
+//     txs, data, adapted,
+//     cellMatrix = table.getCellMatrix();
+
+//   // retrieve the reference row which is used to determine whether
+//   // new cells need to be or the rowspan of an existing one needs to be updated
+//   refRow = (mode === 'before') ? table.startCell.row : table.endCell.row;
+//   refRowNode = table.getRowNodeAt(refRow);
+//   refCells = cellMatrix[refRow];
+//   newRowIndex = (mode === 'before') ? refRow - 1 : refRow + 1;
+//   offset = (mode === 'before') ? refRowNode.getOuterRange().start : refRowNode.getOuterRange().end;
+
+//   txs = [];
+//   data = [];
+//   adapted = {};
+
+//   // There are two different cases:
+//   // 1. The new row is within the spanning range of the node (or the owner node for placeholders).
+//   //    The rowspan attribute of the node must be adapted (only once).
+//   // 2. The new row is outside the spanning range of the node.
+//   //    A new node must be inserted.
+
+//   data.push({ type: 'tableRow'});
+//   for (i = 0; i < refCells.length; i++) {
+//     refCell = (refCells[i].type === 'placeholder') ? refCells[i].owner : refCells[i];
+//     key = refCell.row + "_" + refCell.col;
+//     rowSpan = refCell.getModel().getSpan('row');
+//     newRowSpan = null;
+//     // skip nodes that have been adapted already
+//     if (adapted[key]) {
+//       continue;
+//     }
+//     // check if the node spans over the inserted row and needs to be adapted
+//     if (newRowIndex > refCell.row && newRowIndex < refCell.row + rowSpan) {
+//       newRowSpan = rowSpan + 1;
+//     }
+//     if (newRowSpan) {
+//       txs.push( ve.dm.Transaction.newFromAttributeChanges(
+//           surface.documentModel, refCell.getModel().getOuterRange().start,
+//           {
+//             'rowspan': newRowSpan
+//           }
+//         )
+//       );
+//       adapted[key] = true;
+//     } else {
+//       this.createTableCellData({ data: data, style: refCell.getModel().getAttribute('style') });
+//     }
+//   }
+//   data.push({ type: '/tableRow'});
+
+//   txs.push(ve.dm.Transaction.newFromInsertion( surface.documentModel, offset, data ));
+
+//   // HACK: don't know how to compute valid cursor positions in advance. Thus doing this manually.
+//   offsetAfterInsertion = offset + 3;
+//   surface.change( txs, new ve.Range(offsetAfterInsertion));
+// };
 
 /**
  * Deletes all selected rows of the currently focussed table.
@@ -519,97 +540,72 @@ ve.ce.TableNode.prototype.deleteRow = function () {
   surface.change(txs);
 };
 
-ve.ce.TableNode.prototype.insertColumn = function (mode) {
-  var surface = this.surfaceModel,
-    table = this,
-    offset,
-    refCol, refCells, refCell, newColIndex, key,
-    txs, data, adapted,
-    i, colSpan, newColSpan;
+// TODO: not yet working.
+//  - left insert with span not yet working: example1, J, insert left
+//  - example1, AE, insert right
+//  - delet col: example1, J, del col
+// ve.ce.TableNode.prototype.insertColumn = function (mode) {
+//   var surface = this.surfaceModel,
+//     table = this,
+//     offset,
+//     refCol, refCells, refCell, newColIndex, key,
+//     txs, data, adapted,
+//     i, colSpan, newColSpan;
 
-  // retrieve the reference row which is used to determine whether
-  // new cells need to be or the rowspan of an existing one needs to be updated
-  if (mode === 'before') {
-    refCol = Math.min(table.startCell.col, table.endCell.col);
-  } else {
-    refCol = Math.max(table.startCell.col, table.endCell.col);
-  }
-  refCells = table.getColumnCells(refCol);
-  newColIndex = (mode === 'before') ? refCol - 1 : refCol + 1;
+//   // retrieve the reference row which is used to determine whether
+//   // new cells need to be or the rowspan of an existing one needs to be updated
+//   if (mode === 'before') {
+//     refCol = Math.min(table.startCell.col, table.endCell.col);
+//   } else {
+//     refCol = Math.max(table.startCell.col, table.endCell.col);
+//   }
+//   refCells = table.getColumnCells(refCol);
+//   newColIndex = (mode === 'before') ? refCol - 1 : refCol + 1;
 
-  txs = [];
-  adapted = {};
+//   txs = [];
+//   adapted = {};
 
-  // There are two different cases:
-  // 1. The new col is within the spanning range of the node (or the owner node for placeholders).
-  //    The colwspan attribute of the node must be adapted (only once).
-  // 2. The new col is outside the spanning range of the node.
-  //    A new node must be inserted.
+//   // There are two different cases:
+//   // 1. The new col is within the spanning range of the node (or the owner node for placeholders).
+//   //    The colwspan attribute of the node must be adapted (only once).
+//   // 2. The new col is outside the spanning range of the node.
+//   //    A new node must be inserted.
 
-  for (i = refCells.length - 1; i >= 0; i--) {
-    refCell = (refCells[i].type === 'placeholder') ? refCells[i].owner : refCells[i];
-    key = refCell.row + "_" + refCell.col;
-    colSpan = refCell.getModel().getSpan('col');
-    newColSpan = null;
-    // skip nodes that have been adapted already
-    if (adapted[key]) {
-      continue;
-    }
-    // check if the node spans over the inserted row and needs to be adapted
-    if (newColIndex > refCell.col && newColIndex < refCell.col + colSpan) {
-      newColSpan = colSpan + 1;
-    }
-    if (newColSpan) {
-      txs.push( ve.dm.Transaction.newFromAttributeChanges(
-          surface.documentModel, refCell.getModel().getOuterRange().start,
-          {
-            'colspan': newColSpan
-          }
-        )
-      );
-      adapted[key] = true;
-    } else {
-      offset = (mode === 'before') ? refCell.getModel().getOuterRange().start : refCell.getModel().getOuterRange().end;
-      data = this.createTableCellData({ style: refCell.getModel().getAttribute('style') });
-      txs.push(
-        ve.dm.Transaction.newFromInsertion( surface.documentModel, offset, data )
-      );
-    }
-  }
+//   for (i = refCells.length - 1; i >= 0; i--) {
+//     refCell = (refCells[i].type === 'placeholder') ? refCells[i].owner : refCells[i];
+//     key = refCell.row + "_" + refCell.col;
+//     colSpan = refCell.getModel().getSpan('col');
+//     newColSpan = null;
+//     // skip nodes that have been adapted already
+//     if (adapted[key]) {
+//       continue;
+//     }
+//     // check if the node spans over the inserted row and needs to be adapted
+//     if (newColIndex > refCell.col && newColIndex < refCell.col + colSpan) {
+//       newColSpan = colSpan + 1;
+//     }
+//     if (newColSpan) {
+//       txs.push( ve.dm.Transaction.newFromAttributeChanges(
+//           surface.documentModel, refCell.getModel().getOuterRange().start,
+//           {
+//             'colspan': newColSpan
+//           }
+//         )
+//       );
+//       adapted[key] = true;
+//     } else {
+//       offset = (mode === 'before') ? refCell.getModel().getOuterRange().start : refCell.getModel().getOuterRange().end;
+//       data = this.createTableCellData({ style: refCell.getModel().getAttribute('style') });
+//       txs.push(
+//         ve.dm.Transaction.newFromInsertion( surface.documentModel, offset, data )
+//       );
+//     }
+//   }
 
-  surface.change( txs);
-};
+//   surface.change( txs);
+// };
 
 ve.ce.TableNode.prototype.deleteColumn = function () {
-  // var surface, table, startCell, endCell,
-  //     cells, txs, i, minCol, maxCol;
-
-  // surface = this.surfaceModel;
-  // table = this;
-  // startCell = this.startCell;
-  // endCell = this.endCell;
-  // cells = [];
-
-  // minCol = Math.min(startCell.col, endCell.col);
-  // maxCol = Math.max(startCell.col, endCell.col);
-
-  // for (i = minCol; i <= maxCol; i++) {
-  //   cells = cells.concat(table.getColumnCells(i));
-  // }
-
-  // cells = cells.sort( function(a,b) {
-  //   return a.getRange().start - b.getRange().start;
-  // });
-
-  // txs = [];
-  // for (i = cells.length - 1; i >= 0; i--) {
-  //   txs.push(
-  //     ve.dm.Transaction.newFromRemoval( surface.documentModel, cells[i].getOuterRange() )
-  //   );
-  // }
-
-  // // TODO: set an appropriate selection after deleting the column
-  // surface.change(txs);
   var surface, table, startCell, endCell,
       minCol, maxCol, maxRow, row, col,
       cellMatrix, cell,
@@ -742,7 +738,6 @@ ve.ce.TableNode.prototype.deleteColumn = function () {
   surface.change(txs);
 };
 
-
 /* Static Properties */
 
 ve.ce.TableNode.static.name = 'table';
@@ -750,81 +745,6 @@ ve.ce.TableNode.static.name = 'table';
 ve.ce.TableNode.static.tagName = 'table';
 
 ve.ce.TableNode.static.mergeOnDelete = false;
-
-/**
- * A helper class to iterate over the cells of a table node.
- *
- * It provides a unified interface to iterate cells in presence of table sections,
- * e.g., providing consecutive row indexes.
- */
-ve.ce.TableNode.CellIterator = function VeCeTableNodeCellIterator(tableNode) {
-  this.table = tableNode;
-
-  this.__it = {
-    sectionIndex: -1,
-    rowIndex: -1,
-    rowNode: null,
-    cellIndex: -1,
-    cellNode: null,
-    sectionNode: null,
-    finished: false
-  };
-
-  // hooks
-  this.onNewSection = function() {};
-  this.onNewRow = function() {};
-};
-
-ve.ce.TableNode.CellIterator.prototype.next = function() {
-  if (this.__it.finished) throw new Error("TableCellIterator has no more cells left.");
-  this.nextCell(this.__it);
-  if (this.__it.finished) return null;
-  else return this.__it.cellNode;
-};
-
-ve.ce.TableNode.CellIterator.prototype.nextSection = function(it) {
-  it.sectionIndex++;
-  it.sectionNode = this.table.children[it.sectionIndex];
-  if (!it.sectionNode) {
-    it.finished = true;
-  } else {
-    it.rowIndex = 0;
-    it.rowNode = it.sectionNode.children[0];
-    this.onNewSection(it.sectionNode);
-  }
-};
-
-ve.ce.TableNode.CellIterator.prototype.nextRow = function(it) {
-  it.rowIndex++;
-  if (it.sectionNode) {
-    it.rowNode = it.sectionNode.children[it.rowIndex];
-  }
-  while (!it.rowNode && !it.finished) {
-    this.nextSection(it);
-  }
-  if (it.rowNode) {
-    it.cellIndex = 0;
-    it.cellNode = it.rowNode.children[0];
-    this.onNewRow(it.rowNode);
-  }
-};
-
-ve.ce.TableNode.CellIterator.prototype.nextCell = function(it) {
-  if (it.cellNode) {
-    it.cellIndex++;
-    it.cellNode = it.rowNode.children[it.cellIndex];
-  }
-  // step into the next row if there is no next cell or if the column is
-  // beyond the rectangle boundaries
-  while (!it.cellNode && !it.finished) {
-    this.nextRow(it);
-  }
-};
-
-ve.ce.TableNode.PlaceHolder = function PlaceHolder(owner) {
-  this.type = 'placeholder';
-  this.owner = owner;
-};
 
 /* Registration */
 

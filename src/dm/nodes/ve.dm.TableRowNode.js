@@ -18,6 +18,11 @@
 ve.dm.TableRowNode = function VeDmTableRowNode() {
 	// Parent constructor
 	ve.dm.BranchNode.apply( this, arguments );
+
+  this.connect( this, {
+    'attach': 'onAttach',
+    'detach': 'onDetach'
+  } );
 };
 
 /* Inheritance */
@@ -36,33 +41,37 @@ ve.dm.TableRowNode.static.matchTagNames = [ 'tr' ];
 
 /* Prototype functions */
 
-ve.dm.TableRowNode.prototype.getNumberOfColumns = function() {
-  var children,
-      cols = 0;
-  children = this.children;
-  for (var i = 0; i < children.length; i++) {
-    cols += children[i].getSpan();
-  }
-  return cols;
-};
-
-ve.dm.TableRowNode.prototype.getCellAt = function(colIdx) {
-  var children, cell,
-      pos = -1;
-  children = this.children;
-  for (var i = 0; i < children.length; i++) {
-    cell = children[i];
-    pos += cell.getSpan();
-    if (pos >= colIdx) {
-      return cell;
-    }
-  }
-  return null;
-};
-
 ve.dm.TableRowNode.prototype.canBeMergedWith = function() {
   return false;
 };
+
+ve.dm.TableRowNode.static.createData = function(options) {
+  options = options || {};
+  var data = [];
+  var cellCount = options.cellCount || 1;
+  data.push({ type: 'tableRow'});
+  for (var i = 0; i < cellCount; i++) {
+    data = data.concat(ve.dm.TableCellNode.createData(options));
+  }
+  data.push({ type: '/tableRow'});
+  return data;
+};
+
+ve.dm.TableRowNode.prototype.onAttach = function(to) {
+  to.onStructureChange({ row: this });
+};
+
+ve.dm.TableRowNode.prototype.onDetach = function(from) {
+  from.onStructureChange({ row: this });
+};
+
+ve.dm.TableRowNode.prototype.onStructureChange = function(context) {
+  if ( this.parent ) {
+    context.row = this;
+    this.parent.onStructureChange(context);
+  }
+};
+
 
 /* Registration */
 

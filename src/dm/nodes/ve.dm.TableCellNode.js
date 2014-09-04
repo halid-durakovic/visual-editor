@@ -18,6 +18,12 @@
 ve.dm.TableCellNode = function VeDmTableCellNode() {
 	// Parent constructor
 	ve.dm.BranchNode.apply( this, arguments );
+
+  this.connect( this, {
+    'attach': 'onAttach',
+    'detach': 'onDetach',
+    'attributeChange': 'onAttributeChange'
+  } );
 };
 
 /* Inheritance */
@@ -65,8 +71,37 @@ ve.dm.TableCellNode.prototype.getSpan = function (rowOrCol) {
   return this.element.attributes[key] || 1;
 };
 
+ve.dm.TableCellNode.prototype.getStyle = function () {
+  return this.element.attributes.style || 'data';
+};
+
+ve.dm.TableCellNode.static.createData = function(options) {
+  options = options || {};
+  return [
+    {type: 'tableCell', 'attributes': { 'style': options.style || 'data' } },
+      {type: 'paragraph'},
+      {type: '/paragraph'},
+    {type: '/tableCell'}
+  ];
+};
+
 ve.dm.TableCellNode.prototype.canBeMergedWith = function() {
   return false;
+};
+
+ve.dm.TableCellNode.prototype.onAttach = function(to) {
+  to.onStructureChange({ cell: this });
+};
+
+ve.dm.TableCellNode.prototype.onDetach = function(from) {
+  from.onStructureChange({ cell: this });
+};
+
+ve.dm.TableCellNode.prototype.onAttributeChange = function(key) {
+  console.log('TableCellNode.onAttributeChange', arguments);
+  if ( this.parent && (key === 'colspan' || key === 'rowspan')) {
+    this.parent.onStructureChange({ cell: this });
+  }
 };
 
 /* Registration */
