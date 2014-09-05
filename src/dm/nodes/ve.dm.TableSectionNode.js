@@ -68,7 +68,7 @@ ve.dm.TableSectionNode.prototype.canBeMergedWith = function() {
 };
 
 ve.dm.TableSectionNode.prototype.onAttach = function(to) {
-	to.onStructureChange({ section: this });
+	if (to.onStructureChange) to.onStructureChange({ section: this });
 };
 
 ve.dm.TableSectionNode.prototype.onDetach = function(from) {

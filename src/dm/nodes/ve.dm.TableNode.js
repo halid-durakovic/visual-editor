@@ -41,7 +41,7 @@ ve.dm.TableNode.prototype.canBeMergedWith = function() {
 };
 
 ve.dm.TableNode.prototype.onStructureChange = function(context) {
-  this.emit('table-structure-changed', context);
+  this.emit('tableStructureChange', context);
 };
 
 /**

@@ -102,8 +102,21 @@ ve.dm.TableMatrix.prototype.update = function() {
   this.rowNodes = rowNodes;
 };
 
-ve.dm.TableMatrix.prototype.getRowNodeAt = function(row) {
+ve.dm.TableMatrix.prototype.getColumn = function(col) {
+  var cells, row;
+  cells = [];
+  for (row = 0; row < this.matrix.length; row++) {
+    cells.push(this.matrix[row][col]);
+  }
+  return cells;
+};
+
+ve.dm.TableMatrix.prototype.getRowNode = function(row) {
   return this.rowNodes[row];
+};
+
+ve.dm.TableMatrix.prototype.getRow = function(row) {
+  return this.matrix[row];
 };
 
 ve.dm.TableMatrix.prototype.lookupCell = function(rowNode, cellNode) {
@@ -120,6 +133,19 @@ ve.dm.TableMatrix.prototype.lookupCell = function(rowNode, cellNode) {
   }
   return cell;
 };
+
+ve.dm.TableMatrix.prototype.findClosestCell = function(cell) {
+  var col,
+    rowCells = this.matrix[cell.row];
+  for (col = cell.col; col >= 0; col--) {
+    if (rowCells[col].type === 'cell') return rowCells[col];
+  }
+  for (col = cell.col + 1; col < rowCells.length; col++) {
+    if (rowCells[col].type === 'cell') return rowCells[col];
+  }
+  return null;
+};
+
 
 ve.dm.TableMatrix.Cell = function Cell(node, row, col) {
   this.type = 'cell';

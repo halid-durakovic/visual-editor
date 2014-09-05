@@ -45,20 +45,8 @@ ve.dm.TableRowNode.prototype.canBeMergedWith = function() {
   return false;
 };
 
-ve.dm.TableRowNode.static.createData = function(options) {
-  options = options || {};
-  var data = [];
-  var cellCount = options.cellCount || 1;
-  data.push({ type: 'tableRow'});
-  for (var i = 0; i < cellCount; i++) {
-    data = data.concat(ve.dm.TableCellNode.createData(options));
-  }
-  data.push({ type: '/tableRow'});
-  return data;
-};
-
 ve.dm.TableRowNode.prototype.onAttach = function(to) {
-  to.onStructureChange({ row: this });
+  if (to.onStructureChange) to.onStructureChange({ row: this });
 };
 
 ve.dm.TableRowNode.prototype.onDetach = function(from) {
@@ -72,6 +60,17 @@ ve.dm.TableRowNode.prototype.onStructureChange = function(context) {
   }
 };
 
+ve.dm.TableRowNode.createData = function(options) {
+  options = options || {};
+  var data = [];
+  var cellCount = options.cellCount || 1;
+  data.push({ type: 'tableRow'});
+  for (var i = 0; i < cellCount; i++) {
+    data = data.concat(ve.dm.TableCellNode.static.createData(options));
+  }
+  data.push({ type: '/tableRow'});
+  return data;
+};
 
 /* Registration */
 

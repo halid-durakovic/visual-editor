@@ -87,6 +87,13 @@ ve.ce.TableNode.prototype.onSurfaceModelSelect = function(selection) {
  */
 ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
   var startCellContext, endCellContext;
+
+  if (!selection) {
+    this.startCell  = null;
+    this.endCell = null;
+    this.unfocus();
+  }
+
   if (selection.isBackwards()) {
     selection = selection.flip();
   }
@@ -238,8 +245,10 @@ ve.ce.TableNode.prototype.deleteTable = function() {
   surface.change( txs );
 };
 
-ve.ce.TableNode.BEFORE = -1;
-ve.ce.TableNode.AFTER = 1;
+ve.ce.TableNode.INSERT_POSITIONS = {
+  'before': -1,
+  'after': 1
+};
 
 /**
  *
@@ -252,21 +261,23 @@ ve.ce.TableNode.AFTER = 1;
  *
  * | C* | P** |,  | C | P* | P** |
  */
-ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, position ) {
-  var tableMatrix, pos, rect, index, refIndex, cells, refCells, rowNode,
-    offset, range, i, txs, updated, inserts, cell, refCell, data;
+ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, insertPosition ) {
+  var tableMatrix, pos, rect, index, refIndex, cells, refCells, rowNode, before,
+    offset, range, i, txs, updated, inserts, cell, refCell, data, style;
 
   tableMatrix = this.tableMatrix;
   rect = this.getSelectedRectangle();
-  pos = (position === ve.ce.TableNode.BEFORE) ? rect.start: rect.end;
+  before = (insertPosition === 'before');
+
+  pos = (before) ? rect.start: rect.end;
   // the index of the selected row or column
   index = pos[mode];
   // the index of the reference row or column
-  refIndex = index + position;
+  refIndex = index + (before ? -1 : 1);
   // cells of the selected row or column
   if (mode === 'row') {
     cells = tableMatrix.matrix[index];
-    refCells = tableMatrix.matrix[refIndex];
+    refCells = tableMatrix.matrix[refIndex] || [];
     rowNode = tableMatrix.getRowNode(index);
   } else {
     cells = tableMatrix.getColumn(index);
@@ -283,10 +294,12 @@ ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, position ) {
     refCell = refCells[i];
 
     // detect if span update is necessary
-    if (cell.type === 'placeholder' || refCell.type === 'placeholder') {
+    if (refCell && (cell.type === 'placeholder' || refCell.type === 'placeholder') ) {
       if (cell.node === refCell.node) {
+        cell = cell.owner || cell;
         if (!updated[cell.key]) {
-          txs.push(this.incrementSpan(cell));
+          txs.push(this.incrementSpan(cell, mode));
+          updated[cell.key] = true;
         }
         continue;
       }
@@ -301,24 +314,31 @@ ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, position ) {
       style: cells[0].node.getStyle()
     });
     range = rowNode.getOuterRange();
-    offset = (position === ve.ce.TableNode.BEFORE) ? range.start: range.end;
+    offset = before ? range.start: range.end;
     txs.push(ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data ));
   } else {
     // making sure that the inserts are in descending order
     inserts.sort(ve.dm.TableMatrix.Cell.sortDescending);
     for (i = 0; i < inserts.length; i++) {
       cell = inserts[i];
-      refCell = tableMatrix.findNextCell(cell);
-      range = refCell.getOuterRange();
-      if ( refCell.col < cell.col  || ( refCell.col === cell.col && position === ve.ce.TableNode.AFTER ) ) {
-        offset = range.end;
+      refCell = tableMatrix.findClosestCell(cell);
+      if (refCell) {
+        range = refCell.node.getOuterRange();
+        if ( refCell.col < cell.col  || ( refCell.col === cell.col && !before ) ) {
+          offset = range.end;
+        } else {
+          offset = range.start;
+        }
+        style = refCell.node.getStyle();
       } else {
-        offset = range.start;
+        range = rowNode.getRange();
+        offset = before ? range.start: range.end;
+        style = cells[0].node.getStyle();
       }
+      data = ve.dm.TableCellNode.createData({ style: style });
       txs.push(ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data ));
     }
   }
-
   this.surfaceModel.change(txs);
 };
 
@@ -337,405 +357,119 @@ ve.ce.TableNode.prototype.insertColumn = function ( position ) {
   this.insertRowOrCol('col', position);
 };
 
-// ve.ce.TableNode.prototype.insertRow = function ( mode ) {
-//   var surface = this.surfaceModel,
-//     table = this,
-//     offset, offsetAfterInsertion,
-//     refRow, refRowNode, refCells, refCell, newRowIndex, key,
-//     i, rowSpan, newRowSpan,
-//     txs, data, adapted,
-//     cellMatrix = table.getCellMatrix();
+ve.ce.TableNode.prototype.deleteRowsOrColumns = function ( mode ) {
+  var rect, cells, row, col, i, cell, key, minIndex, maxIndex,
+    span, startRow, startCol, endRow, endCol, rowNode,
+    txs, adapted, actions;
 
-//   // retrieve the reference row which is used to determine whether
-//   // new cells need to be or the rowspan of an existing one needs to be updated
-//   refRow = (mode === 'before') ? table.startCell.row : table.endCell.row;
-//   refRowNode = table.getRowNodeAt(refRow);
-//   refCells = cellMatrix[refRow];
-//   newRowIndex = (mode === 'before') ? refRow - 1 : refRow + 1;
-//   offset = (mode === 'before') ? refRowNode.getOuterRange().start : refRowNode.getOuterRange().end;
-
-//   txs = [];
-//   data = [];
-//   adapted = {};
-
-//   // There are two different cases:
-//   // 1. The new row is within the spanning range of the node (or the owner node for placeholders).
-//   //    The rowspan attribute of the node must be adapted (only once).
-//   // 2. The new row is outside the spanning range of the node.
-//   //    A new node must be inserted.
-
-//   data.push({ type: 'tableRow'});
-//   for (i = 0; i < refCells.length; i++) {
-//     refCell = (refCells[i].type === 'placeholder') ? refCells[i].owner : refCells[i];
-//     key = refCell.row + "_" + refCell.col;
-//     rowSpan = refCell.getModel().getSpan('row');
-//     newRowSpan = null;
-//     // skip nodes that have been adapted already
-//     if (adapted[key]) {
-//       continue;
-//     }
-//     // check if the node spans over the inserted row and needs to be adapted
-//     if (newRowIndex > refCell.row && newRowIndex < refCell.row + rowSpan) {
-//       newRowSpan = rowSpan + 1;
-//     }
-//     if (newRowSpan) {
-//       txs.push( ve.dm.Transaction.newFromAttributeChanges(
-//           surface.documentModel, refCell.getModel().getOuterRange().start,
-//           {
-//             'rowspan': newRowSpan
-//           }
-//         )
-//       );
-//       adapted[key] = true;
-//     } else {
-//       this.createTableCellData({ data: data, style: refCell.getModel().getAttribute('style') });
-//     }
-//   }
-//   data.push({ type: '/tableRow'});
-
-//   txs.push(ve.dm.Transaction.newFromInsertion( surface.documentModel, offset, data ));
-
-//   // HACK: don't know how to compute valid cursor positions in advance. Thus doing this manually.
-//   offsetAfterInsertion = offset + 3;
-//   surface.change( txs, new ve.Range(offsetAfterInsertion));
-// };
-
-/**
- * Deletes all selected rows of the currently focussed table.
- *
- * There are two use-cases:
- * 1. A deleted row contains a placeholder, not the actual cell.
- *    In this case, the rowspan of the cell has to be adapted.
- * 2. A deleted row contains a row-spanning cell, which results in an orphaned
- *    placeholder. To keep a proper shape of the spanned row, a new cell must
- *    be inserted.
- */
-ve.ce.TableNode.prototype.deleteRow = function () {
-  var surface, table, startCell, endCell,
-      minRow, maxRow, row, col,
-      cellMatrix, cells, cell,
-      i, data, rowNode, key,
-      txs, reduced, orphans;
-
-  surface = this.surfaceModel;
-  table = this;
-  cellMatrix = table.getCellMatrix();
-  startCell = table.startCell;
-  endCell = table.endCell;
-  minRow = Math.min(startCell.row, endCell.row);
-  maxRow = Math.max(startCell.row, endCell.row);
-
-  // Collect all transactions
+  rect = this.getSelectedRectangle();
+  cells = [];
   txs = [];
-  reduced = {};
-  orphans = [];
+  adapted = {};
+  actions = [];
+  minIndex = rect.start[mode];
+  maxIndex = rect.end[mode];
 
-  // Creates a transaction to decrease the row span of a cell by one
-  function decreaseRowSpan(cell) {
-    var newRowSpan,
-        rowSpan = cell.getModel().getSpan('row');
-    // Note: asserting cell.row < minRow
-    newRowSpan = (minRow - cell.row) + Math.max(0, cell.row + rowSpan - 1 - maxRow);
-    txs.push( ve.dm.Transaction.newFromAttributeChanges(
-        surface.documentModel, cell.getOuterRange().start,
-        {
-          'rowspan': newRowSpan
-        }
-      )
-    );
-  }
-
-  // Adds specifications for new nodes that will be inserted replacing orphaned placeholders.
-  // Note: this has to be done in two passes, to have transactions in correct order (larger offsets first).
-  function recordOrphans(cell) {
-    var row, col, maxSpanRow, maxSpanCol, cellSpec, node;
-    maxSpanRow = cell.row + cell.getModel().getSpan('row') - 1;
-    maxSpanCol = cell.col + cell.getModel().getSpan('col') - 1;
-    // For every orphan we determine an insert position by looking for
-    // the next real cell node in the same row
-    for (row = maxRow + 1; row <= maxSpanRow; row++) {
-      for (col = cell.col; col <= maxSpanCol; col++) {
-        cellSpec = null;
-        // look for the closest predecessor not being a placeholder
-        for (i=col-1; i >= 0; i--) {
-          node = cellMatrix[row][i];
-          if (node.type !== 'placeholder') {
-            cellSpec = {
-              // insert after
-              offset: node.getOuterRange().end,
-              style: node.getModel().getAttribute('style')
-            };
-            break;
-          }
-        }
-        // ... then for for the closest successor
-        if (!cellSpec) {
-          for (i=col+1; i < cellMatrix[row].length; i++) {
-            node = cellMatrix[row][i];
-            if (node.type !== 'placeholder') {
-              cellSpec = {
-                // insert before
-                offset: node.getOuterRange().start,
-                style: node.getModel().getAttribute('style')
-              };
-              break;
-            }
-          }
-        }
-        // if there is no real cell nodes at all use the row node to get an insert position
-        if (!cellSpec) {
-          var rowNode = table.getRowNodeAt(row);
-          cellSpec = {
-            offset: rowNode.getRange().start,
-            style: 'data' // TODO where to take this from?
-          };
-        }
-        orphans.push(cellSpec);
-      }
+  if (mode === 'row') {
+    for (row = minIndex; row <= maxIndex; row++) {
+      cells = cells.concat(this.tableMatrix.getRow(row));
+    }
+  } else {
+    for (col = minIndex; col <= maxIndex; col++) {
+      cells = cells.concat(this.tableMatrix.getColumn(col));
     }
   }
 
-  // Adapt the model considering existing rowspan attributes.
-  //
-  // There are essentially two cases:
-  // 1. A placeholder is removed for a cell with rowspan,
-  // 2. A cell with rowspan is removed. In this case, a new elements have to replace orphaned
-  //    placeholders.
-  for (row = maxRow; row >= minRow; row--) {
-    // reduce rowspan for owner of placeholder cells
-    cells = cellMatrix[row];
-    for (col = 0; col < cells.length; col++) {
-      cell = cells[col];
-      if (cell.type === 'placeholder' && cell.owner.row < minRow) {
-        cell = cell.owner;
-        key = cell.row + '_' + cell.col;
-        if (!reduced[key]) {
-          decreaseRowSpan(cell, minRow);
-          reduced[key] = true;
-        }
-      } else if (cell.type === 'tableCell' && cell.row + cell.getModel().getSpan('row') - 1  > maxRow) {
-        recordOrphans(cell);
+  for (i = 0; i < cells.length; i++) {
+    cell = cells[i];
+
+    if (cell.type === 'placeholder') {
+      key = cell.owner.key;
+      if (!adapted[key]) {
+        txs.push(this.decreaseSpan(cell, mode, rect));
+        adapted[key] = true;
       }
+      continue;
+    }
+
+    span = cell.node.getSpan(mode);
+    if (cell[mode] + span - 1  > maxIndex) {
+      // add inserts for orphaned place holders
+      startRow = (mode === 'col') ? cell.row     : maxIndex + 1;
+      startCol = (mode === 'col') ? maxIndex + 1 : cell.col;
+      endRow = cell.row + cell.node.getSpan('row') - 1;
+      endCol = cell.col + cell.node.getSpan('col') - 1;
+
+      for (row = startRow; row <= endRow; row++) {
+        for (col = startCol; col <= endCol; col++) {
+          actions.push({ action: 'insert', cell: this.tableMatrix.matrix[row][col] });
+        }
+      }
+    }
+
+    if (mode === 'col') {
+      actions.push({action: 'delete', cell: cell });
     }
   }
 
-  // Sort the orphan specs so that they are in proper order (descending offsets)
-  function sortByOffsetDescending(a, b) {
-    return b.offset - a.offset;
-  }
-  orphans.sort(sortByOffsetDescending);
+  actions.sort(function(a, b) {
+    return ve.dm.TableMatrix.Cell.sortDescending(a.cell, b.cell);
+  });
 
-  // Create transactions for inserting cells for orphaned placeholders
-  for (i = 0; i < orphans.length; i++) {
-    data = this.createTableCellData({ style: orphans[i].style });
-    txs.push(
-      ve.dm.Transaction.newFromInsertion( surface.documentModel, orphans[i].offset, data )
-    );
+  if (mode === 'row') {
+    // only inserts in this case
+    for (i = 0; i < actions.length; i++) {
+      txs.push(this.replaceOrphanedPlaceholder(actions[i].cell));
+    }
+    for (row = rect.end.row; row >= rect.start.row; row--) {
+      rowNode = this.tableMatrix.getRowNode(row);
+      txs.push( ve.dm.Transaction.newFromRemoval( this.surfaceModel.documentModel, rowNode.getOuterRange() ) );
+    }
+  } else {
+    for (i = 0; i < actions.length; i++) {
+      if (actions[i].action === 'insert') {
+        txs.push(this.replaceOrphanedPlaceholder(actions[i].cell));
+      } else {
+        txs.push( ve.dm.Transaction.newFromRemoval( this.surfaceModel.documentModel, actions[i].cell.node.getOuterRange() ) );
+      }
+    }
   }
-  // Delete row nodes in reverse order
-  for (row = maxRow; row >= minRow; row--) {
-    rowNode = this.getRowNodeAt(row);
-    txs.push( ve.dm.Transaction.newFromRemoval( surface.documentModel, rowNode.getOuterRange() ) );
-  }
-  surface.change(txs);
+  this.surfaceModel.change(txs);
 };
 
-// TODO: not yet working.
-//  - left insert with span not yet working: example1, J, insert left
-//  - example1, AE, insert right
-//  - delet col: example1, J, del col
-// ve.ce.TableNode.prototype.insertColumn = function (mode) {
-//   var surface = this.surfaceModel,
-//     table = this,
-//     offset,
-//     refCol, refCells, refCell, newColIndex, key,
-//     txs, data, adapted,
-//     i, colSpan, newColSpan;
+ve.ce.TableNode.prototype.decreaseSpan = function ( cell, mode, rect ) {
+  var newSpan, span, data, attr;
+  attr = (mode === 'row') ? 'rowspan' : 'colspan';
+  span = cell.node.getSpan(mode);
+  data = {};
+  newSpan = (rect.start[mode] - cell[mode]) + Math.max(0, cell[mode] + span - 1 - rect.end[mode]);
+  data[attr] = newSpan;
+  return ve.dm.Transaction.newFromAttributeChanges( this.surfaceModel.documentModel, cell.node.getOuterRange().start, data );
+};
 
-//   // retrieve the reference row which is used to determine whether
-//   // new cells need to be or the rowspan of an existing one needs to be updated
-//   if (mode === 'before') {
-//     refCol = Math.min(table.startCell.col, table.endCell.col);
-//   } else {
-//     refCol = Math.max(table.startCell.col, table.endCell.col);
-//   }
-//   refCells = table.getColumnCells(refCol);
-//   newColIndex = (mode === 'before') ? refCol - 1 : refCol + 1;
 
-//   txs = [];
-//   adapted = {};
+ve.ce.TableNode.prototype.replaceOrphanedPlaceholder = function ( cell ) {
+  var refCell, range, offset, data, style;
+  refCell = this.tableMatrix.findClosestCell(cell);
+  if (refCell) {
+    range = refCell.node.getOuterRange();
+    offset = (cell.col < refCell.col) ? range.start : range.end;
+    style = refCell.node.getStyle();
+  } else {
+    range = this.tableMatrix.getRowNode(cell.row).getRange();
+    offset = range.start;
+    style = cell.node.getStyle();
+  }
+  data = ve.dm.TableCellNode.createData({ style: style });
+  return ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data );
+};
 
-//   // There are two different cases:
-//   // 1. The new col is within the spanning range of the node (or the owner node for placeholders).
-//   //    The colwspan attribute of the node must be adapted (only once).
-//   // 2. The new col is outside the spanning range of the node.
-//   //    A new node must be inserted.
-
-//   for (i = refCells.length - 1; i >= 0; i--) {
-//     refCell = (refCells[i].type === 'placeholder') ? refCells[i].owner : refCells[i];
-//     key = refCell.row + "_" + refCell.col;
-//     colSpan = refCell.getModel().getSpan('col');
-//     newColSpan = null;
-//     // skip nodes that have been adapted already
-//     if (adapted[key]) {
-//       continue;
-//     }
-//     // check if the node spans over the inserted row and needs to be adapted
-//     if (newColIndex > refCell.col && newColIndex < refCell.col + colSpan) {
-//       newColSpan = colSpan + 1;
-//     }
-//     if (newColSpan) {
-//       txs.push( ve.dm.Transaction.newFromAttributeChanges(
-//           surface.documentModel, refCell.getModel().getOuterRange().start,
-//           {
-//             'colspan': newColSpan
-//           }
-//         )
-//       );
-//       adapted[key] = true;
-//     } else {
-//       offset = (mode === 'before') ? refCell.getModel().getOuterRange().start : refCell.getModel().getOuterRange().end;
-//       data = this.createTableCellData({ style: refCell.getModel().getAttribute('style') });
-//       txs.push(
-//         ve.dm.Transaction.newFromInsertion( surface.documentModel, offset, data )
-//       );
-//     }
-//   }
-
-//   surface.change( txs);
-// };
+ve.ce.TableNode.prototype.deleteRow = function () {
+  this.deleteRowsOrColumns('row');
+};
 
 ve.ce.TableNode.prototype.deleteColumn = function () {
-  var surface, table, startCell, endCell,
-      minCol, maxCol, maxRow, row, col,
-      cellMatrix, cell,
-      i, data, key,
-      txs, reduced, orphans, removals;
-
-  surface = this.surfaceModel;
-  table = this;
-  cellMatrix = table.getCellMatrix();
-  startCell = table.startCell;
-  endCell = table.endCell;
-  minCol = Math.min(startCell.col, endCell.col);
-  maxCol = Math.max(startCell.col, endCell.col);
-  maxRow = cellMatrix.length - 1;
-
-  // Collect all transactions
-  txs = [];
-  reduced = {};
-  orphans = [];
-  removals = [];
-
-  // Creates a transaction to decrease the row span of a cell by one
-  function decreaseColSpan(cell) {
-    var newColSpan,
-        colSpan = cell.getModel().getSpan('col');
-    // Note: asserting cell.row < minRow
-    newColSpan = (minCol - cell.col) + Math.max(0, cell.col + colSpan - 1 - maxCol);
-    txs.push( ve.dm.Transaction.newFromAttributeChanges(
-        surface.documentModel, cell.getOuterRange().start,
-        {
-          'colspan': newColSpan
-        }
-      )
-    );
-  }
-
-  // Adds specifications for new nodes that will be inserted replacing orphaned placeholders.
-  // Note: this has to be done in two passes, to have transactions in correct order (larger offsets first).
-  function recordOrphans(cell) {
-    var row, col, maxSpanRow, maxSpanCol, cellSpec, node;
-    maxSpanRow = cell.row + cell.getModel().getSpan('row') - 1;
-    maxSpanCol = cell.col + cell.getModel().getSpan('col') - 1;
-    // For every orphan we determine an insert position by looking for
-    // the next real cell node in the same row
-    for (row = cell.row; row <= maxSpanRow; row++) {
-      for (col = maxCol + 1; col <= maxSpanCol; col++) {
-        cellSpec = null;
-        // look for the closest predecessor not being a placeholder
-        for (i=col-1; i >= 0; i--) {
-          node = cellMatrix[row][i];
-          if (node.type !== 'placeholder') {
-            cellSpec = {
-              // insert after
-              offset: node.getOuterRange().end,
-              style: node.getModel().getAttribute('style')
-            };
-            break;
-          }
-        }
-        // ... then for for the closest successor
-        if (!cellSpec) {
-          for (i=col+1; i < cellMatrix[row].length; i++) {
-            node = cellMatrix[row][i];
-            if (node.type !== 'placeholder') {
-              cellSpec = {
-                // insert before
-                offset: node.getOuterRange().start,
-                style: node.getModel().getAttribute('style')
-              };
-              break;
-            }
-          }
-        }
-        // if there is no real cell nodes at all use the row node to get an insert position
-        if (!cellSpec) {
-          var rowNode = table.getRowNodeAt(row);
-          cellSpec = {
-            offset: rowNode.getRange().start,
-            style: 'data' // TODO where to take this from?
-          };
-        }
-        orphans.push(cellSpec);
-      }
-    }
-  }
-
-  // Adapt the model considering existing rowspan attributes.
-  //
-  // There are essentially two cases:
-  // 1. A placeholder is removed for a cell with rowspan,
-  // 2. A cell with rowspan is removed. In this case, a new elements have to replace orphaned
-  //    placeholders.
-  for (col = maxCol; col >= minCol; col--) {
-    // reduce rowspan for owner of placeholder cells
-    for (row = maxRow; row >= 0; row--) {
-      cell = cellMatrix[row][col];
-      if (cell.type === 'placeholder' && cell.owner.col < minCol) {
-        cell = cell.owner;
-        key = cell.row + '_' + cell.col;
-        if (!reduced[key]) {
-          decreaseColSpan(cell, minCol);
-          reduced[key] = true;
-        }
-      } else if (cell.type === 'tableCell') {
-        if (cell.col + cell.getModel().getSpan('col') - 1  > maxCol) {
-          recordOrphans(cell);
-        }
-        removals.push(cell);
-      }
-    }
-  }
-
-  // Sort the orphan specs so that they are in proper order (descending offsets)
-  function sortByOffsetDescending(a, b) {
-    return b.offset - a.offset;
-  }
-  orphans.sort(sortByOffsetDescending);
-
-  // Create transactions for inserting cells for orphaned placeholders
-  for (i = 0; i < orphans.length; i++) {
-    data = this.createTableCellData({ style: orphans[i].style });
-    txs.push(
-      ve.dm.Transaction.newFromInsertion( surface.documentModel, orphans[i].offset, data )
-    );
-  }
-  // Delete col nodes in reverse order
-  for (i = 0; i < removals.length; i++) {
-    txs.push( ve.dm.Transaction.newFromRemoval( surface.documentModel, removals[i].getOuterRange() ) );
-  }
-  surface.change(txs);
+  this.deleteRowsOrColumns('col');
 };
 
 /* Static Properties */

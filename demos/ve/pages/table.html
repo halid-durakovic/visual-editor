@@ -1,10 +1,57 @@
 <h1>Tables</h1>
 
+<h2>Simple table</h2>
+
+<p>Simple tables come without sections, and only have rows.</p>
+
+<table border="1">
+  <tr>
+    <td>A</td><td>B</td><td>C</td><td>D</td>
+  </tr>
+  <tr>
+    <td>E</td><td>F</td><td>G</td><td>H</td>
+  </tr>
+  <tr>
+    <td>I</td><td>J</td><td>K</td><td>L</td>
+  </tr>
+  <tr>
+    <td>M</td><td>N</td><td>O</td><td>P</td>
+  </tr>
+</table>
+
 <h2>Merged cells</h2>
 
 <p>Horizontally merged cells:</p>
+
 <table>
   <tbody>
+    <tr>
+      <td>A</td><td colspan=2>B C</td><td>D</td>
+    </tr>
+    <tr>
+      <td>E</td><td>F</td><td>G</td><td>H</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<table>
+  <tbody>
+    <tr>
+      <td>A</td><td colspan=3>B C D</td>
+    </tr>
+    <tr>
+      <td>E</td><td>F</td><td>G</td><td>H</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<table>
+  <tbody>
+    <tr>
+      <td>1</td><td>2</td><td>3</td><td>4</td>
+    </tr>
     <tr>
       <td>A</td><td colspan=2>B C</td><td>D</td>
     </tr>
@@ -31,13 +78,27 @@
 <table>
   <tbody>
     <tr>
-      <td>A</td><td rowspan=3 colspan=2>B C<br>F G<br>J K</td><td>D</td>
+      <td rowspan=3>A<br>C<br>E</td><td>B</td>
+    </tr>
+    <tr>
+      <td>D</td>
+    </tr>
+    <tr>
+      <td>F</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <tbody>
+    <tr>
+      <td>A</td><td rowspan=2 colspan=2>B C<br>F G</td><td>D</td>
     </tr>
     <tr>
       <td>E</td><td>H</td>
     </tr>
     <tr>
-      <td>I</td><td>L</td>
+      <td>I</td><td>J</td><td>K</td><td>L</td>
     </tr>
   </tbody>
 </table>

@@ -75,22 +75,12 @@ ve.dm.TableCellNode.prototype.getStyle = function () {
   return this.element.attributes.style || 'data';
 };
 
-ve.dm.TableCellNode.static.createData = function(options) {
-  options = options || {};
-  return [
-    {type: 'tableCell', 'attributes': { 'style': options.style || 'data' } },
-      {type: 'paragraph'},
-      {type: '/paragraph'},
-    {type: '/tableCell'}
-  ];
-};
-
 ve.dm.TableCellNode.prototype.canBeMergedWith = function() {
   return false;
 };
 
 ve.dm.TableCellNode.prototype.onAttach = function(to) {
-  to.onStructureChange({ cell: this });
+  if (to.onStructureChange) to.onStructureChange({ cell: this });
 };
 
 ve.dm.TableCellNode.prototype.onDetach = function(from) {
@@ -102,6 +92,16 @@ ve.dm.TableCellNode.prototype.onAttributeChange = function(key) {
   if ( this.parent && (key === 'colspan' || key === 'rowspan')) {
     this.parent.onStructureChange({ cell: this });
   }
+};
+
+ve.dm.TableCellNode.createData = function(options) {
+  options = options || {};
+  return [
+    {type: 'tableCell', 'attributes': { 'style': options.style || 'data' } },
+      {type: 'paragraph'},
+      {type: '/paragraph'},
+    {type: '/tableCell'}
+  ];
 };
 
 /* Registration */
