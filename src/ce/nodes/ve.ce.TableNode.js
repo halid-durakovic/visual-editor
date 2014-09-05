@@ -203,22 +203,42 @@ ve.ce.TableNode.prototype.getCellContextForOffset = function ( offset ) {
 };
 
 ve.ce.TableNode.prototype.getSelectedRectangle = function() {
+  var rect, minRow, maxRow, minCol, maxCol, cell, matrix;
   if (!this.startCell || !this.endCell) return null;
-  return {
-    start: { row: Math.min(this.startCell.row, this.endCell.row), col: Math.min(this.startCell.col, this.endCell.col)},
-    end: { row: Math.max(this.startCell.row, this.endCell.row), col: Math.max(this.startCell.col, this.endCell.col) }
+  matrix = this.tableMatrix.getMatrix();
+  minRow = Math.min(this.startCell.row, this.endCell.row);
+  maxRow = Math.max(this.startCell.row, this.endCell.row);
+  minCol = Math.min(this.startCell.col, this.endCell.col);
+  maxCol = Math.max(this.startCell.col, this.endCell.col);
+  rect = {
+    start: { row: minRow , col: minCol },
+    end: { row: maxRow, col: maxCol }
   };
+  for (var row = minRow; row <= maxRow; row++) {
+    for (var col = minCol; col <= maxCol; col++) {
+      cell = matrix[row][col];
+      if (cell.type === 'placeholder') {
+        cell = cell.owner;
+      }
+      rect.start.row = Math.min(rect.start.row, cell.row);
+      rect.end.row = Math.max(rect.end.row, cell.row + cell.node.getSpan('row') - 1);
+      rect.start.col = Math.min(rect.start.col, cell.col);
+      rect.end.col = Math.max(rect.end.col, cell.col + cell.node.getSpan('col') - 1);
+    }
+  }
+  return rect;
 };
 
 // NOTE: this is only used in CE world for visual stuff
 ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
-  var cells, i, j, rect, cell, ceCellNode, offset;
+  var cells, i, j, rect, cell, ceCellNode, offset, matrix;
   cells = [];
   rect = this.getSelectedRectangle();
+  matrix = this.tableMatrix.getMatrix();
   if (rect) {
     for (i = rect.start.row; i <= rect.end.row; i++) {
       for (j = rect.start.col; j <= rect.end.col; j++) {
-        cell = this.tableMatrix.matrix[i][j];
+        cell = matrix[i][j];
         if (cell.type === 'cell') {
           offset = cell.node.getRange().start - this.model.getRange().start;
           ceCellNode = this.getNodeFromOffset(offset);
@@ -262,12 +282,12 @@ ve.ce.TableNode.INSERT_POSITIONS = {
  * | C* | P** |,  | C | P* | P** |
  */
 ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, insertPosition ) {
-  var tableMatrix, pos, rect, index, refIndex, cells, refCells, rowNode, before,
+  var matrix, pos, rect, index, refIndex, cells, refCells, rowNode, before,
     offset, range, i, txs, updated, inserts, cell, refCell, data, style;
 
-  tableMatrix = this.tableMatrix;
   rect = this.getSelectedRectangle();
   before = (insertPosition === 'before');
+  matrix = this.tableMatrix.getMatrix();
 
   pos = (before) ? rect.start: rect.end;
   // the index of the selected row or column
@@ -276,13 +296,13 @@ ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, insertPosition ) {
   refIndex = index + (before ? -1 : 1);
   // cells of the selected row or column
   if (mode === 'row') {
-    cells = tableMatrix.matrix[index];
-    refCells = tableMatrix.matrix[refIndex] || [];
-    rowNode = tableMatrix.getRowNode(index);
+    cells = matrix[index];
+    refCells = matrix[refIndex] || [];
+    rowNode = this.tableMatrix.getRowNode(index);
   } else {
-    cells = tableMatrix.getColumn(index);
-    refCells = tableMatrix.getColumn(refIndex);
-    rowNode = tableMatrix.getRowNode(pos.row);
+    cells = this.tableMatrix.getColumn(index);
+    refCells = this.tableMatrix.getColumn(refIndex);
+    rowNode = this.tableMatrix.getRowNode(pos.row);
   }
 
   txs = [];
@@ -321,7 +341,7 @@ ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, insertPosition ) {
     inserts.sort(ve.dm.TableMatrix.Cell.sortDescending);
     for (i = 0; i < inserts.length; i++) {
       cell = inserts[i];
-      refCell = tableMatrix.findClosestCell(cell);
+      refCell = this.tableMatrix.findClosestCell(cell);
       if (refCell) {
         range = refCell.node.getOuterRange();
         if ( refCell.col < cell.col  || ( refCell.col === cell.col && !before ) ) {
@@ -358,7 +378,7 @@ ve.ce.TableNode.prototype.insertColumn = function ( position ) {
 };
 
 ve.ce.TableNode.prototype.deleteRowsOrColumns = function ( mode ) {
-  var rect, cells, row, col, i, cell, key, minIndex, maxIndex,
+  var rect, cells, row, col, i, cell, key, minIndex, maxIndex, matrix,
     span, startRow, startCol, endRow, endCol, rowNode,
     txs, adapted, actions;
 
@@ -369,6 +389,7 @@ ve.ce.TableNode.prototype.deleteRowsOrColumns = function ( mode ) {
   actions = [];
   minIndex = rect.start[mode];
   maxIndex = rect.end[mode];
+  matrix = this.tableMatrix.getMatrix();
 
   if (mode === 'row') {
     for (row = minIndex; row <= maxIndex; row++) {
@@ -402,7 +423,7 @@ ve.ce.TableNode.prototype.deleteRowsOrColumns = function ( mode ) {
 
       for (row = startRow; row <= endRow; row++) {
         for (col = startCol; col <= endCol; col++) {
-          actions.push({ action: 'insert', cell: this.tableMatrix.matrix[row][col] });
+          actions.push({ action: 'insert', cell: matrix[row][col] });
         }
       }
     }

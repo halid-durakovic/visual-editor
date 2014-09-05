@@ -33,23 +33,22 @@ ve.dm.TableMatrix = function VeDmTableMatrix(tableNode) {
   OO.EventEmitter.call(this);
 
   this.table = tableNode;
-  this.matrix = null;
-  this.rowNodes = null;
+
+  // Do not access these directly as they get invalidated on structural changes
+  // Use 'getMatrix()' and 'getRowNodes()' instead.
+  this._matrix = null;
+  this._rowNodes = null;
 
   tableNode.connect( this, {
     'tableStructureChange': 'onTableStructureChange'
   });
-
-  this.update();
 };
 
 OO.mixinClass( ve.dm.TableMatrix, OO.EventEmitter );
 
 ve.dm.TableMatrix.prototype.onTableStructureChange = function( /* context */ ) {
-  // TODO: we could try to update the matrix incrementally
-  // but for sake of simplicity this is not done yet, instead recreated completely
-  console.log('Recreating table matrix.');
-  this.update();
+  this._matrix = null;
+  this._rowNodes = null;
 };
 
 ve.dm.TableMatrix.prototype.destroy = function() {
@@ -98,33 +97,48 @@ ve.dm.TableMatrix.prototype.update = function() {
     }
   }
 
-  this.matrix = matrix;
-  this.rowNodes = rowNodes;
+  this._matrix = matrix;
+  this._rowNodes = rowNodes;
 };
 
 ve.dm.TableMatrix.prototype.getColumn = function(col) {
-  var cells, row;
+  var cells, row,
+    matrix = this.getMatrix();
   cells = [];
-  for (row = 0; row < this.matrix.length; row++) {
-    cells.push(this.matrix[row][col]);
+  for (row = 0; row < matrix.length; row++) {
+    cells.push(matrix[row][col]);
   }
   return cells;
 };
 
 ve.dm.TableMatrix.prototype.getRowNode = function(row) {
-  return this.rowNodes[row];
+  var rowNodes = this.getRowNodes();
+  return rowNodes[row];
 };
 
 ve.dm.TableMatrix.prototype.getRow = function(row) {
-  return this.matrix[row];
+  var matrix = this.getMatrix();
+  return matrix[row];
+};
+
+ve.dm.TableMatrix.prototype.getMatrix = function() {
+  if (!this._matrix) this.update();
+  return this._matrix;
+};
+
+ve.dm.TableMatrix.prototype.getRowNodes = function() {
+  if (!this._rowNodes) this.update();
+  return this._rowNodes;
 };
 
 ve.dm.TableMatrix.prototype.lookupCell = function(rowNode, cellNode) {
-  var row, col, cell, rowCells;
-  row = this.rowNodes.indexOf(rowNode);
+  var row, col, cell, rowCells,
+    matrix = this.getMatrix(),
+    rowNodes = this.getRowNodes();
+  row = rowNodes.indexOf(rowNode);
   if (row < 0) return null;
   cell = null;
-  rowCells = this.matrix[row];
+  rowCells = matrix[row];
   for (col = 0; col < rowCells.length; col++) {
     cell = rowCells[col];
     if (cell.node === cellNode) {
@@ -135,8 +149,9 @@ ve.dm.TableMatrix.prototype.lookupCell = function(rowNode, cellNode) {
 };
 
 ve.dm.TableMatrix.prototype.findClosestCell = function(cell) {
-  var col,
-    rowCells = this.matrix[cell.row];
+  var col, rowCells,
+    matrix = this.getMatrix();
+  rowCells = matrix[cell.row];
   for (col = cell.col; col >= 0; col--) {
     if (rowCells[col].type === 'cell') return rowCells[col];
   }

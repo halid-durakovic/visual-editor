@@ -66,7 +66,7 @@ ve.dm.TableRowNode.createData = function(options) {
   var cellCount = options.cellCount || 1;
   data.push({ type: 'tableRow'});
   for (var i = 0; i < cellCount; i++) {
-    data = data.concat(ve.dm.TableCellNode.static.createData(options));
+    data = data.concat(ve.dm.TableCellNode.createData(options));
   }
   data.push({ type: '/tableRow'});
   return data;
