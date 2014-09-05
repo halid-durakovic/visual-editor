@@ -397,7 +397,7 @@ ve.ce.TableNode.prototype.deleteRowsOrColumns = function ( mode ) {
     if (cell.type === 'placeholder') {
       key = cell.owner.key;
       if (!adapted[key]) {
-        txs.push(this.decreaseSpan(cell, mode, rect));
+        txs.push(this.decreaseSpan(cell.owner, mode, rect));
         adapted[key] = true;
       }
       continue;
