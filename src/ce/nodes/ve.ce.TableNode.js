@@ -207,25 +207,15 @@ ve.ce.TableNode.prototype.getSelectedRectangle = function() {
   if (!this.startCell || !this.endCell) return null;
   matrix = this.tableMatrix.getMatrix();
   minRow = Math.min(this.startCell.row, this.endCell.row);
-  maxRow = Math.max(this.startCell.row, this.endCell.row);
+  maxRow = Math.max(this.startCell.row + this.startCell.node.getSpan('row') - 1,
+    this.endCell.row  + this.endCell.node.getSpan('row') - 1);
   minCol = Math.min(this.startCell.col, this.endCell.col);
-  maxCol = Math.max(this.startCell.col, this.endCell.col);
+  maxCol = Math.max(this.startCell.col + this.startCell.node.getSpan('col') - 1,
+    this.endCell.col  + this.endCell.node.getSpan('col') - 1);
   rect = {
     start: { row: minRow , col: minCol },
     end: { row: maxRow, col: maxCol }
   };
-  for (var row = minRow; row <= maxRow; row++) {
-    for (var col = minCol; col <= maxCol; col++) {
-      cell = matrix[row][col];
-      if (cell.type === 'placeholder') {
-        cell = cell.owner;
-      }
-      rect.start.row = Math.min(rect.start.row, cell.row);
-      rect.end.row = Math.max(rect.end.row, cell.row + cell.node.getSpan('row') - 1);
-      rect.start.col = Math.min(rect.start.col, cell.col);
-      rect.end.col = Math.max(rect.end.col, cell.col + cell.node.getSpan('col') - 1);
-    }
-  }
   return rect;
 };
 
