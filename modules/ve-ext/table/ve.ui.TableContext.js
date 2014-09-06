@@ -12,17 +12,13 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
 
   this.surface = surface;
 
-  this.tableNodes = [];
+  // the currently focussed ve.ce.TableNode instance
   this.focussedTable = null;
 
-  // update the overlay when the window is resized
-  var self = this;
-  $( window ).resize(function() {
-    window.setTimeout(function() {
-      self.update();
-      self.computeSelectedArea();
-    }, 0);
-  } );
+  // Registry for all table nodes wihtin this surface
+  // Table nodes are added and removed by listening to custom events 'tableNodeCreated'
+  // and 'tableNodeRemoved' emitted by ve.ce.TableNode.
+  this.tableNodes = [];
 
   // Collect all existing table nodes
   surface.view.documentView.getDocumentNode().traversePreOrder(function(n) {
@@ -69,9 +65,17 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
   surfaceModel.connect(this, { 'documentUpdate': 'onDocumentUpdate' });
   surfaceModel.connect( this, { 'select': 'onSurfaceModelSelect' });
 
-  surfaceModel.connect(this, { 'table-node-created': 'onTableNodeCreated' });
-  surfaceModel.connect(this, { 'table-node-removed': 'onTableNodeRemoved' });
+  surfaceModel.connect(this, { 'tableNodeCreated': 'onTableNodeCreated' });
+  surfaceModel.connect(this, { 'tableNodeRemoved': 'onTableNodeRemoved' });
 
+  // update the overlay when the window is resized
+  $( window ).resize( ve.bind( function() {
+      // TODO: why delayed?
+      window.setTimeout(function() {
+        this.update();
+        this.computeSelectedArea();
+      }, 0);
+    }, this) );
 };
 
 OO.inheritClass( ve.ui.TableContext, OO.ui.Element );

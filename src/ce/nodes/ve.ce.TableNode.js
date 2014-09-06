@@ -21,8 +21,13 @@ ve.ce.TableNode = function VeCeTableNode( model, config ) {
 
   this.focussed = false;
 
-  this.startCell = null;
-  this.endCell = null;
+  // selected rectangle:
+  // {
+  //   start: { row: minRowIndex, col: minColIndex},
+  //   end:   { row: maxRowIndex, col: maxColIndex}
+  // }
+  // or null, if no valid selection
+  this.selectedRect = null;
 
   // A cached matrix representation of the table's cells.
   // It is created initially and gets invalidated on each model update.
@@ -52,13 +57,13 @@ ve.ce.TableNode.prototype.onTableNodeSetup = function() {
 
   this.surfaceModel.connect( this, { 'select': 'onSurfaceModelSelect' });
 
-  this.surfaceModel.emit( 'table-node-created', this );
+  this.surfaceModel.emit( 'tableNodeCreated', this );
 };
 
 ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
   this.surfaceModel.disconnect( this );
   this.tableMatrix.destroy();
-  this.surfaceModel.emit( 'table-node-removed', this );
+  this.surfaceModel.emit( 'tableNodeRemoved', this );
 };
 
 /**
@@ -86,11 +91,10 @@ ve.ce.TableNode.prototype.onSurfaceModelSelect = function(selection) {
  * This is called upon every selection change.
  */
 ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
-  var startCellContext, endCellContext;
+  var startCellContext, endCellContext, startCell, endCell, minRow, maxRow, minCol, maxCol;
 
   if (!selection) {
-    this.startCell  = null;
-    this.endCell = null;
+    this.rect = null;
     this.unfocus();
   }
 
@@ -106,17 +110,25 @@ ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
     endCellContext = this.getCellContextForOffset( selection.end );
   }
   if (!startCellContext || !endCellContext) {
-    this.startCell  = null;
-    this.endCell = null;
-    this.unfocus();
+    this.selectedRect  = null;
   } else {
-    // TODO: this could also be solved in DM world
-    this.startCell = this.tableMatrix.lookupCell(startCellContext.rowNode.model, startCellContext.cellNode.model);
+    startCell = this.tableMatrix.lookupCell(startCellContext.rowNode.model, startCellContext.cellNode.model);
     if (startCellContext === endCellContext) {
-      this.endCell = this.startCell;
+      endCell = startCell;
     } else {
-      this.endCell = this.tableMatrix.lookupCell(endCellContext.rowNode.model, endCellContext.cellNode.model);
+      endCell = this.tableMatrix.lookupCell(endCellContext.rowNode.model, endCellContext.cellNode.model);
     }
+    // derive the rectangle from the selection anchors (spans considered)
+    minRow = Math.min(startCell.row, endCell.row);
+    maxRow = Math.max(startCell.row + startCell.node.getSpan('row') - 1,
+      endCell.row  + endCell.node.getSpan('row') - 1);
+    minCol = Math.min(startCell.col, endCell.col);
+    maxCol = Math.max(startCell.col + startCell.node.getSpan('col') - 1,
+      endCell.col  + endCell.node.getSpan('col') - 1);
+    this.selectedRect = {
+      start: { row: minRow , col: minCol },
+      end: { row: maxRow, col: maxCol }
+    };
   }
 };
 
@@ -127,20 +139,24 @@ ve.ce.TableNode.prototype.isFocussed = function() {
 ve.ce.TableNode.prototype.focus = function() {
   this.$element.addClass('focussed');
   this.focussed = true;
-  this.surfaceModel.emit('table-focus-changed', this);
+  this.surfaceModel.emit('tableFocusChange', this);
 };
 
 ve.ce.TableNode.prototype.unfocus = function() {
   this.$element.removeClass('focussed');
   this.focussed = false;
-  this.surfaceModel.emit('table-focus-changed', this);
+  this.surfaceModel.emit('tableFocusChange', this);
 };
 
 /**
  * Determines a cell node's context, in terms of table row and table section.
  *
- * To be able to deal with nested tables we identify a cell node's
- * context by examining the parent nodes.
+ * To be able to deal with nested tables a cell node's
+ * context is identified by examining the parent nodes.
+ * If the inspected node is within a nested table, this method iterates up
+ * and provides the cell containing the child table.
+ *
+ * This method is used internally only.
  *
  * @param node a ve.ce.Node instance
  * @returns null of the given node is not within this table, or an object with following properties:
@@ -202,28 +218,11 @@ ve.ce.TableNode.prototype.getCellContextForOffset = function ( offset ) {
   return cellContext;
 };
 
-ve.ce.TableNode.prototype.getSelectedRectangle = function() {
-  var rect, minRow, maxRow, minCol, maxCol, cell, matrix;
-  if (!this.startCell || !this.endCell) return null;
-  matrix = this.tableMatrix.getMatrix();
-  minRow = Math.min(this.startCell.row, this.endCell.row);
-  maxRow = Math.max(this.startCell.row + this.startCell.node.getSpan('row') - 1,
-    this.endCell.row  + this.endCell.node.getSpan('row') - 1);
-  minCol = Math.min(this.startCell.col, this.endCell.col);
-  maxCol = Math.max(this.startCell.col + this.startCell.node.getSpan('col') - 1,
-    this.endCell.col  + this.endCell.node.getSpan('col') - 1);
-  rect = {
-    start: { row: minRow , col: minCol },
-    end: { row: maxRow, col: maxCol }
-  };
-  return rect;
-};
-
 // NOTE: this is only used in CE world for visual stuff
 ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
   var cells, i, j, rect, cell, ceCellNode, offset, matrix;
   cells = [];
-  rect = this.getSelectedRectangle();
+  rect = this.selectedRect;
   matrix = this.tableMatrix.getMatrix();
   if (rect) {
     for (i = rect.start.row; i <= rect.end.row; i++) {
@@ -275,7 +274,7 @@ ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, insertPosition ) {
   var matrix, pos, rect, index, refIndex, cells, refCells, rowNode, before,
     offset, range, i, txs, updated, inserts, cell, refCell, data, style;
 
-  rect = this.getSelectedRectangle();
+  rect = this.selectedRect;
   before = (insertPosition === 'before');
   matrix = this.tableMatrix.getMatrix();
 
@@ -372,7 +371,7 @@ ve.ce.TableNode.prototype.deleteRowsOrColumns = function ( mode ) {
     span, startRow, startCol, endRow, endCol, rowNode,
     txs, adapted, actions;
 
-  rect = this.getSelectedRectangle();
+  rect = this.selectedRect;
   cells = [];
   txs = [];
   adapted = {};

@@ -32,7 +32,7 @@
 ve.dm.TableMatrix = function VeDmTableMatrix(tableNode) {
   OO.EventEmitter.call(this);
 
-  this.table = tableNode;
+  this.tableNode = tableNode;
 
   // Do not access these directly as they get invalidated on structural changes
   // Use 'getMatrix()' and 'getRowNodes()' instead.
@@ -60,7 +60,7 @@ ve.dm.TableMatrix.prototype.update = function() {
     rowSpan, colSpan, i, j, _row, _col,
     matrix = [],
     rowNodes = [],
-    iterator = this.table.getIterator(),
+    iterator = this.tableNode.getIterator(),
     row = -1, col = -1;
 
   // hook to react on row transitions
