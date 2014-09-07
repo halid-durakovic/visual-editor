@@ -30,29 +30,16 @@
  * and P[1] a PlaceHolder instance owned by that cell.
  */
 ve.dm.TableMatrix = function VeDmTableMatrix(tableNode) {
-  OO.EventEmitter.call(this);
-
   this.tableNode = tableNode;
-
   // Do not access these directly as they get invalidated on structural changes
-  // Use 'getMatrix()' and 'getRowNodes()' instead.
-  this._matrix = null;
-  this._rowNodes = null;
-
-  tableNode.connect( this, {
-    'tableStructureChange': 'onTableStructureChange'
-  });
-};
-
-OO.mixinClass( ve.dm.TableMatrix, OO.EventEmitter );
-
-ve.dm.TableMatrix.prototype.onTableStructureChange = function( /* context */ ) {
+  // Use the accessor methods instead.
   this._matrix = null;
   this._rowNodes = null;
 };
 
-ve.dm.TableMatrix.prototype.destroy = function() {
-  this.tableNode.disconnect( this );
+ve.dm.TableMatrix.prototype.invalidate = function( /* context */ ) {
+  this._matrix = null;
+  this._rowNodes = null;
 };
 
 ve.dm.TableMatrix.prototype.update = function() {
@@ -101,6 +88,11 @@ ve.dm.TableMatrix.prototype.update = function() {
   this._rowNodes = rowNodes;
 };
 
+ve.dm.TableMatrix.prototype.getCell = function(row, col) {
+  var matrix = this.getMatrix();
+  return matrix[row][col];
+};
+
 ve.dm.TableMatrix.prototype.getColumn = function(col) {
   var cells, row,
     matrix = this.getMatrix();
@@ -111,14 +103,14 @@ ve.dm.TableMatrix.prototype.getColumn = function(col) {
   return cells;
 };
 
-ve.dm.TableMatrix.prototype.getRowNode = function(row) {
-  var rowNodes = this.getRowNodes();
-  return rowNodes[row];
-};
-
 ve.dm.TableMatrix.prototype.getRow = function(row) {
   var matrix = this.getMatrix();
   return matrix[row];
+};
+
+ve.dm.TableMatrix.prototype.getRowNode = function(row) {
+  var rowNodes = this.getRowNodes();
+  return rowNodes[row];
 };
 
 ve.dm.TableMatrix.prototype.getMatrix = function() {
@@ -131,11 +123,40 @@ ve.dm.TableMatrix.prototype.getRowNodes = function() {
   return this._rowNodes;
 };
 
-ve.dm.TableMatrix.prototype.lookupCell = function(rowNode, cellNode) {
+ve.dm.TableMatrix.prototype.getRectangle = function (startCellNode, endCellNode) {
+  var startCell, endCell, minRow, minCol, maxRow, maxCol;
+  startCell = this.lookupCell(startCellNode);
+  if (startCellNode === endCellNode) {
+    endCell = startCell;
+  } else {
+    endCell = this.lookupCell(endCellNode);
+  }
+  minRow = Math.min(startCell.row, endCell.row);
+  maxRow = Math.max(startCell.row + startCell.node.getSpan('row') - 1,
+    endCell.row  + endCell.node.getSpan('row') - 1);
+  minCol = Math.min(startCell.col, endCell.col);
+  maxCol = Math.max(startCell.col + startCell.node.getSpan('col') - 1,
+      endCell.col  + endCell.node.getSpan('col') - 1);
+  return {
+    start: { row: minRow , col: minCol },
+    end: { row: maxRow, col: maxCol }
+  };
+};
+
+ve.dm.TableMatrix.prototype.getSize = function () {
+  var matrix = this.getMatrix();
+  if (matrix.length === 0) {
+    return [0, 0];
+  } else {
+    return [matrix.length, matrix[0].length];
+  }
+};
+
+ve.dm.TableMatrix.prototype.lookupCell = function(cellNode) {
   var row, col, cell, rowCells,
     matrix = this.getMatrix(),
     rowNodes = this.getRowNodes();
-  row = rowNodes.indexOf(rowNode);
+  row = rowNodes.indexOf(cellNode.parent);
   if (row < 0) return null;
   cell = null;
   rowCells = matrix[row];

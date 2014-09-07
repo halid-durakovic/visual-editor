@@ -28,10 +28,6 @@ ve.ce.TableNode = function VeCeTableNode( model, config ) {
   // }
   // or null, if no valid selection
   this.selectedRect = null;
-
-  // A cached matrix representation of the table's cells.
-  // It is created initially and gets invalidated on each model update.
-  this.tableMatrix = new ve.dm.TableMatrix(this.model);
 };
 
 /* Inheritance */
@@ -62,7 +58,6 @@ ve.ce.TableNode.prototype.onTableNodeSetup = function() {
 
 ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
   this.surfaceModel.disconnect( this );
-  this.tableMatrix.destroy();
   this.surfaceModel.emit( 'tableNodeRemoved', this );
 };
 
@@ -112,11 +107,11 @@ ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
   if (!startCellContext || !endCellContext) {
     this.selectedRect  = null;
   } else {
-    startCell = this.tableMatrix.lookupCell(startCellContext.rowNode.model, startCellContext.cellNode.model);
+    startCell = this.model.matrix.lookupCell(startCellContext.cellNode.model);
     if (startCellContext === endCellContext) {
       endCell = startCell;
     } else {
-      endCell = this.tableMatrix.lookupCell(endCellContext.rowNode.model, endCellContext.cellNode.model);
+      endCell = this.model.matrix.lookupCell(endCellContext.cellNode.model);
     }
     // derive the rectangle from the selection anchors (spans considered)
     minRow = Math.min(startCell.row, endCell.row);
@@ -223,7 +218,7 @@ ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
   var cells, i, j, rect, cell, ceCellNode, offset, matrix;
   cells = [];
   rect = this.selectedRect;
-  matrix = this.tableMatrix.getMatrix();
+  matrix = this.model.matrix.getMatrix();
   if (rect) {
     for (i = rect.start.row; i <= rect.end.row; i++) {
       for (j = rect.start.col; j <= rect.end.col; j++) {
@@ -237,249 +232,6 @@ ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
     }
   }
   return cells;
-};
-
-/* Table manipulation */
-
-ve.ce.TableNode.prototype.deleteTable = function() {
-  var txs = [],
-    surface = this.surfaceModel;
-  txs.push(
-    ve.dm.Transaction.newFromRemoval(
-      surface.documentModel,
-      this.model.getOuterRange()
-    )
-  );
-  // TODO: set a proper selection after deletion
-  surface.change( txs );
-};
-
-ve.ce.TableNode.INSERT_POSITIONS = {
-  'before': -1,
-  'after': 1
-};
-
-/**
- *
- * Case 1: 'update span'
- * ---------------------
- * The span property needs to be updated when the cell and the reference cell have the same owner
- * or one of the is owner of the other.
- *
- * Examples:
- *
- * | C* | P** |,  | C | P* | P** |
- */
-ve.ce.TableNode.prototype.insertRowOrCol = function ( mode, insertPosition ) {
-  var matrix, pos, rect, index, refIndex, cells, refCells, rowNode, before,
-    offset, range, i, txs, updated, inserts, cell, refCell, data, style;
-
-  rect = this.selectedRect;
-  before = (insertPosition === 'before');
-  matrix = this.tableMatrix.getMatrix();
-
-  pos = (before) ? rect.start: rect.end;
-  // the index of the selected row or column
-  index = pos[mode];
-  // the index of the reference row or column
-  refIndex = index + (before ? -1 : 1);
-  // cells of the selected row or column
-  if (mode === 'row') {
-    cells = matrix[index];
-    refCells = matrix[refIndex] || [];
-    rowNode = this.tableMatrix.getRowNode(index);
-  } else {
-    cells = this.tableMatrix.getColumn(index);
-    refCells = this.tableMatrix.getColumn(refIndex);
-    rowNode = this.tableMatrix.getRowNode(pos.row);
-  }
-
-  txs = [];
-  updated = {};
-  inserts = [];
-
-  for (i = 0; i < cells.length; i++) {
-    cell = cells[i];
-    refCell = refCells[i];
-
-    // detect if span update is necessary
-    if (refCell && (cell.type === 'placeholder' || refCell.type === 'placeholder') ) {
-      if (cell.node === refCell.node) {
-        cell = cell.owner || cell;
-        if (!updated[cell.key]) {
-          txs.push(this.incrementSpan(cell, mode));
-          updated[cell.key] = true;
-        }
-        continue;
-      }
-    }
-    inserts.push(cell);
-  }
-
-  if (mode === 'row') {
-    data = ve.dm.TableRowNode.createData({
-      cellCount: inserts.length,
-      // taking the style of the first cell of the selected row
-      style: cells[0].node.getStyle()
-    });
-    range = rowNode.getOuterRange();
-    offset = before ? range.start: range.end;
-    txs.push(ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data ));
-  } else {
-    // making sure that the inserts are in descending order
-    inserts.sort(ve.dm.TableMatrix.Cell.sortDescending);
-    for (i = 0; i < inserts.length; i++) {
-      cell = inserts[i];
-      refCell = this.tableMatrix.findClosestCell(cell);
-      if (refCell) {
-        range = refCell.node.getOuterRange();
-        if ( refCell.col < cell.col  || ( refCell.col === cell.col && !before ) ) {
-          offset = range.end;
-        } else {
-          offset = range.start;
-        }
-        style = refCell.node.getStyle();
-      } else {
-        range = rowNode.getRange();
-        offset = before ? range.start: range.end;
-        style = cells[0].node.getStyle();
-      }
-      data = ve.dm.TableCellNode.createData({ style: style });
-      txs.push(ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data ));
-    }
-  }
-  this.surfaceModel.change(txs);
-};
-
-ve.ce.TableNode.prototype.incrementSpan = function(cell, mode) {
-  var attr = (mode === 'row') ? 'rowspan' : 'colspan',
-      data = {};
-  data[attr] = cell.node.getSpan(mode) + 1;
-  return ve.dm.Transaction.newFromAttributeChanges( this.surfaceModel.documentModel, cell.node.getOuterRange().start, data);
-};
-
-ve.ce.TableNode.prototype.insertRow = function ( position ) {
-  this.insertRowOrCol('row', position);
-};
-
-ve.ce.TableNode.prototype.insertColumn = function ( position ) {
-  this.insertRowOrCol('col', position);
-};
-
-ve.ce.TableNode.prototype.deleteRowsOrColumns = function ( mode ) {
-  var rect, cells, row, col, i, cell, key, minIndex, maxIndex, matrix,
-    span, startRow, startCol, endRow, endCol, rowNode,
-    txs, adapted, actions;
-
-  rect = this.selectedRect;
-  cells = [];
-  txs = [];
-  adapted = {};
-  actions = [];
-  minIndex = rect.start[mode];
-  maxIndex = rect.end[mode];
-  matrix = this.tableMatrix.getMatrix();
-
-  if (mode === 'row') {
-    for (row = minIndex; row <= maxIndex; row++) {
-      cells = cells.concat(this.tableMatrix.getRow(row));
-    }
-  } else {
-    for (col = minIndex; col <= maxIndex; col++) {
-      cells = cells.concat(this.tableMatrix.getColumn(col));
-    }
-  }
-
-  for (i = 0; i < cells.length; i++) {
-    cell = cells[i];
-
-    if (cell.type === 'placeholder') {
-      key = cell.owner.key;
-      if (!adapted[key]) {
-        txs.push(this.decreaseSpan(cell.owner, mode, rect));
-        adapted[key] = true;
-      }
-      continue;
-    }
-
-    span = cell.node.getSpan(mode);
-    if (cell[mode] + span - 1  > maxIndex) {
-      // add inserts for orphaned place holders
-      startRow = (mode === 'col') ? cell.row     : maxIndex + 1;
-      startCol = (mode === 'col') ? maxIndex + 1 : cell.col;
-      endRow = cell.row + cell.node.getSpan('row') - 1;
-      endCol = cell.col + cell.node.getSpan('col') - 1;
-
-      for (row = startRow; row <= endRow; row++) {
-        for (col = startCol; col <= endCol; col++) {
-          actions.push({ action: 'insert', cell: matrix[row][col] });
-        }
-      }
-    }
-
-    if (mode === 'col') {
-      actions.push({action: 'delete', cell: cell });
-    }
-  }
-
-  actions.sort(function(a, b) {
-    return ve.dm.TableMatrix.Cell.sortDescending(a.cell, b.cell);
-  });
-
-  if (mode === 'row') {
-    // only inserts in this case
-    for (i = 0; i < actions.length; i++) {
-      txs.push(this.replaceOrphanedPlaceholder(actions[i].cell));
-    }
-    for (row = rect.end.row; row >= rect.start.row; row--) {
-      rowNode = this.tableMatrix.getRowNode(row);
-      txs.push( ve.dm.Transaction.newFromRemoval( this.surfaceModel.documentModel, rowNode.getOuterRange() ) );
-    }
-  } else {
-    for (i = 0; i < actions.length; i++) {
-      if (actions[i].action === 'insert') {
-        txs.push(this.replaceOrphanedPlaceholder(actions[i].cell));
-      } else {
-        txs.push( ve.dm.Transaction.newFromRemoval( this.surfaceModel.documentModel, actions[i].cell.node.getOuterRange() ) );
-      }
-    }
-  }
-  this.surfaceModel.change(txs);
-};
-
-ve.ce.TableNode.prototype.decreaseSpan = function ( cell, mode, rect ) {
-  var newSpan, span, data, attr;
-  attr = (mode === 'row') ? 'rowspan' : 'colspan';
-  span = cell.node.getSpan(mode);
-  data = {};
-  newSpan = (rect.start[mode] - cell[mode]) + Math.max(0, cell[mode] + span - 1 - rect.end[mode]);
-  data[attr] = newSpan;
-  return ve.dm.Transaction.newFromAttributeChanges( this.surfaceModel.documentModel, cell.node.getOuterRange().start, data );
-};
-
-
-ve.ce.TableNode.prototype.replaceOrphanedPlaceholder = function ( cell ) {
-  var refCell, range, offset, data, style;
-  refCell = this.tableMatrix.findClosestCell(cell);
-  if (refCell) {
-    range = refCell.node.getOuterRange();
-    offset = (cell.col < refCell.col) ? range.start : range.end;
-    style = refCell.node.getStyle();
-  } else {
-    range = this.tableMatrix.getRowNode(cell.row).getRange();
-    offset = range.start;
-    style = cell.node.getStyle();
-  }
-  data = ve.dm.TableCellNode.createData({ style: style });
-  return ve.dm.Transaction.newFromInsertion( this.surfaceModel.documentModel, offset, data );
-};
-
-ve.ce.TableNode.prototype.deleteRow = function () {
-  this.deleteRowsOrColumns('row');
-};
-
-ve.ce.TableNode.prototype.deleteColumn = function () {
-  this.deleteRowsOrColumns('col');
 };
 
 /* Static Properties */

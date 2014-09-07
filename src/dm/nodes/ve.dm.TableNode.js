@@ -18,6 +18,10 @@
 ve.dm.TableNode = function VeDmTableNode() {
 	// Parent constructor
 	ve.dm.BranchNode.apply( this, arguments );
+
+  // A dense representation of the sparse model to make manipulations
+  // in presence of spanning cells doable.
+  this.matrix = new ve.dm.TableMatrix(this);
 };
 
 /* Inheritance */
@@ -41,7 +45,87 @@ ve.dm.TableNode.prototype.canBeMergedWith = function() {
 };
 
 ve.dm.TableNode.prototype.onStructureChange = function(context) {
+  this.matrix.invalidate();
   this.emit('tableStructureChange', context);
+};
+
+ve.dm.TableNode.prototype.getSize = function (dimension) {
+  var dim = this.matrix.getSize();
+  if ( dimension === 'row' ) {
+    return dim[0];
+  } else if ( dimension === 'col' ) {
+    return dim[1];
+  } else {
+    return dim;
+  }
+};
+
+ve.dm.TableNode.prototype.getRectangle = function (startCellNode, endCellNode) {
+  return this.matrix.getRectangle(startCellNode, endCellNode);
+};
+
+/**
+ * Find a table in the document which contains a given selection.
+ *
+ * @param documentNode The document model
+ * @param selection A range that must be contained by the table
+ * @return An object with properties 'node', 'startCell', 'endCell'
+ */
+ve.dm.TableNode.lookupTable = function (documentNode, selection) {
+  var start, end;
+  if (!selection) {
+    return null;
+  }
+  if (selection.isBackwards()) {
+    selection = selection.flip();
+  }
+  // find the outer-most table which includes both selection anchors
+  if (selection.isCollapsed()) {
+    start = ve.dm.TableNode.findTableForOffset(documentNode, selection.start);
+    end = start;
+  } else {
+    start = ve.dm.TableNode.findTableForOffset(documentNode, selection.start, selection.end);
+    end = ve.dm.TableNode.findTableForOffset(documentNode, selection.end, selection.start);
+  }
+  if (!start || !end) {
+    return null;
+  }
+  return {
+    node: start.tableNode,
+    startCell: start.cellNode,
+    endCell: end.cellNode
+  };
+};
+
+/**
+ * Find a table starting from a node with given offset that contains another constraint offset.
+ *
+ * @param documentNode The document model
+ * @param offset Offset of the node to start from
+ * @param constraint Offset which must be contained
+ * @return An object with properties 'tableNode', 'cellNode'
+ */
+ve.dm.TableNode.findTableForOffset = function (documentNode, offset, constraint) {
+  var cellNode, node;
+  node = documentNode.getNodeFromOffset(offset);
+  if (!node) return null;
+  while (true) {
+    switch (node.type) {
+      case 'tableCell':
+        cellNode = node;
+        break;
+      case 'table':
+        if (constraint && !node.getRange().containsOffset(constraint)) {
+          continue;
+        }
+        return {
+          tableNode: node,
+          cellNode: cellNode
+        };
+    }
+    node = node.parent;
+    if (!node) return null;
+  }
 };
 
 /**
@@ -113,7 +197,6 @@ ve.dm.TableNode.CellIterator.prototype.nextCell = function(it) {
     this.nextRow(it);
   }
 };
-
 
 /* Registration */
 

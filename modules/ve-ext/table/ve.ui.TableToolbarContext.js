@@ -6,7 +6,7 @@ ve.ui.TableToolbarContext = function VeUiTableToolbarContext(surface, config) {
   // ------------
 
   var $toolbar = config.$toolbar;
-  this.tableToolbar = new ve.ui.TableToolbar(this, config);
+  this.tableToolbar = new ve.ui.TableToolbar(surface, config);
   $toolbar.append(this.tableToolbar.$element.css({ visibility: 'hidden' }));
 
 };

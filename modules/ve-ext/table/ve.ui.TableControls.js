@@ -1,8 +1,8 @@
-ve.ui.TableControls = function VeUiTableControls( tableContext, config ) {
+ve.ui.TableControls = function VeUiTableControls( surface, config ) {
   // Parent constructor
   OO.ui.Element.call( this, config );
 
-  this.tableContext = tableContext;
+  this.surface = surface;
 
   this.icon = new OO.ui.IconWidget({
     '$': this.$,
@@ -73,50 +73,29 @@ OO.inheritClass( ve.ui.TableControls, OO.ui.Element );
 /* Methods */
 
 ve.ui.TableControls.prototype.onInsertColumnBefore = function () {
-  var table = this.tableContext.getTable();
-  if (table) {
-    table.insertColumn('before');
-  }
+  this.surface.execute('table', 'insert',  'col', 'before');
 };
 
 ve.ui.TableControls.prototype.onInsertColumnAfter = function () {
-  var table = this.tableContext.getTable();
-  if (table) {
-    table.insertColumn('after');
-  }
+  this.surface.execute('table', 'insert',  'col', 'after');
 };
 
 ve.ui.TableControls.prototype.onDeleteColumn = function () {
-  var table = this.tableContext.getTable();
-  if (table) {
-    table.deleteColumn();
-  }
+  this.surface.execute('table', 'delete', 'col');
 };
 
 ve.ui.TableControls.prototype.onInsertRowBefore = function () {
-  var table = this.tableContext.getTable();
-  if (table) {
-    table.insertRow('before');
-  }
+  this.surface.execute('table', 'insert', 'row', 'before');
 };
 
 ve.ui.TableControls.prototype.onInsertRowAfter = function () {
-  var table = this.tableContext.getTable();
-  if (table) {
-    table.insertRow('after');
-  }
+  this.surface.execute('table', 'insert', 'row', 'after');
 };
 
 ve.ui.TableControls.prototype.onDeleteRow = function () {
-  var table = this.tableContext.getTable();
-  if (table) {
-    table.deleteRow();
-  }
+  this.surface.execute('table', 'delete', 'row');
 };
 
 ve.ui.TableControls.prototype.onRemove = function() {
-  var table = this.tableContext.getTable();
-  if (table) {
-    table.deleteTable();
-  }
+  this.surface.execute('table', 'delete', 'table');
 };

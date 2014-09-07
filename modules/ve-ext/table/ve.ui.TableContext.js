@@ -71,10 +71,11 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
   // update the overlay when the window is resized
   $( window ).resize( ve.bind( function() {
       // TODO: why delayed?
-      window.setTimeout(function() {
-        this.update();
-        this.computeSelectedArea();
-      }, 0);
+      var self = this;
+      window.setTimeout( ve.bind( function() {
+        self.update();
+        self.computeSelectedArea();
+      }, this),  0);
     }, this) );
 };
 

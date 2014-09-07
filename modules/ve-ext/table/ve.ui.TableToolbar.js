@@ -1,5 +1,5 @@
-ve.ui.TableToolbar = function VeUiTableToolbar( tableContext, config ) {
-  ve.ui.TableControls.call(this, tableContext, config);
+ve.ui.TableToolbar = function VeUiTableToolbar( surface, config ) {
+  ve.ui.TableControls.call(this, surface, config);
 
   this.$element.addClass('ve-ui-tableToolbar');
 
