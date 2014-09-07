@@ -74,6 +74,8 @@ ve.dm.Document = function VeDmDocument( data, htmlDocument, parentDocument, inte
 		this.data = fullData;
 		this.metadata = new ve.dm.MetaLinearData( this.data.getStore(), new Array( 1 + this.data.getLength() ) );
 	}
+
+	this.indexes = null;
 };
 
 /* Inheritance */
@@ -284,6 +286,7 @@ ve.dm.Document.prototype.buildNodeTree = function () {
 	// The end state is stack = [ [this.documentNode] [ array, of, its, children ] ]
 	// so attach all nodes in stack[1] to the root node
 	ve.batchSplice( this.documentNode, 0, 0, currentStack );
+	if (this.indexes) this.updateIndexes( this.documentNode, 0, 0, currentStack );
 
 	doc.buildingNodeTree = false;
 };
@@ -297,12 +300,31 @@ ve.dm.Document.prototype.buildNodeTree = function () {
  * @throws {Error} Cannot commit a transaction that has already been committed
  */
 ve.dm.Document.prototype.commit = function ( transaction ) {
+	var i;
 	if ( transaction.hasBeenApplied() ) {
 		throw new Error( 'Cannot commit a transaction that has already been committed' );
 	}
 	new ve.dm.TransactionProcessor( this, transaction ).process();
 	this.completeHistory.push( transaction );
 	this.emit( 'transact', transaction );
+};
+
+/**
+ * Update all registered indexes after a transaction has been applied.
+ *
+ * @method
+ * @param {ve.dm.Transaction} transaction Applied transaction
+ */
+ve.dm.Document.prototype.updateIndexes = function ( parent, index, numNodes, nodes ) {
+	$.each(this.indexes, function(key, documentIndex) {
+		documentIndex.update(parent, index, numNodes, nodes);
+	});
+};
+
+ve.dm.Document.prototype.addIndex = function ( key, documentIndex ) {
+	if (!this.indexes) this.indexes = {};
+	documentIndex.initialize(this);
+	this.indexes[key] = documentIndex;
 };
 
 /**
@@ -692,6 +714,7 @@ ve.dm.Document.prototype.rebuildNodes = function ( parent, index, numNodes, offs
 		// Get generated child nodes from the document fragment
 		nodes = fragment.getDocumentNode().getChildren();
 	// Replace nodes in the model tree
+	if ( this.indexes ) this.updateIndexes( parent, index, numNodes, nodes );
 	ve.batchSplice( parent, index, numNodes, nodes );
 	// Return inserted nodes
 	return nodes;
