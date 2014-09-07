@@ -111,15 +111,13 @@ ve.ui.actionFactory.register( ve.ui.TableAction );
 // Maybe this could be moved into DM world later
 
 ve.ui.TableAction.deleteTable = function( surface, table ) {
-  var txs = [];
-  txs.push(
-    ve.dm.Transaction.newFromRemoval(
-      surface.documentModel,
-      table.getOuterRange()
-    )
+  var txs = [], selection;
+  tx = ve.dm.Transaction.newFromRemoval(
+    surface.documentModel,
+    table.getOuterRange()
   );
-  // TODO: set a proper selection after deletion
-  surface.change( txs );
+  // TODO: maybe a better selection
+  surface.change( tx, new ve.Range(null) );
 };
 
 ve.ui.TableAction.insertRowOrCol = function ( surface, table, mode, index, insertMode ) {
@@ -278,7 +276,7 @@ ve.ui.TableAction.deleteRowsOrColumns = function ( surface, table, mode, minInde
       }
     }
   }
-  surface.change(txs);
+  surface.change( txs, new ve.Range(null) );
 };
 
 ve.ui.TableAction.decreaseSpan = function ( surface, cell, mode, minIndex, maxIndex) {
