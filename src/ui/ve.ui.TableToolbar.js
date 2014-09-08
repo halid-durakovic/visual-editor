@@ -7,25 +7,26 @@ ve.ui.TableToolbar = function VeUiTableToolbar( surface, config ) {
 
   this.setup([
     {
-      header: 'Table',
-      label: 'Table',
-    },
-    {
-      header: 'Rows',
-      label: 'Row',
+      classes: ['tableToolbar-rowGroup'],
       include: [ 'insertRowBefore', 'insertRowAfter', 'deleteRow' ]
     },
     {
-      header: 'Columns',
-      label: 'Column',
+      classes: ['tableToolbar-colGroup'],
       include: [ 'insertColumnBefore', 'insertColumnAfter', 'deleteColumn' ]
     },
     {
+      classes: ['tableToolbar-otherGroup'],
       include: [ 'deleteTable' ]
     }
   ]);
 
   this.$element.addClass('ve-ui-tableToolbar');
+  $('<div>').addClass('toolbarTitle')
+    .append($('<span>').text('Table'))
+    .insertBefore(this.$element.find('.oo-ui-toolbar-tools'));
+  $('<div>').addClass('toolbarSeparator')
+    .insertBefore(this.$element.find('.oo-ui-toolGroup'))
+
   this.setVisible(false);
 
   // Events

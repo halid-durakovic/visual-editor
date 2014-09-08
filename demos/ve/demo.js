@@ -259,14 +259,18 @@ $( function () {
 					surfaceView.focus();
 				} );
 
-				var toolbar = currentTarget.getToolbar();
-				var $subToolbars = $('<div>').addClass('oo-ui-toolbar-subtoolbars');
+				// HACK: injecting a contextual sub-toolbar for table editing
+				// TODO: find a proper approach for that
+				// Alternatives:
+				//   - contextual toolbar around the CE element
+				//   - inspector popup
+				var $subToolbars = $('<div>');
 				$subToolbars.append( $('<div style="clear:both"></div>' ) );
-				$subToolbars.insertAfter(toolbar.$actions);
         var tableToolbar = new ve.ui.TableToolbar(surface, {
           $context: $subToolbars
         });
         $subToolbars.append(tableToolbar.$element);
+				$subToolbars.insertAfter(currentTarget.getToolbar().$actions);
 			} );
 		}
 

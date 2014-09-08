@@ -101,7 +101,7 @@ ve.ui.commandRegistry.register(
   } )
 );
 ve.ui.commandRegistry.register(
-  new ve.ui.Command( 'deleteTable', 'table', 'delete')
+  new ve.ui.Command( 'deleteTable', 'table', 'delete', 'table')
 );
 ve.ui.commandRegistry.register(
   new ve.ui.Command( 'insertRowBefore', 'table', 'insert', 'row', 'before')
