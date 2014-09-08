@@ -44,3 +44,36 @@
     <td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td>
   </tr>
 </table>
+
+<h2>Nested tables</h2>
+
+<table>
+  <tr>
+    <td>cell 1 row 1</td>
+    <td>cell 2 row 1</td>
+  </tr>
+  <tr>
+    <td>cell 1 row 2</td>
+    <td><table>
+        <tr>
+          <td>table 2 cell 1 row 1</td>
+          <td>table 2 cell 2 row 1</td>
+        </tr>
+        <tr>
+          <td>table 2 cell 1 row 2</td>
+          <td><table>
+              <tr>
+                <td>table 3 cell 1 row 1</td>
+                <td>table 3 cell 2 row 1</td>
+              </tr>
+              <tr>
+                <td>table 3 cell 1 row 2</td>
+                <td>table 3 cell 2 row 2</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

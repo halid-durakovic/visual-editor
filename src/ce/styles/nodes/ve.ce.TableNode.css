@@ -6,20 +6,68 @@
  */
 
 .ve-ce-tableNode {
+  position: relative;
   margin-top: 30px;
   margin-bottom: 30px;
   margin-left:auto;
   margin-right:auto;
-  border: 1px dotted #ccc;
   border-spacing: 0;
   border-collapse: collapse;
 }
 
-.ve-ce-tableNode.focussed {
-  border: 1px dashed;
+.ve-ce-tableNode > .ve-ce-tableNodeOverlay {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ve-ce-tableNode.focussed > .ve-ce-tableNodeOverlay {
+  visibility: visible;
+}
+
+.ve-ce-tableNode > .ve-ce-tableNodeOverlay .ruler {
+  position: absolute;
+}
+
+.ve-ce-tableNode > .ve-ce-tableNodeOverlay .ruler.horizontal {
+  left: 0px;
+  height: 0px;
+  border-bottom: solid 1px #00ffff;
+  opacity: 0.3;
+}
+
+.ve-ce-tableNode > .ve-ce-tableNodeOverlay .ruler.vertical {
+  top: 0px;
+  width: 0px;
+  border-right: solid 1px #00ffff;
+  opacity: 0.3;
+}
+
+.ve-ce-tableNode > .ve-ce-tableNodeOverlay .selection-box {
+  position: absolute;
+  border: solid 2px #008080;
+  opacity: 0.3;
+}
+
+.ve-ce-tableNode > .ve-ce-tableNodeOverlay .row-bracket {
+  position: absolute;
+  left: -10px;
+  width: 3px;
+  border-style: solid;
+  border-color: #008080;
+  border-right: 0px;
+  opacity: 0.3;
+}
+
+.ve-ce-tableNode > .ve-ce-tableNodeOverlay .column-bracket {
+  position: absolute;
+  top: -10px;
+  height: 3px;
+  border-style: solid;
+  border-color: #008080;
+  border-bottom: 0px;
+  opacity: 0.3;
 }
 
 .ve-ce-tableNode caption {
   caption-side: bottom;
 }
-

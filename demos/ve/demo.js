@@ -263,11 +263,10 @@ $( function () {
 				var $subToolbars = $('<div>').addClass('oo-ui-toolbar-subtoolbars');
 				$subToolbars.append( $('<div style="clear:both"></div>' ) );
 				$subToolbars.insertAfter(toolbar.$actions);
-        var tableContext = new ve.ui.TableToolbarContext(surface, {
-        	$toolbar: $subToolbars
+        var tableToolbar = new ve.ui.TableToolbar(surface, {
+          $context: $subToolbars
         });
-        surface.localOverlay.$element.append(tableContext.$element);
-
+        $subToolbars.append(tableToolbar.$element);
 			} );
 		}
 

@@ -71,32 +71,41 @@ ve.ui.TableAction.prototype.create = function ( options ) {
 };
 
 ve.ui.TableAction.prototype.insert = function ( mode, position ) {
-  var surface, table, rect, index;
+  var surface, tableSelection, table, matrix, rect, index;
   surface = this.surface.getModel();
-  table = ve.dm.TableNode.lookupTable(surface.documentModel, surface.selection);
-  if (table) {
-    rect = table.node.getRectangle(table.startCell, table.endCell);
-    index = (position === 'before') ? rect.start[mode] : rect.end[mode];
-    ve.ui.TableAction.insertRowOrCol( surface, table.node, mode, index, position );
-  }
+  tableSelection = ve.dm.TableNode.lookupSelection(surface.documentModel, surface.selection);
+  if (!tableSelection) return;
+  // Retrieve the bounding rectangle
+  table = tableSelection.node;
+  matrix = tableSelection.node.matrix;
+  rect = matrix.getRectangle(tableSelection.startCell, tableSelection.endCell);
+  rect = matrix.getBoundingRectangle(rect);
+  // and insert either before or after
+  index = (position === 'before') ? rect.start[mode] : rect.end[mode];
+  ve.ui.TableAction.insertRowOrCol( surface, table, mode, index, position );
 };
 
 ve.ui.TableAction.prototype.delete = function ( mode ) {
-  var surface, table, rect, minIndex, maxIndex;
+  var surface, tableSelection, table, matrix, rect, minIndex, maxIndex;
   surface = this.surface.getModel();
-  table = ve.dm.TableNode.lookupTable(surface.documentModel, surface.selection);
-  if (table) {
-    if (mode === 'table') {
-      ve.ui.TableAction.deleteTable( surface, table.node );
+  tableSelection = ve.dm.TableNode.lookupSelection(surface.documentModel, surface.selection);
+  if (!tableSelection) return;
+  // Either delete the table or rows or columns
+  table = tableSelection.node;
+  matrix = tableSelection.node.matrix;
+  if (mode === 'table') {
+    ve.ui.TableAction.deleteTable( surface, tableSelection.node );
+  } else {
+    // Retrieve the bounding rectangle
+    rect = matrix.getRectangle(tableSelection.startCell, tableSelection.endCell);
+    rect = matrix.getBoundingRectangle(rect);
+    minIndex = rect.start[mode];
+    maxIndex = rect.end[mode];
+    // delete the whole table if all rows or cols get deleted
+    if (minIndex === 0 && maxIndex === table.getSize(mode) - 1) {
+      ve.ui.TableAction.deleteTable( surface, table );
     } else {
-      rect = table.node.getRectangle(table.startCell, table.endCell);
-      minIndex = rect.start[mode];
-      maxIndex = rect.end[mode];
-      if (minIndex === 0 && maxIndex === table.node.getSize(mode) - 1) {
-        ve.ui.TableAction.deleteTable( surface, table.node );
-      } else {
-        ve.ui.TableAction.deleteRowsOrColumns( surface, table.node, mode, minIndex, maxIndex );
-      }
+      ve.ui.TableAction.deleteRowsOrColumns( surface, table, mode, minIndex, maxIndex );
     }
   }
 };
@@ -111,7 +120,7 @@ ve.ui.actionFactory.register( ve.ui.TableAction );
 // Maybe this could be moved into DM world later
 
 ve.ui.TableAction.deleteTable = function( surface, table ) {
-  var txs = [], selection;
+  var tx;
   tx = ve.dm.Transaction.newFromRemoval(
     surface.documentModel,
     table.getOuterRange()

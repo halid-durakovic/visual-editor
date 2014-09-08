@@ -57,15 +57,15 @@ ve.ui.TableControls = function VeUiTableControls( surface, config ) {
     'label': 'Delete'
   });
 
-  this.removeButton.connect( this, {'click': 'onRemove'});
+  // this.removeButton.connect( this, {'click': 'onRemove'});
 
-  this.insertColumnBefore.connect( this, {'click': 'onInsertColumnBefore'} );
-  this.insertColumnAfter.connect( this, {'click': 'onInsertColumnAfter'} );
-  this.deleteColumn.connect( this, {'click': 'onDeleteColumn'} );
+  // this.insertColumnBefore.connect( this, {'click': 'onInsertColumnBefore'} );
+  // this.insertColumnAfter.connect( this, {'click': 'onInsertColumnAfter'} );
+  // this.deleteColumn.connect( this, {'click': 'onDeleteColumn'} );
 
-  this.insertRowBefore.connect( this, {'click': 'onInsertRowBefore'} );
-  this.insertRowAfter.connect( this, {'click': 'onInsertRowAfter'} );
-  this.deleteRow.connect( this, {'click': 'onDeleteRow'} );
+  // this.insertRowBefore.connect( this, {'click': 'onInsertRowBefore'} );
+  // this.insertRowAfter.connect( this, {'click': 'onInsertRowAfter'} );
+  // this.deleteRow.connect( this, {'click': 'onDeleteRow'} );
 };
 
 OO.inheritClass( ve.ui.TableControls, OO.ui.Element );
@@ -73,29 +73,29 @@ OO.inheritClass( ve.ui.TableControls, OO.ui.Element );
 /* Methods */
 
 ve.ui.TableControls.prototype.onInsertColumnBefore = function () {
-  this.surface.execute('table', 'insert',  'col', 'before');
+  // this.surface.execute('table', 'insert',  'col', 'before');
 };
 
 ve.ui.TableControls.prototype.onInsertColumnAfter = function () {
-  this.surface.execute('table', 'insert',  'col', 'after');
+  // this.surface.execute('table', 'insert',  'col', 'after');
 };
 
 ve.ui.TableControls.prototype.onDeleteColumn = function () {
-  this.surface.execute('table', 'delete', 'col');
+  // this.surface.execute('table', 'delete', 'col');
 };
 
 ve.ui.TableControls.prototype.onInsertRowBefore = function () {
-  this.surface.execute('table', 'insert', 'row', 'before');
+  // this.surface.execute('table', 'insert', 'row', 'before');
 };
 
 ve.ui.TableControls.prototype.onInsertRowAfter = function () {
-  this.surface.execute('table', 'insert', 'row', 'after');
+  // this.surface.execute('table', 'insert', 'row', 'after');
 };
 
 ve.ui.TableControls.prototype.onDeleteRow = function () {
-  this.surface.execute('table', 'delete', 'row');
+  // this.surface.execute('table', 'delete', 'row');
 };
 
 ve.ui.TableControls.prototype.onRemove = function() {
-  this.surface.execute('table', 'delete', 'table');
+  // this.surface.execute('table', 'delete', 'table');
 };

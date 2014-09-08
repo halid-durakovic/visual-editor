@@ -10,6 +10,9 @@ ve.ui.TableContext = function VeUiTableContext(surface, config) {
   // Parent constructor
   OO.ui.Element.call( this, config );
 
+  // disabled
+  return;
+
   this.surface = surface;
 
   // the currently focussed ve.ce.TableNode instance

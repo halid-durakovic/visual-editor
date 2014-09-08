@@ -124,23 +124,53 @@ ve.dm.TableMatrix.prototype.getRowNodes = function() {
 };
 
 ve.dm.TableMatrix.prototype.getRectangle = function (startCellNode, endCellNode) {
-  var startCell, endCell, minRow, minCol, maxRow, maxCol;
+  var startCell, endCell, minRow, maxRow, minCol, maxCol;
   startCell = this.lookupCell(startCellNode);
+  if (!startCell) return null;
   if (startCellNode === endCellNode) {
     endCell = startCell;
   } else {
     endCell = this.lookupCell(endCellNode);
   }
   minRow = Math.min(startCell.row, endCell.row);
-  maxRow = Math.max(startCell.row + startCell.node.getSpan('row') - 1,
-    endCell.row  + endCell.node.getSpan('row') - 1);
+  maxRow = Math.max(startCell.row, endCell.row);
   minCol = Math.min(startCell.col, endCell.col);
-  maxCol = Math.max(startCell.col + startCell.node.getSpan('col') - 1,
-      endCell.col  + endCell.node.getSpan('col') - 1);
+  maxCol = Math.max(startCell.col, endCell.col);
   return {
-    start: { row: minRow , col: minCol },
+    start: { row: minRow, col: minCol },
     end: { row: maxRow, col: maxCol }
   };
+};
+
+ve.dm.TableMatrix.prototype.getCellsForRectangle = function (rect) {
+  var row, col, cells, visited, cell;
+  cells = [];
+  visited = {};
+  for (row = rect.start.row; row <= rect.end.row; row++) {
+    for (col = rect.start.col; col <= rect.end.col; col++) {
+      cell = this.getCell(row, col);
+      if (cell.type === 'placeholder') cell = cell.owner;
+      if (!visited[cell.key]) {
+        cells.push(cell);
+        visited[cell.key] = true;
+      }
+    }
+  }
+  return cells;
+};
+
+ve.dm.TableMatrix.prototype.getBoundingRectangle = function (rect) {
+  var cells, cell, i;
+  cells = this.getCellsForRectangle(rect);
+  if (!cells || cells.length === 0) return null;
+  for (i = 0; i < cells.length; i++) {
+    cell = cells[i];
+    rect.start.row = Math.min(rect.start.row, cell.row);
+    rect.start.col = Math.min(rect.start.col, cell.col);
+    rect.end.row = Math.max(rect.end.row, cell.row + cell.node.getSpan('row') - 1);
+    rect.end.col = Math.max(rect.end.col, cell.col + cell.node.getSpan('col') - 1);
+  }
+  return rect;
 };
 
 ve.dm.TableMatrix.prototype.getSize = function () {

@@ -71,7 +71,7 @@ ve.dm.TableNode.prototype.getRectangle = function (startCellNode, endCellNode) {
  * @param selection A range that must be contained by the table
  * @return An object with properties 'node', 'startCell', 'endCell'
  */
-ve.dm.TableNode.lookupTable = function (documentNode, selection) {
+ve.dm.TableNode.lookupSelection = function (documentNode, selection) {
   var start, end;
   if (!selection) {
     return null;
@@ -108,24 +108,24 @@ ve.dm.TableNode.lookupTable = function (documentNode, selection) {
 ve.dm.TableNode.findTableForOffset = function (documentNode, offset, constraint) {
   var cellNode, node;
   node = documentNode.getNodeFromOffset(offset);
-  if (!node) return null;
-  while (true) {
+  while (node) {
     switch (node.type) {
       case 'tableCell':
         cellNode = node;
         break;
       case 'table':
         if (constraint && !node.getRange().containsOffset(constraint)) {
-          continue;
+          break;
+        } else {
+          return {
+            tableNode: node,
+            cellNode: cellNode
+          };
         }
-        return {
-          tableNode: node,
-          cellNode: cellNode
-        };
     }
     node = node.parent;
-    if (!node) return null;
   }
+  return null;
 };
 
 /**

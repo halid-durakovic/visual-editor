@@ -27,7 +27,7 @@ ve.ce.TableNode = function VeCeTableNode( model, config ) {
   //   end:   { row: maxRowIndex, col: maxColIndex}
   // }
   // or null, if no valid selection
-  this.selectedRect = null;
+  this.selectedRectangle = null;
 };
 
 /* Inheritance */
@@ -49,16 +49,32 @@ ve.ce.TableNode.prototype.onTableNodeSetup = function() {
 
   this.$element.addClass( 've-ce-tableNode' );
 
+  this.$rulerTop = $('<div>').addClass('ruler horizontal top');
+  this.$rulerBottom = $('<div>').addClass('ruler horizontal bottom');
+  this.$rulerLeft = $('<div>').addClass('ruler vertical left');
+  this.$rulerRight = $('<div>').addClass('ruler vertical right');
+  this.$bbox = $('<div>').addClass('selection-box');
+  this.$rowBracket = $('<div>').addClass('row-bracket');
+  this.$colBracket = $('<div>').addClass('column-bracket');
+
+  this.$overlay = $('<div contenteditable="false">')
+    .addClass('ve-ce-tableNodeOverlay')
+    .append([
+      this.$rulerTop, this.$rulerBottom,
+      this.$rulerLeft, this.$rulerRight,
+      this.$bbox,
+      this.$rowBracket,
+      this.$colBracket
+    ] );
+  this.$element.append(this.$overlay);
+
   // Events
 
   this.surfaceModel.connect( this, { 'select': 'onSurfaceModelSelect' });
-
-  this.surfaceModel.emit( 'tableNodeCreated', this );
 };
 
 ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
   this.surfaceModel.disconnect( this );
-  this.surfaceModel.emit( 'tableNodeRemoved', this );
 };
 
 /**
@@ -67,171 +83,116 @@ ve.ce.TableNode.prototype.onTableNodeTeardown = function() {
  */
 ve.ce.TableNode.prototype.onSurfaceModelSelect = function(selection) {
   var range = this.model.getRange();
-  var focus;
+  var isSelected, tableSelection;
 
   // consider this table focussed when the selection is fully within the range
-  focus = (selection && range.containsOffset(selection.from) && range.containsOffset(selection.to));
+  isSelected = (selection && range.containsOffset(selection.from) && range.containsOffset(selection.to));
 
-  if (focus && !this.focussed) {
-    this.focus();
-  } else if (!focus && this.focussed) {
-    this.unfocus();
+  // make sure that the selection does really belong to this table not to a nested one
+  if (isSelected) {
+    tableSelection = ve.dm.TableNode.lookupSelection(this.surfaceModel.documentModel, selection);
+    isSelected = (tableSelection && tableSelection.node === this.model);
   }
 
-  this.updateSelectedRectangle(selection);
-};
-
-/**
- * Stores anchor nodes which define a selection rectangle.
- * This is called upon every selection change.
- */
-ve.ce.TableNode.prototype.updateSelectedRectangle = function( selection ) {
-  var startCellContext, endCellContext, startCell, endCell, minRow, maxRow, minCol, maxCol;
-
-  if (!selection) {
-    this.rect = null;
-    this.unfocus();
-  }
-
-  if (selection.isBackwards()) {
-    selection = selection.flip();
-  }
-  startCellContext = this.getCellContextForOffset( selection.start );
-  if (!startCellContext) {
-    endCellContext = null;
-  } else if (selection.isCollapsed()) {
-    endCellContext = startCellContext;
-  } else {
-    endCellContext = this.getCellContextForOffset( selection.end );
-  }
-  if (!startCellContext || !endCellContext) {
-    this.selectedRect  = null;
-  } else {
-    startCell = this.model.matrix.lookupCell(startCellContext.cellNode.model);
-    if (startCellContext === endCellContext) {
-      endCell = startCell;
-    } else {
-      endCell = this.model.matrix.lookupCell(endCellContext.cellNode.model);
+  if (isSelected) {
+    if (!this.focussed) {
+      this.focussed = true;
+      this.$element.addClass('focussed');
     }
-    // derive the rectangle from the selection anchors (spans considered)
-    minRow = Math.min(startCell.row, endCell.row);
-    maxRow = Math.max(startCell.row + startCell.node.getSpan('row') - 1,
-      endCell.row  + endCell.node.getSpan('row') - 1);
-    minCol = Math.min(startCell.col, endCell.col);
-    maxCol = Math.max(startCell.col + startCell.node.getSpan('col') - 1,
-      endCell.col  + endCell.node.getSpan('col') - 1);
-    this.selectedRect = {
-      start: { row: minRow , col: minCol },
-      end: { row: maxRow, col: maxCol }
-    };
+    this.selectedRectangle = this.model.getRectangle(tableSelection.startCell, tableSelection.endCell);
+    this.updateOverlay();
+  } else if (!isSelected && this.focussed) {
+    this.focussed = false;
+    this.selectedRectangle = null;
+    this.$element.removeClass('focussed');
+    this.$element.find('.selected').removeClass('selected');
   }
 };
 
-ve.ce.TableNode.prototype.isFocussed = function() {
-  return this.focussed;
-};
+ve.ce.TableNode.prototype.updateOverlay = function() {
+  var $cells, $cell, offset, width, height,
+    top, left, bottom, right,
+    tableOffset, tableHeight, tableWidth;
 
-ve.ce.TableNode.prototype.focus = function() {
-  this.$element.addClass('focussed');
-  this.focussed = true;
-  this.surfaceModel.emit('tableFocusChange', this);
-};
+  this.$overlay.css({'visibility': 'hidden'});
 
-ve.ce.TableNode.prototype.unfocus = function() {
-  this.$element.removeClass('focussed');
-  this.focussed = false;
-  this.surfaceModel.emit('tableFocusChange', this);
-};
+  $cells = this.getElementsForSelectedRectangle();
+  this.$element.find('.selected').removeClass('selected');
 
-/**
- * Determines a cell node's context, in terms of table row and table section.
- *
- * To be able to deal with nested tables a cell node's
- * context is identified by examining the parent nodes.
- * If the inspected node is within a nested table, this method iterates up
- * and provides the cell containing the child table.
- *
- * This method is used internally only.
- *
- * @param node a ve.ce.Node instance
- * @returns null of the given node is not within this table, or an object with following properties:
- *    - 'sectionNode': ve.dm.TableSectionNode
- *    - 'rowNode': ve.dm.TableRowNode
- *    - 'cellNode': ve.dm.TableCellNode
- *    - 'sectionIndex': Number
- *    - 'rowNodeIndex': Number
- *    - 'cellNodeIndex': Number
- */
-ve.ce.TableNode.prototype.getCellContext = function (node) {
-  var cellContext, sectionNode, rowNode, cellNode;
-  if (!node) return null;
-  while (true) {
-    switch (node.type) {
-      case 'tableCell':
-        cellNode = node;
-        break;
-      case 'tableRow':
-        rowNode = node;
-        break;
-      case 'tableSection':
-        sectionNode = node;
-        break;
-    }
-    node = node.parent;
-    // stop when we reach the right the level of this node
-    // in that case, the last section and row should be the correct ones.
-    if (node === this) break;
-    if (!node) return null;
+  top = Number.MAX_VALUE;
+  bottom = 0;
+  left = Number.MAX_VALUE;
+  right = 0;
+
+  // compute a bounding box for the given cell elements
+  for (var i = 0; i < $cells.length; i++) {
+    $cell = $cells[i];
+    $cell.addClass('selected');
+    offset = $cell.offset();
+    width = $cell.outerWidth();
+    height = $cell.outerHeight();
+
+    top = Math.min(top, offset.top);
+    bottom = Math.max(bottom, offset.top + height);
+    left = Math.min(left, offset.left);
+    right = Math.max(right, offset.left + width);
   }
-  // fallback if this is called with a top-level node
-  if (!rowNode || !cellNode) {
-    return null;
-  }
-  cellContext = {
-    sectionNode: sectionNode,
-    rowNode: rowNode,
-    cellNode: cellNode,
-    sectionNodeIndex: this.children.indexOf(sectionNode),
-    rowNodeIndex: sectionNode.children.indexOf(rowNode),
-    cellNodeIndex: rowNode.children.indexOf(cellNode)
-  };
-  return cellContext;
-};
 
-/**
- * A convenience wrapper for 'TableNode.prototype.getCellContext(cell)' which allows
- * to retrieve the cell context for a given global document offset.
- *
- * @param offset: the global offset of a cell
- */
-ve.ce.TableNode.prototype.getCellContextForOffset = function ( offset ) {
-  var node, cellContext;
-  // treat the offset as global offset
-  offset -= this.model.getRange().start;
-  node = this.getNodeFromOffset(offset);
-  cellContext = this.getCellContext(node);
-  return cellContext;
+  tableOffset = this.$element.offset();
+  tableHeight = this.$element.height();
+  tableWidth = this.$element.width();
+
+  this.$rulerTop.css({
+    'top': top - tableOffset.top,
+    'width': tableWidth
+  } );
+  this.$rulerBottom.css({
+    'top': bottom - tableOffset.top,
+    'width': tableWidth
+  } );
+  this.$rulerLeft.css({
+    'left': left - tableOffset.left,
+    'height': tableHeight
+  } );
+  this.$rulerRight.css({
+    'left': right - tableOffset.left,
+    'height': tableHeight
+  } );
+  this.$bbox.css({
+    'left': left - tableOffset.left,
+    'top': top - tableOffset.top,
+    // Note: can we get the border strength (last subtractor) from the element?
+    'height': bottom - top - 2,
+    'width': right - left - 2,
+  } );
+  this.$rowBracket.css({
+    'top': top - tableOffset.top - 2,
+    // Note: can we get the border strength (last subtractor) from the element?
+    'height': bottom - top,
+  } );
+  this.$colBracket.css({
+    'left': left - tableOffset.left - 2,
+    'width': right - left,
+  } );
+
+  this.$overlay.css({'visibility': ''});
 };
 
 // NOTE: this is only used in CE world for visual stuff
-ve.ce.TableNode.prototype.getCellsForSelectedRectangle = function() {
-  var cells, i, j, rect, cell, ceCellNode, offset, matrix;
+ve.ce.TableNode.prototype.getElementsForSelectedRectangle = function() {
+  var cellModels, cells, rect, cell, cellNode, offset, matrix, i;
   cells = [];
-  rect = this.selectedRect;
-  matrix = this.model.matrix.getMatrix();
-  if (rect) {
-    for (i = rect.start.row; i <= rect.end.row; i++) {
-      for (j = rect.start.col; j <= rect.end.col; j++) {
-        cell = matrix[i][j];
-        if (cell.type === 'cell') {
-          offset = cell.node.getRange().start - this.model.getRange().start;
-          ceCellNode = this.getNodeFromOffset(offset);
-          cells.push(ceCellNode);
-        }
-      }
-    }
+  matrix = this.model.matrix;
+  rect = this.selectedRectangle;
+  rect = matrix.getBoundingRectangle(rect);
+  cellModels = matrix.getCellsForRectangle(rect);
+  for (i = 0; i < cellModels.length; i++) {
+    cell = cellModels[i];
+    offset = cell.node.getRange().start - this.model.getRange().start;
+    cellNode = this.getNodeFromOffset(offset);
+    cells.push(cellNode.$element);
   }
-  return cells;
+  return $(cells);
 };
 
 /* Static Properties */

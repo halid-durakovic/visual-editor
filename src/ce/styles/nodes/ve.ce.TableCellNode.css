@@ -5,6 +5,7 @@
  * @license The MIT License (MIT); see LICENSE.txt
  */
 .ve-ce-tableCellNode {
+  position: relative;
   border: 1px solid #ccc;
   padding: 5px 10px 5px 10px;
 }
@@ -16,4 +17,9 @@
 
 thead .ve-ce-tableCellNode {
   background-color: #EEE;
+}
+
+.ve-ce-tableCellNode.selected {
+  border: 1px solid #008080;
+  border-style:double;
 }

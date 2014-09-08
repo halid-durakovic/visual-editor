@@ -1,40 +1,72 @@
 ve.ui.TableToolbar = function VeUiTableToolbar( surface, config ) {
-  ve.ui.TableControls.call(this, surface, config);
+  OO.ui.Toolbar.call(this, ve.ui.toolFactory, ve.ui.toolGroupFactory, config);
 
-  this.$element.addClass('ve-ui-tableToolbar');
+  this.surface = surface;
 
-  var $header = $('<div>').addClass('ve-ui-tableToolbar-header')
-    .append( [
-      this.label.$element
-    ] );
+  // DOM changes
 
-  var rowButtons = new OO.ui.GroupElement($('<div>').addClass('ve-ui-tableToolbar-buttons'), {} );
-  rowButtons.addItems([
-      this.insertRowBefore,
-      this.insertRowAfter,
-      this.deleteRow
-    ] );
-
-  var columnButtons = new OO.ui.GroupElement($('<div>').addClass('ve-ui-tableToolbar-buttons'), {} );
-  columnButtons.addItems([
-      this.insertColumnBefore,
-      this.insertColumnAfter,
-      this.deleteColumn
-    ] );
-
-  var others = new OO.ui.GroupElement($('<div>').addClass('ve-ui-tableToolbar-buttons'), {} );
-  others.addItems([
-    this.removeButton
-    ] );
-
-
-  this.$element.append([
-    $header,
-    rowButtons.$group,
-    columnButtons.$group,
-    others.$group
+  this.setup([
+    {
+      header: 'Table',
+      label: 'Table',
+    },
+    {
+      header: 'Rows',
+      label: 'Row',
+      include: [ 'insertRowBefore', 'insertRowAfter', 'deleteRow' ]
+    },
+    {
+      header: 'Columns',
+      label: 'Column',
+      include: [ 'insertColumnBefore', 'insertColumnAfter', 'deleteColumn' ]
+    },
+    {
+      include: [ 'deleteTable' ]
+    }
   ]);
 
+  this.$element.addClass('ve-ui-tableToolbar');
+  this.setVisible(false);
+
+  // Events
+
+  this.surface.getModel().connect( this, { contextChange: 'onContextChange' } );
 };
 
-OO.inheritClass( ve.ui.TableToolbar, ve.ui.TableControls );
+OO.inheritClass( ve.ui.TableToolbar, OO.ui.Toolbar );
+
+ve.ui.TableToolbar.prototype.getSurface = function() {
+  return this.surface;
+};
+
+/**
+ * Handle context changes on the surface.
+ *
+ * @fires updateState
+ */
+ve.ui.TableToolbar.prototype.onContextChange = function () {
+  this.updateToolState();
+};
+
+/**
+ * Update the state of the tools
+ */
+ve.ui.TableToolbar.prototype.updateToolState = function () {
+  var surface, selection, tableSelection;
+  surface = this.surface.getModel();
+  selection = surface.selection;
+  tableSelection = ve.dm.TableNode.lookupSelection(surface.documentModel, selection);
+  if (tableSelection) {
+    this.setVisible(true);
+  } else {
+    this.setVisible(false);
+  }
+};
+
+ve.ui.TableToolbar.prototype.setVisible = function ( visible ) {
+  if (visible) {
+    this.$element.css({ 'visibility': '' });
+  } else {
+    this.$element.css({ 'visibility': 'hidden' });
+  }
+};

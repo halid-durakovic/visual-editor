@@ -112,17 +112,6 @@ ve.init.Target.static.toolbarGroups = [
 		include: [ { group: 'structure' } ],
 		demote: [ 'outdent', 'indent' ]
 	},
-	// Table
-	{
-		header: 'Table',
-		type: 'list',
-		icon: 'table',
-		label: '',
-		title: 'Table',
-		indicator: 'down',
-		include: [ { group: 'table' }],
-		demote: [ ]
-	},
 	// Insert
 	{
 		header: OO.ui.deferMsg( 'visualeditor-toolbar-insert' ),
@@ -131,9 +120,25 @@ ve.init.Target.static.toolbarGroups = [
 		label: '',
 		title: OO.ui.deferMsg( 'visualeditor-toolbar-insert' ),
 		indicator: 'down',
-		include: '*',
+		// TODO: this wildcard prevents defining tools without side-effect
+		// include: '*',
+		include: [ { group: 'insert' }, { group: 'meta' } ],
 		demote: [ 'specialcharacter' ]
 	}
+
+	// TODO: maybe have something like a 'custom'?
+	// It would be great to be able to define tools that do not get collected by the wildcard group above
+	// Table
+	// {
+	// 	header: 'Table',
+	// 	type: 'custom',
+	// 	icon: 'table',
+	// 	label: '',
+	// 	title: 'Table',
+	// 	indicator: 'down',
+	// 	include: [ { group: 'table' }],
+	// 	demote: [ ]
+	// },
 ];
 
 ve.init.Target.static.surfaceCommands = [
