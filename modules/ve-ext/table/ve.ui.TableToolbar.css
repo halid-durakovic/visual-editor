@@ -1,0 +1,23 @@
+.ve-ui-tableToolbar .ve-ui-tableToolbar-header,
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons {
+  float: left;
+  margin-left: 10px;
+  padding-left: 10px;
+}
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons {
+  border-left: solid 1px #ccc;
+}
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-header {
+  vertical-align: middle;
+}
+
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons .oo-ui-labeledElement-label {
+  font-size: 0.8em;
+}
+
+.ve-ui-tableToolbar .ve-ui-tableToolbar-buttons .oo-ui-buttonedElement-button {
+  padding-left: 5px;
+}

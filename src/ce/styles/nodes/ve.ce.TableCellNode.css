@@ -4,11 +4,16 @@
  * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
  * @license The MIT License (MIT); see LICENSE.txt
  */
-
-.ve-ce-tableCellNode .ve-ce-paragraphNode {
-	margin: 0;
+.ve-ce-tableCellNode {
+  border: 1px solid #ccc;
+  padding: 5px 10px 5px 10px;
 }
 
-.ve-ce-tableCellNode {
-	border: 1px dotted #ccc;
+.ve-ce-tableCellNode .ve-ce-paragraphNode {
+  min-width: 10px;
+  margin: 0;
+}
+
+thead .ve-ce-tableCellNode {
+  background-color: #EEE;
 }

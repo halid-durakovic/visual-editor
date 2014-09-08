@@ -88,7 +88,6 @@ ve.dm.TableCellNode.prototype.onDetach = function(from) {
 };
 
 ve.dm.TableCellNode.prototype.onAttributeChange = function(key) {
-  console.log('TableCellNode.onAttributeChange', arguments);
   if ( this.parent && (key === 'colspan' || key === 'rowspan')) {
     this.parent.onStructureChange({ cell: this });
   }
