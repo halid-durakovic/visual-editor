@@ -4,11 +4,26 @@
  * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
  * @license The MIT License (MIT); see LICENSE.txt
  */
+.ve-ce-tableCellNode {
+	position: relative;
+	border: 1px solid #ccc;
+	padding: 5px 10px 5px 10px;
+}
+
+td.ve-ce-tableCellNode {
+	vertical-align: top;
+}
 
 .ve-ce-tableCellNode .ve-ce-paragraphNode {
+	min-width: 10px;
 	margin: 0;
 }
 
-.ve-ce-tableCellNode {
-	border: 1px dotted #ccc;
+thead .ve-ce-tableCellNode {
+	background-color: #EEE;
+}
+
+.ve-ce-tableCellNode.selected {
+	border: 1px solid #008080;
+	border-style:double;
 }
