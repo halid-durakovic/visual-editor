@@ -91,5 +91,15 @@
 	"visualeditor-toolbar-structure": "Struktur",
 	"visualeditor-toolbar-style-tooltip": "Text gestalten",
 	"visualeditor-toolbar-text-style": "Gestaltung",
+	"visualeditor-toolbar-table": "Tabelle",
+	"visualeditor-toolbar-table-delete": "Entfernen",
+	"visualeditor-toolbar-table-deletetable": "Tabelle",
+	"visualeditor-toolbar-table-deleterow": "Zeile",
+	"visualeditor-toolbar-table-deletecol": "Spalte",
+	"visualeditor-toolbar-table-insert": "Einfügen",
+	"visualeditor-toolbar-table-insertcolbefore": "Links",
+	"visualeditor-toolbar-table-insertcolafter": "Rechts",
+	"visualeditor-toolbar-table-insertrowbefore": "Oben",
+	"visualeditor-toolbar-table-insertrowafter": "Unten",
 	"visualeditor-version-label": "Version"
 }
