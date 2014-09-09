@@ -237,3 +237,32 @@ ve.Node.prototype.traverseUpstream = function ( callback ) {
 		node = node.getParent();
 	}
 };
+
+/**
+ * Traverse tree of nodes (model or view) in pre-order.
+ *
+ * For each traversed node, the callback function will be passed the traversed node as a parameter.
+ * The callback can stop descending in branch node by returning `{ descend: false }`
+ * and stop the iteration by returning `{ stop: true }`
+ *
+ * @param {Function} callback Callback method to be called for every traversed node
+ * @method
+ */
+ve.Node.prototype.traversePreOrder = function( callback ) {
+	var stack = [], node, result, i;
+	stack.push(this);
+	while (stack.length > 0) {
+		node = stack.pop();
+		result = callback(node);
+		// react on control requests from the callback
+		if (result) {
+			if (result.stop === true) return;
+			if (result.descend === false) continue;
+		}
+		if (node.canHaveChildren()) {
+			for (i = node.children.length - 1; i >= 0; i--) {
+				stack.push(node.children[i]);
+			}
+		}
+	}
+};
