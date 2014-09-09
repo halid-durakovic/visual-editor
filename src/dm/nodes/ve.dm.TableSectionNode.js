@@ -18,6 +18,13 @@
 ve.dm.TableSectionNode = function VeDmTableSectionNode() {
 	// Parent constructor
 	ve.dm.BranchNode.apply( this, arguments );
+
+	/* Events */
+
+	this.connect( this, {
+		'attach': 'onAttach',
+		'detach': 'onDetach'
+	} );
 };
 
 /* Inheritance */
@@ -32,9 +39,7 @@ ve.dm.TableSectionNode.static.childNodeTypes = [ 'tableRow' ];
 
 ve.dm.TableSectionNode.static.parentNodeTypes = [ 'table' ];
 
-ve.dm.TableSectionNode.static.defaultAttributes = {
-	style: 'body'
-};
+ve.dm.TableSectionNode.static.defaultAttributes = { style: 'body' };
 
 ve.dm.TableSectionNode.static.matchTagNames = [ 'thead', 'tbody', 'tfoot' ];
 
@@ -57,6 +62,24 @@ ve.dm.TableSectionNode.static.toDomElements = function ( dataElement, doc ) {
 		tag = tags[dataElement.attributes && dataElement.attributes.style || 'body'];
 	return [ doc.createElement( tag ) ];
 };
+
+/* Prototype functions */
+
+ve.dm.TableSectionNode.prototype.onAttach = function( to ) {
+	if (to.onStructureChange) to.onStructureChange( { section: this } );
+};
+
+ve.dm.TableSectionNode.prototype.onDetach = function( from ) {
+	if (from.onStructureChange) from.onStructureChange( { section: this } );
+};
+
+ve.dm.TableSectionNode.prototype.onStructureChange = function( context ) {
+	if ( this.parent ) {
+		context.section = this;
+		this.parent.onStructureChange(context);
+	}
+};
+
 /* Registration */
 
 ve.dm.modelRegistry.register( ve.dm.TableSectionNode );
