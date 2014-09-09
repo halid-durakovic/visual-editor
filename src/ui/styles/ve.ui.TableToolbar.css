@@ -1,0 +1,56 @@
+.ve-ui-tableToolbar {
+	height: 55px;
+}
+
+.ve-ui-tableToolbar .oo-ui-toolbar-tools {
+	width: 100%;
+}
+
+.ve-ui-tableToolbar .oo-ui-toolbar-tools .oo-ui-tool a.oo-ui-tool-link {
+	height: 2.5em;
+}
+
+/* Center icon and show label */
+
+.ve-ui-tableToolbar .oo-ui-toolbar-tools .oo-ui-tool {
+	min-width: 50px;
+	text-align: center;
+	vertical-align: inherit;
+}
+
+.ve-ui-tableToolbar .oo-ui-toolbar-tools .oo-ui-tool .oo-ui-iconElement-icon {
+	margin: 0px auto;
+	width: 28px;
+	height: 28px;
+}
+
+.ve-ui-tableToolbar .oo-ui-toolbar-tools .oo-ui-tool .oo-ui-tool-title {
+	display: inline;
+	font-size: 10px;
+}
+
+.ve-ui-tableToolbar .oo-ui-toolbar-tools .toolGroupTitle {
+	display: inline-block;
+	font-size: 10px;
+	font-style: italic;
+	padding: 2px 0px 0px 5px;
+	margin-right: 10px;
+}
+
+/* Separators and Labels */
+
+.ve-ui-tableToolbar .toolbarTitle {
+	float:left;
+	font-size: 18px;
+	padding-top: 25px;
+	padding-left: 20px;
+	padding-right: 40px;
+}
+
+.ve-ui-tableToolbar .toolbarSeparator {
+	display: inline-block;
+	vertical-align: middle;
+	width: 1px;
+	height: 40px;
+	border-left: solid 1px #ccc;
+}

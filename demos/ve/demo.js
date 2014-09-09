@@ -251,7 +251,8 @@ $( function () {
 			);
 
 			currentTarget.on( 'surfaceReady', function () {
-				var surfaceView = currentTarget.getSurface().getView();
+				var surface = currentTarget.getSurface();
+				var surfaceView = surface.getView();
 				// Container must be properly hidden before slideDown animation
 				$targetContainer.removeAttr( 'style' ).hide()
 					// Restore directionality
@@ -260,6 +261,19 @@ $( function () {
 				$targetContainer.slideDown().promise().done( function () {
 					surfaceView.focus();
 				} );
+
+				// HACK: injecting a contextual sub-toolbar for table editing
+				// TODO: find a proper approach for that
+				// Alternatives:
+				//   - contextual toolbar around the CE element
+				//   - inspector popup
+				var $subToolbars = $('<div>');
+				$subToolbars.append( $('<div style="clear:both"></div>' ) );
+				var tableToolbar = new ve.ui.TableToolbar(surface, {
+					$context: $subToolbars
+				});
+				$subToolbars.append(tableToolbar.$element);
+				$subToolbars.insertAfter(currentTarget.getToolbar().$actions);
 			} );
 		}
 
