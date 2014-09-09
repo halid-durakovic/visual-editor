@@ -2128,6 +2128,17 @@ ve.ce.Surface.prototype.handleDelete = function ( e, direction ) {
 				model.setSelection( startNode.getModel().getOuterRange() );
 				return;
 			}
+			// HACK: preventing a deletion of table nodes
+			// TODO: there are more cases which alter a tables structure, which must not happen:
+			// e.g., delete with non-collapsed selection, cut, paster
+			else if ( !startNode.mergeOnDelete() ) {
+				model.setSelection(
+					this.getDocument().getRelativeRange(
+						model.getSelection(), direction, 'character', false
+					)
+				);
+				return;
+			}
 		}
 		if ( rangeToRemove.isCollapsed() ) {
 			// For instance beginning or end of the document.

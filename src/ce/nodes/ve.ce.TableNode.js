@@ -209,6 +209,9 @@ ve.ce.TableNode.static.name = 'table';
 
 ve.ce.TableNode.static.tagName = 'table';
 
+ve.ce.TableNode.static.mergeOnDelete = false;
+
+
 /* Registration */
 
 ve.ce.nodeFactory.register( ve.ce.TableNode );

@@ -42,6 +42,10 @@ ve.dm.TableNode.prototype.onStructureChange = function(context) {
 	this.emit('tableStructureChange', context);
 };
 
+ve.dm.TableNode.prototype.canBeMergedWith = function() {
+	return false;
+};
+
 /**
  * Provides a cell iterator that allows convenient traversal regardless of
  * the structure with respect to sections.

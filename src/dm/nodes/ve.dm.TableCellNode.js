@@ -91,6 +91,10 @@ ve.dm.TableCellNode.prototype.onAttributeChange = function( key ) {
 	}
 };
 
+ve.dm.TableCellNode.prototype.canBeMergedWith = function() {
+	return false;
+};
+
 /**
  * Creates data that can be inserted into the model to create a new table cell.
  *

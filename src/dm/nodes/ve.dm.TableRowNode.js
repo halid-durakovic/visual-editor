@@ -58,6 +58,10 @@ ve.dm.TableRowNode.prototype.onStructureChange = function( context ) {
 	}
 };
 
+ve.dm.TableRowNode.prototype.canBeMergedWith = function() {
+	return false;
+};
+
 /**
  * Creates data that can be inserted into the model to create a new table row.
  *

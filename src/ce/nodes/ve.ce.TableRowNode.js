@@ -29,6 +29,8 @@ ve.ce.TableRowNode.static.name = 'tableRow';
 
 ve.ce.TableRowNode.static.tagName = 'tr';
 
+ve.ce.TableRowNode.static.mergeOnDelete = false;
+
 /* Registration */
 
 ve.ce.nodeFactory.register( ve.ce.TableRowNode );
