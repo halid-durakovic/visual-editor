@@ -1,0 +1,12 @@
+input[type=text] {
+  width: 400px;
+}
+
+#result {
+  border: solid 1px #ccc;
+  overflow: hidden;
+}
+
+#result .data {
+  background-color: #eee;
+}
