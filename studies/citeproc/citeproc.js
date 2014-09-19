@@ -680,6 +680,10 @@ CSL.Output.Queue.prototype.string = function (state, myblobs, blob) {
                         if (state.normalDecorIsOrphan(blobjr, params)) {
                             continue;
                         }
+                        if ("@variable" === params[0] && state.fun.decorate["@variable"]) {
+                            b = state.fun.decorate["@variable"](state, b, params[1]);
+                            continue;
+                        }
                         b = state.fun.decorate[params[0]][params[1]](state, b);
                     }
                 }
@@ -727,6 +731,10 @@ CSL.Output.Queue.prototype.string = function (state, myblobs, blob) {
                 if (state.normalDecorIsOrphan(blobjr, params)) {
                     continue;
                 }
+                if ("@variable" === params[0] && state.fun.decorate["@variable"]) {
+                    blobs_start = state.fun.decorate["@variable"](state, blobs_start, params[1]);
+                    continue;
+                }
                 blobs_start = state.fun.decorate[params[0]][params[1]](state, blobs_start);
             }
         }
@@ -744,6 +752,10 @@ CSL.Output.Queue.prototype.string = function (state, myblobs, blob) {
             for (i = 0, ilen = blob.decorations.length; i < ilen; i += 1) {
                 params = blob.decorations[i];
                 if (["@bibliography", "@display"].indexOf(params[0]) === -1) {
+                    continue;
+                }
+                if ("@variable" === params[0] && state.fun.decorate["@variable"]) {
+                    blobs_start = state.fun.decorate["@variable"](state, blobs_start, params[1]);
                     continue;
                 }
                 blobs_start = state.fun.decorate[params[0]][params[1]].call(blob, state, blobs_start);
@@ -839,6 +851,10 @@ CSL.Output.Queue.prototype.renderBlobs = function (blobs, delim, has_more) {
                 for (ppos = 0; ppos < llen; ppos += 1) {
                     params = blob.decorations[ppos];
                     if (state.normalDecorIsOrphan(blob, params)) {
+                        continue;
+                    }
+                    if ("@variable" === params[0] && state.fun.decorate["@variable"]) {
+                        str = state.fun.decorate["@variable"](state, str, params[1]);
                         continue;
                     }
                     str = state.fun.decorate[params[0]][params[1]](state, str);
@@ -1324,6 +1340,11 @@ CSL.XmlToToken = function (state, tokentype) {
     attrfuncs = [];
     attributes = state.sys.xml.attributes(this);
     decorations = CSL.setDecorations.call(this, state, attributes);
+    // HACK: add the @variable to decorations so that we can experiment
+    // with the variable name for HTML output
+    if (attributes['@variable']) {
+        decorations.unshift(['@variable', attributes['@variable']]);
+    }
     token = new CSL.Token(name, tokentype);
     if (tokentype !== CSL.END || name === "if" || name === "else-if" || name === "layout") {
         for (key in attributes) {
@@ -9792,6 +9813,9 @@ CSL.Output.Formats.prototype.html = {
     },
     "bibstart": "<div class=\"csl-bib-body\">\n",
     "bibend": "</div>",
+    "@variable": function(state, str, name) {
+        return "<span class=\""+name+"\">" + str + "</span>";
+    },
     "@font-style/italic": "<i>%%STRING%%</i>",
     "@font-style/oblique": "<em>%%STRING%%</em>",
     "@font-style/normal": "<span style=\"font-style:normal;\">%%STRING%%</span>",
