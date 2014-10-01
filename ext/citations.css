@@ -1,0 +1,36 @@
+span.citation {
+/*  background: rgba(140, 190, 250, 0.3); */
+  background: #DCEBFD;
+}
+
+.bibliography {
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.bibliography .title {
+  font-size: large;
+  font-weight: bold;
+}
+
+.bibliography .references {
+  padding-top: 20px;
+}
+
+.bibliography .references .reference {
+  padding-top: 5px;
+}
+
+.bibliography .references .reference .label {
+  font-weight: bold;
+  float: left;
+}
+
+.bibliography .references .reference .content {
+  display: inline;
+  padding-left: 5px;
+}
+
+.oo-ui-icon-citation {
+  background-image: /* @embed */ url(citation.svg);
+}
