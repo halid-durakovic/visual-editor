@@ -2,6 +2,8 @@
 ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   // Parent constructor
   ve.ui.NodeInspector.call( this, config );
+
+  this.$frame.addClass('ve-ui-citationManager');
 };
 
 /* Inheritance */
@@ -22,28 +24,20 @@ ve.ui.CitationInspector.static.modelClasses = [ ve.dm.CitationNode ];
 ve.ui.CitationInspector.static.size = 'large';
 
 ve.ui.CitationInspector.static.actions = [
-  {
-    action: 'open',
-    label: OO.ui.deferMsg( 'visualeditor-linkinspector-open' )
-  },
-  {
-    action: 'done',
-    label: OO.ui.deferMsg( 'visualeditor-dialog-action-done' ),
-    flags: 'primary',
-    modes: 'edit'
-  },
-  {
-    action: 'insert',
-    label: OO.ui.deferMsg( 'visualeditor-dialog-action-insert' ),
-    flags: [ 'constructive', 'primary' ],
-    modes: 'insert'
-  },
-  {
-    action: 'remove',
-    label: OO.ui.deferMsg( 'visualeditor-inspector-remove-tooltip' ),
-    flags: 'destructive',
-    modes: 'edit'
-  }
+  // {
+  //   action: 'remove',
+  //   icon: 'remove',
+  //   label: OO.ui.deferMsg( 'visualeditor-inspector-remove-tooltip' ),
+  //   flags: 'primary',
+  //   modes: 'edit'
+  // },
+  // {
+  //   action: 'done',
+  //   icon: 'back',
+  //   label: OO.ui.deferMsg( 'visualeditor-inspector-close-tooltip' ),
+  //   flags: 'destructive',
+  //   modes: 'edit'
+  // },
 ];
 
 /**
@@ -56,6 +50,55 @@ ve.ui.CitationInspector.prototype.initialize = function () {
   ve.ui.CitationInspector.super.prototype.initialize.call( this );
 
   this.$content.addClass( 've-ui-citationInspector-content' );
+
+  var removeButton = new OO.ui.ActionWidget({
+    action: 'remove',
+    icon: 'remove',
+    label: OO.ui.deferMsg( 'visualeditor-inspector-remove-tooltip' ),
+    modes: 'edit'
+  });
+
+  var closeButton = new OO.ui.ActionWidget({
+    action: 'done',
+    icon: 'back',
+    label: OO.ui.deferMsg( 'visualeditor-inspector-close-tooltip' ),
+    modes: 'edit'
+  });
+
+  this.$primaryActions.append( [
+    removeButton.$element,
+    closeButton.$element
+    ] );
+
+  removeButton.connect(this, { click: ['executeAction', 'remove' ] });
+  closeButton.connect(this, { click: ['executeAction', 'done' ] });
+
+  this.removeButton = removeButton;
+  this.closeButton = closeButton;
+
+  var $toolbar = $('<div>').addClass('toolbar');
+
+  var $searchbar = $('<div>').addClass('searchbar');
+  var $searchFieldLabel = $('<span>').addClass('label').text('Find Reference');
+  var $searchField = $('<input type="text">');
+  $searchbar.append([ $searchFieldLabel, $searchField] );
+
+  var $tabs = $('<div>').addClass('tabs');
+  var $referencesTab = $('<div>').addClass('tab referencesTab').text('References');
+  var $newReferencesTab = $('<div>').addClass('tab newReferencesTab').text('New References');
+  $tabs.append([ $referencesTab, $newReferencesTab ]);
+
+  $toolbar.append([ $searchbar, $tabs ]);
+  this.$body.append($toolbar);
+
+  var $referenceList = $('<div>').addClass('referenceList');
+  for (var i = 0; i < 5; i++) {
+    $referenceList.append($('<div>').addClass('reference').text('Hallo ' + i));
+  }
+  this.$body.append($referenceList);
+
+  var $description = $('<div>').addClass('description').text('Enter a search text to filter available references. Press ‘Enter’ or click on a reference to add a citation to your article.')
+  this.$foot.append($description);
 };
 
 /**
@@ -83,8 +126,11 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       this.getFragment().getSurface().disable();
 
       this.citationNode = this.getSelectedNode();
+      // TODO: just disable the delete button instead of toggling (=show/hide)
       if ( this.citationNode ) {
+        this.removeButton.toggle(true);
       } else {
+        this.removeButton.toggle(false);
       }
     }, this );
 };
@@ -107,10 +153,10 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
   data = data || {};
   return ve.ui.CitationInspector.super.prototype.getTeardownProcess.call( this, data )
     .first( function () {
-      var surfaceModel = this.getFragment().getSurface();
+      // var surfaceModel = this.getFragment().getSurface();
 
       if ( this.commentNode ) {
-        if ( data.action === 'remove' || innerText === '' ) {
+        if ( data.action === 'remove' ) {
           // Remove citation node
           this.fragment = this.getFragment().clone( this.citationNode.getOuterRange() );
           this.fragment.removeContent();

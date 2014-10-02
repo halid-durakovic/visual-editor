@@ -24,13 +24,82 @@ span.citation {
 .bibliography .references .reference .label {
   font-weight: bold;
   float: left;
+  background-color: #eeeeee;
 }
 
 .bibliography .references .reference .content {
   display: inline;
-  padding-left: 5px;
+  padding-left: 10px;
 }
 
 .oo-ui-icon-citation {
   background-image: /* @embed */ url(citation.svg);
+}
+
+.oo-ui-icon-back {
+  background-image: /* @embed */ url(back.svg);
+}
+
+
+/* Hacking the style for CitationManager */
+
+.oo-ui-window-frame.ve-ui-citationManager {
+  width: 1000px !important;
+  height: 400px !important;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-head {
+  background-color: #CCCCCC;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-head .oo-ui-processDialog-location {
+  text-align: initial !important;
+  padding-left: 0px !important;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-head .oo-ui-processDialog-location .oo-ui-processDialog-title {
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-head .oo-ui-processDialog-actions-primary .oo-ui-buttonElement-button {
+  background : 0;
+  text-shadow : none;
+  border: none;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body {
+  min-height: 200px;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .toolbar {
+  display: block;
+  overflow: hidden;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar {
+  display: inline;
+  float: left;
+  height: 30px;
+  width: 50%;
+  border: solid 1px #cccccc;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar input {
+  border: none;
+  border-bottom: solid 1px #eeeeee;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs {
+  float: right;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab {
+  display: inline;
+  float: right;
+  padding-right: 10px;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-foot {
+  min-height: 30px;
+  background-color: #eeeeee;
+  color: #888888;
 }
