@@ -47,7 +47,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   this.citationNode = null;
 
   // to support keyboard driven selection
-  this.selectedIdx = -1;
+  this.cursorIdx = -1;
   this.filterPattern = "";
 
   this.removeButton.connect(this, { click: ['executeAction', 'remove' ] });
@@ -177,7 +177,7 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       }
 
       this.openExistingReferences();
-      this.selectedIdx = -1;
+      this.cursorIdx = -1;
 
     }, this );
 };
@@ -249,10 +249,29 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
     .next( function () {
       this.getFragment().getSurface().enable();
       // TODO: pre-select the reference associated to the currently selected citation
-      this.searchField.$input.on('keydown', this.keyDownHandler);
+      //this.searchField.$input.on('keydown', this.keyDownHandler);
       $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
+      this.searchField.$input.val('');
       this.searchField.$input.focus();
-      this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('selected'); this.selectedIdx = -1; }, this ));
+      this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('cursor'); this.cursorIdx = -1; }, this ));
+
+      $(this.referenceElements).removeClass('selected');
+      // TODO we should count citations for each reference somewhere
+      if (this.citationNode) {
+        // find the cited reference
+        for (var i = 0; i < this.referenceElements.length; i++) {
+          var refEl = this.referenceElements[i];
+          var ref = $.data(refEl, 'model');
+          if (ref.getAttribute('label') === this.citationNode.getAttribute('label')) {
+            $(refEl).addClass('selected');
+            OO.ui.Element.scrollIntoView(refEl);
+            break;
+          }
+        }
+      }
+
+      this.filterReferences();
+
     }, this );
 };
 
@@ -263,30 +282,7 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
   data = data || {};
   return ve.ui.CitationInspector.super.prototype.getTeardownProcess.call( this, data )
     .first( function () {
-      // var surfaceModel = this.getFragment().getSurface();
-
-      if ( this.commentNode ) {
-        if ( data.action === 'remove' ) {
-          // Remove citation node
-          this.fragment = this.getFragment().clone( this.citationNode.getOuterRange() );
-          this.fragment.removeContent();
-        } else {
-          // Update the label?
-        }
-      } else if ( false /* TODO when? */ ) {
-        // Insert new comment node
-        this.getFragment().insertContent( [
-          {
-            type: 'citation',
-            attributes: { label: 'TODO' }
-          },
-          { type: '/citation' }
-        ] );
-      }
-
-      this.searchField.$input.off('keydown', this.keyDownHandler);
-      $(document).off('keydown', this.keyDownHandler);
-
+      $(this.$iframe[0].contentDocument).off('keydown', this.keyDownHandler);
     }, this );
 };
 
@@ -311,51 +307,37 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
   referenceEls = this.$referenceList[0].children;
 
   if (e.keyCode === OO.ui.Keys.ENTER) {
-    if (fromSearchField) {
-      this.acceptSearch();
-    } else {
-      refEl = referenceEls[this.selectedIdx];
-      reference = $.data(refEl, 'model');
-      if (reference) {
-        this.selectReference(reference);
-      }
+    refEl = referenceEls[this.cursorIdx];
+    reference = $.data(refEl, 'model');
+    if (reference) {
+      this.selectReference(reference);
+      this.close( { action: 'edit' } );
     }
     e.preventDefault();
     return;
   } else {
-    // reset if the search field has got focused
-    if (fromSearchField) {
-      oldRef = referenceEls[this.selectedIdx];
-      this.selectedIdx = -1;
-      if (oldRef) {
-        $(oldRef).removeClass('selected');
-      }
-    }
-
-    if (e.keyCode === OO.ui.Keys.UP && !fromSearchField && this.selectedIdx >= 0) {
-      oldRef = referenceEls[this.selectedIdx];
-      this.selectedIdx--;
-      newRef = referenceEls[this.selectedIdx];
+    if (e.keyCode === OO.ui.Keys.UP && this.cursorIdx >= 0) {
+      oldRef = referenceEls[this.cursorIdx];
+      this.cursorIdx--;
+      newRef = referenceEls[this.cursorIdx];
       e.preventDefault();
-    } else if (e.keyCode === OO.ui.Keys.DOWN) {
-      oldRef = referenceEls[this.selectedIdx];
-      this.selectedIdx++;
-      this.selectedIdx = Math.min(this.selectedIdx, referenceEls.length - 1);
-      newRef = referenceEls[this.selectedIdx];
+    } else if (e.keyCode === OO.ui.Keys.DOWN && this.cursorIdx < referenceEls.length-1 ) {
+      oldRef = referenceEls[this.cursorIdx];
+      this.cursorIdx++;
+      newRef = referenceEls[this.cursorIdx];
       e.preventDefault();
     }
     if (oldRef) {
-      $(oldRef).removeClass('selected');
+      $(oldRef).removeClass('cursor');
     }
     if (newRef) {
-      $(newRef).addClass('selected');
+      $(newRef).addClass('cursor');
       OO.ui.Element.scrollIntoView(newRef);
     }
-    if ( this.selectedIdx < 0 ) {
-      this.selectedIdx = -1;
+    if ( this.cursorIdx < 0 ) {
+      this.cursorIdx = -1;
       this.searchField.$input.focus();
     } else if (fromSearchField) {
-      this.searchField.$input.blur();
     }
   }
 };
@@ -428,8 +410,8 @@ ve.ui.CitationInspector.prototype.filterReferences = function( ) {
 
   this.$referenceList.empty();
   this.$referenceList[0].appendChild(frag);
-  this.selectedIdx = -1;
-  $(this.referenceElements).removeClass('selected');
+  this.cursorIdx = -1;
+  $(this.referenceElements).removeClass('cursor');
 };
 
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {

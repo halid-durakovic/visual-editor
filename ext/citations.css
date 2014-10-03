@@ -148,10 +148,6 @@ span.citation {
   /* TODO: make that the last element is fully visible despite the fixed footer bar */;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected {
-  border: solid 1px #4A90E2;
-}
-
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .label {
   position: absolute;
   top: 0px;
@@ -161,10 +157,6 @@ span.citation {
   background-color: #979797;
   color: #ffffff;
   padding: 1px 5px 1px 5px;
-}
-
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .label {
-  background-color: #4A90E2;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .content {
@@ -179,11 +171,23 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-labelElement-label {
-  color: #cccccc;
+  color: #aaaaaa;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference:hover:not(.selected) .buttons .oo-ui-labelElement-label {
-  color: #333333;
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected {
+  border: solid 1px #4A90E2;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .label {
+  background-color: #4A90E2;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor:not(.selected) {
+  border: solid 1px #333333;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor:not(.selected) .label {
+  background-color: #333333;
 }
 
 
