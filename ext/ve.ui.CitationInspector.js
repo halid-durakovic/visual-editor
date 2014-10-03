@@ -4,6 +4,58 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   ve.ui.NodeInspector.call( this, config );
 
   this.$frame.addClass('ve-ui-citationManager');
+
+  // created in initialize
+  this.removeButton = new OO.ui.ActionWidget({
+    action: 'remove',
+    icon: 'remove',
+    label: OO.ui.deferMsg( 'visualeditor-inspector-remove-tooltip' ),
+    modes: 'edit'
+  });
+  this.closeButton = new OO.ui.ActionWidget({
+    action: 'done',
+    icon: 'back',
+    label: OO.ui.deferMsg( 'visualeditor-inspector-close-tooltip' ),
+    modes: 'edit'
+  });
+  this.searchField = new OO.ui.TextInputWidget( {
+    $: this.$,
+    autosize: true,
+    classes: ['citation-search-field']
+  } );
+  this.referencesTab = new OO.ui.ActionWidget({
+    action: 'references',
+    label: 'References',
+    classes: ['tab', 'referencesTab']
+  });
+  this.newReferencesTab = new OO.ui.ActionWidget({
+    action: 'newReferences',
+    label: 'New References',
+    classes: ['tab', 'newReferencesTab']
+  });
+
+  // set when opening a tab
+  this.activeTab = null;
+
+  this.$referenceList = $('<div>').addClass('reference-list');
+
+  // created when adding the first reference or extracted from document
+  this.bibliography = null;
+  this.referenceElements = null;
+
+  // extracted from fragment on setup when the inspector is opened for an existing citation
+  this.citationNode = null;
+
+  // to support keyboard driven selection
+  this.selectedIdx = -1;
+  this.filterPattern = "";
+
+  this.removeButton.connect(this, { click: ['executeAction', 'remove' ] });
+  this.closeButton.connect(this, { click: ['executeAction', 'done' ] });
+  this.referencesTab.connect(this, { click: ['executeAction', { action: 'tab', name: 'references' } ] });
+  this.newReferencesTab.connect(this, { click: ['executeAction', { action: 'tab', name: 'newReferences' } ] });
+
+  this.keyDownHandler = ve.bind( this.onKeyDown, this );
 };
 
 /* Inheritance */
@@ -23,22 +75,7 @@ ve.ui.CitationInspector.static.modelClasses = [ ve.dm.CitationNode ];
 
 ve.ui.CitationInspector.static.size = 'large';
 
-ve.ui.CitationInspector.static.actions = [
-  // {
-  //   action: 'remove',
-  //   icon: 'remove',
-  //   label: OO.ui.deferMsg( 'visualeditor-inspector-remove-tooltip' ),
-  //   flags: 'primary',
-  //   modes: 'edit'
-  // },
-  // {
-  //   action: 'done',
-  //   icon: 'back',
-  //   label: OO.ui.deferMsg( 'visualeditor-inspector-close-tooltip' ),
-  //   flags: 'destructive',
-  //   modes: 'edit'
-  // },
-];
+ve.ui.CitationInspector.static.actions = [];
 
 /**
  * Handle frame ready events.
@@ -51,53 +88,27 @@ ve.ui.CitationInspector.prototype.initialize = function () {
 
   this.$content.addClass( 've-ui-citationInspector-content' );
 
-  var removeButton = new OO.ui.ActionWidget({
-    action: 'remove',
-    icon: 'remove',
-    label: OO.ui.deferMsg( 'visualeditor-inspector-remove-tooltip' ),
-    modes: 'edit'
-  });
-
-  var closeButton = new OO.ui.ActionWidget({
-    action: 'done',
-    icon: 'back',
-    label: OO.ui.deferMsg( 'visualeditor-inspector-close-tooltip' ),
-    modes: 'edit'
-  });
-
   this.$primaryActions.append( [
-    removeButton.$element,
-    closeButton.$element
+    this.removeButton.$element,
+    this.closeButton.$element
     ] );
-
-  removeButton.connect(this, { click: ['executeAction', 'remove' ] });
-  closeButton.connect(this, { click: ['executeAction', 'done' ] });
-
-  this.removeButton = removeButton;
-  this.closeButton = closeButton;
 
   var $toolbar = $('<div>').addClass('toolbar');
 
   var $searchbar = $('<div>').addClass('searchbar');
   var $searchFieldLabel = $('<span>').addClass('label').text('Find Reference');
-  var $searchField = $('<input type="text">');
-  $searchbar.append([ $searchFieldLabel, $searchField] );
+  $searchbar.append([ $searchFieldLabel, this.searchField.$element ] );
 
-  var $tabs = $('<div>').addClass('tabs');
-  var $referencesTab = $('<div>').addClass('tab referencesTab').text('References');
-  var $newReferencesTab = $('<div>').addClass('tab newReferencesTab').text('New References');
-  $tabs.append([ $referencesTab, $newReferencesTab ]);
+  var $tabs = $('<div>').addClass('tabs')
+    // HACK: strange - we need to add the elements in reverse order
+    .append([ this.newReferencesTab.$element, this.referencesTab.$element ]);
 
   $toolbar.append([ $searchbar, $tabs ]);
+
   this.$body.append($toolbar);
+  this.$body.append(this.$referenceList);
 
-  var $referenceList = $('<div>').addClass('referenceList');
-  for (var i = 0; i < 5; i++) {
-    $referenceList.append($('<div>').addClass('reference').text('Hallo ' + i));
-  }
-  this.$body.append($referenceList);
-
-  var $description = $('<div>').addClass('description').text('Enter a search text to filter available references. Press ‘Enter’ or click on a reference to add a citation to your article.')
+  var $description = $('<div>').addClass('description').text('Enter a search text to filter available references. Press ‘Enter’ or click on a reference to add a citation to your article.');
   this.$foot.append($description);
 };
 
@@ -105,9 +116,22 @@ ve.ui.CitationInspector.prototype.initialize = function () {
  * @inheritdoc
  */
 ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
-  if ( action === 'remove' || action === 'insert' ) {
+  window.console.log('vi.ui.CitationInspector: action', action);
+  if ( action === 'remove' ) {
     return new OO.ui.Process( function () {
       this.close( { action: action } );
+    }, this );
+  } else if ( action.action === 'select' ) {
+    return new OO.ui.Process( function () {
+      this.selectReference(action.reference);
+    }, this );
+  } else if ( action.action === 'tab' ) {
+    return new OO.ui.Process( function () {
+      if (action.name === 'references') {
+        this.openExistingReferences();
+      } else if (action.name === 'newReferences') {
+        this.openNewReferences();
+      }
     }, this );
   }
   return ve.ui.CitationInspector.super.prototype.getActionProcess.call( this, action );
@@ -132,7 +156,83 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       } else {
         this.removeButton.toggle(false);
       }
+
+      var fragment = this.getFragment();
+      var documentModel = fragment.getDocument();
+
+      this.bibliography = null;
+      var toplevelNodes = documentModel.selectNodes( documentModel.getDocumentNode().getRange(), 'branches');
+      for (var i = 0; i < toplevelNodes.length; i++) {
+        var toplevelNode = toplevelNodes[i].node;
+        if (toplevelNode.type === 'bibliography') {
+          this.bibliography = toplevelNode;
+          break;
+        }
+      }
+
+      this.openExistingReferences();
+      this.selectedIdx = -1;
+
     }, this );
+};
+
+ve.ui.CitationInspector.prototype.openExistingReferences = function () {
+  var references, reference, $reference, $label, $content, i;
+
+  // already open
+  if (this.activeTab === this.referencesTab) return;
+
+  this.$referenceList.empty();
+  this.referenceElements = [];
+
+  if (this.bibliography) {
+    references = this.bibliography.getAttribute( 'entries' );
+    for (i = 0; i < references.length; i++) {
+      reference = references[i];
+      if (reference.type !== 'reference') continue;
+      $reference = $('<div>').addClass('reference');
+      $label = $('<div>').addClass('label')
+        .text(reference.getAttribute('label'));
+      $content = $('<div>').addClass('content')
+        .text(reference.getAttribute('content'));
+      $reference.append([$label, $content]);
+      $reference.data('model', reference);
+
+      this.referenceElements.push($reference[0])
+
+      var $buttons = $('<div>').addClass('buttons');
+      var selectButton = new OO.ui.ActionWidget({
+        action: 'select',
+        label: 'Select'
+      });
+      selectButton.connect(this, { click: [ 'executeAction', { action: 'select', reference: reference } ] });
+      $buttons.append([ selectButton.$element ]);
+
+      $reference.append($buttons);
+
+      this.$referenceList.append($reference);
+    }
+  } else {
+    this.$referenceList.text('No References available. You should use the "New References Tab" to add new ones');
+  }
+
+  this.newReferencesTab.$element.removeClass('active');
+  this.referencesTab.$element.addClass('active');
+  this.activeTab = this.referencesTab;
+};
+
+ve.ui.CitationInspector.prototype.openNewReferences = function () {
+  // already open
+  if (this.activeTab === this.newReferencesTab) return;
+
+  this.$referenceList.empty();
+
+  // TODO: load references according to search field
+  this.$referenceList.text('This is not implemented yet.');
+
+  this.referencesTab.$element.removeClass('active');
+  this.newReferencesTab.$element.addClass('active');
+  this.activeTab = this.newReferencesTab;
 };
 
 /**
@@ -143,6 +243,9 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
     .next( function () {
       this.getFragment().getSurface().enable();
       // TODO: pre-select the reference associated to the currently selected citation
+      this.searchField.$input.on('keydown', this.keyDownHandler);
+      $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
+      this.searchField.$input.focus();
     }, this );
 };
 
@@ -173,8 +276,141 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
           { type: '/citation' }
         ] );
       }
+
+      this.searchField.$input.off('keydown', this.keyDownHandler);
+      $(document).off('keydown', this.keyDownHandler);
+
     }, this );
 };
+
+ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
+  window.console.log('CitationInspector.onKeyDown', e);
+  var refEl, oldRef, newRef, fromSearchField, referenceEls, reference;
+
+  if (e.keyCode !== OO.ui.Keys.UP && e.keyCode !== OO.ui.Keys.DOWN && e.keyCode !== OO.ui.Keys.ENTER) {
+    window.setTimeout(ve.bind( function() {
+      // filter is only in for local references where it is ok to do that on every change of the pattern
+      if (this.activeTab === this.referencesTab) {
+        var pattern = this.searchField.$input.val();
+        if (this.filterPattern !== pattern) {
+          this.filterReferences();
+        }
+        this.filterPattern = pattern;
+      }
+    }, this), 0);
+    return;
+  }
+
+  fromSearchField = (e.srcElement === this.searchField.$input[0]);
+  referenceEls = this.$referenceList[0].children;
+
+  if (e.keyCode === OO.ui.Keys.ENTER) {
+    if (fromSearchField) {
+      this.acceptSearch();
+    } else {
+      refEl = referenceEls[this.selectedIdx];
+      reference = $.data(refEl, 'model');
+      if (reference) {
+        this.selectReference(reference);
+      }
+    }
+    e.preventDefault();
+    return;
+  } else {
+    // reset if the search field has got focused
+    if (fromSearchField) {
+      oldRef = referenceEls[this.selectedIdx];
+      this.selectedIdx = -1;
+      if (oldRef) {
+        $(oldRef).removeClass('selected');
+      }
+    }
+
+    if (e.keyCode === OO.ui.Keys.UP && !fromSearchField && this.selectedIdx >= 0) {
+      oldRef = referenceEls[this.selectedIdx];
+      this.selectedIdx--;
+      newRef = referenceEls[this.selectedIdx];
+      e.preventDefault();
+    } else if (e.keyCode === OO.ui.Keys.DOWN) {
+      oldRef = referenceEls[this.selectedIdx];
+      this.selectedIdx++;
+      this.selectedIdx = Math.min(this.selectedIdx, referenceEls.length - 1);
+      newRef = referenceEls[this.selectedIdx];
+      e.preventDefault();
+    }
+    if (oldRef) {
+      $(oldRef).removeClass('selected');
+    }
+    if (newRef) {
+      $(newRef).addClass('selected');
+      OO.ui.Element.scrollIntoView(newRef);
+    }
+    if ( this.selectedIdx < 0 ) {
+      this.selectedIdx = -1;
+      this.searchField.$input.focus();
+    } else if (fromSearchField) {
+      this.searchField.$input.blur();
+    }
+  }
+};
+
+ve.ui.CitationInspector.prototype.selectReference = function( reference ) {
+  window.console.log("CitationInspector will insert a label into the article... soon", reference);
+};
+
+ve.ui.CitationInspector.prototype.acceptSearch = function() {
+  if (this.activeTab === this.referencesTab) {
+    this.filterReferences();
+  } else {
+    this.lookupExternalReferences();
+  }
+};
+
+
+ve.ui.CitationInspector.prototype.filterReferences = function( ) {
+  var refEls, patterns, i, j, pattern, re, refEl, ranking, item, content;
+
+  patterns = this.searchField.$input.val().trim().split(/\s+/);
+  refEls = this.referenceElements;
+
+  ranking = [];
+
+  // a simple AND on all given keywords
+  // TODO: a smart ranking would be great
+  for (j = 0; j < refEls.length; j++) {
+    refEl = refEls[j];
+    item = { el: refEl, count: 0 };
+    content = refEl.textContent;
+    for (i = 0; i < patterns.length; i++) {
+      pattern = patterns[i];
+      re = new RegExp(pattern, 'g');
+      if (re.test(content)) {
+        item.count++;
+      }
+    }
+    ranking.push(item);
+  }
+
+  ranking.sort(function(a, b) {
+    return -(a.count - b.count);
+  });
+
+  var frag = window.document.createDocumentFragment();
+
+  for (i = 0; i < ranking.length; i++) {
+    if (ranking[i].count > 0) {
+      frag.appendChild(ranking[i].el);
+    }
+  }
+
+  this.$referenceList.empty();
+  this.$referenceList[0].appendChild(frag);
+};
+
+ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
+  window.console.log("Soon we will lookup external references...");
+};
+
 
 /* Registration */
 
