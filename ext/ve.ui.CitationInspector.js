@@ -119,11 +119,17 @@ ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
   window.console.log('vi.ui.CitationInspector: action', action);
   if ( action === 'remove' ) {
     return new OO.ui.Process( function () {
+      if (this.citationNode) {
+        this.getFragment().removeContent();
+      }
       this.close( { action: action } );
     }, this );
   } else if ( action.action === 'select' ) {
     return new OO.ui.Process( function () {
       this.selectReference(action.reference);
+      if (this.citationNode) {
+        this.close( { action: 'edit' } );
+      }
     }, this );
   } else if ( action.action === 'tab' ) {
     return new OO.ui.Process( function () {
@@ -198,7 +204,7 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
       $reference.append([$label, $content]);
       $reference.data('model', reference);
 
-      this.referenceElements.push($reference[0])
+      this.referenceElements.push($reference[0]);
 
       var $buttons = $('<div>').addClass('buttons');
       var selectButton = new OO.ui.ActionWidget({
@@ -246,6 +252,7 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       this.searchField.$input.on('keydown', this.keyDownHandler);
       $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
       this.searchField.$input.focus();
+      this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('selected'); this.selectedIdx = -1; }, this ));
     }, this );
 };
 
@@ -284,7 +291,6 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
 };
 
 ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
-  window.console.log('CitationInspector.onKeyDown', e);
   var refEl, oldRef, newRef, fromSearchField, referenceEls, reference;
 
   if (e.keyCode !== OO.ui.Keys.UP && e.keyCode !== OO.ui.Keys.DOWN && e.keyCode !== OO.ui.Keys.ENTER) {
@@ -356,6 +362,23 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
 
 ve.ui.CitationInspector.prototype.selectReference = function( reference ) {
   window.console.log("CitationInspector will insert a label into the article... soon", reference);
+  var tx, fragment, surface, data;
+
+  fragment = this.getFragment();
+  surface = fragment.getSurface();
+
+  if (this.citationNode) {
+    tx = ve.dm.Transaction.newFromAttributeChanges( surface.documentModel, this.citationNode.getOuterRange().start, { label: reference.getAttribute('label') } );
+    surface.change( tx );
+  } else {
+    data = [ {
+      type: 'citation',
+      attributes: {
+        label: reference.getAttribute('label')
+      }
+    } ];
+    fragment.insertContent(data, false).collapseRangeToEnd().select();
+  }
 };
 
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
@@ -370,7 +393,7 @@ ve.ui.CitationInspector.prototype.acceptSearch = function() {
 ve.ui.CitationInspector.prototype.filterReferences = function( ) {
   var refEls, patterns, i, j, pattern, re, refEl, ranking, item, content;
 
-  patterns = this.searchField.$input.val().trim().split(/\s+/);
+  patterns = this.searchField.$input.val().trim().toLowerCase().split(/\s+/);
   refEls = this.referenceElements;
 
   ranking = [];
@@ -380,7 +403,7 @@ ve.ui.CitationInspector.prototype.filterReferences = function( ) {
   for (j = 0; j < refEls.length; j++) {
     refEl = refEls[j];
     item = { el: refEl, count: 0 };
-    content = refEl.textContent;
+    content = refEl.textContent.toLowerCase();
     for (i = 0; i < patterns.length; i++) {
       pattern = patterns[i];
       re = new RegExp(pattern, 'g');
@@ -405,6 +428,8 @@ ve.ui.CitationInspector.prototype.filterReferences = function( ) {
 
   this.$referenceList.empty();
   this.$referenceList[0].appendChild(frag);
+  this.selectedIdx = -1;
+  $(this.referenceElements).removeClass('selected');
 };
 
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {

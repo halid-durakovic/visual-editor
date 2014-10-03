@@ -11,6 +11,8 @@ ve.ce.ReferenceNode = function VeCeReferenceNode( model, config ) {
 
   // Mixin constructors
   ve.ce.FocusableNode.call( this, this.$element, config );
+
+  this.model.connect( this, { 'update': 'onUpdate' } );
 };
 
 /* Inheritance */
@@ -31,6 +33,9 @@ ve.ce.ReferenceNode.prototype.createHighlight = function () {
     .attr( 'title', ve.msg( 'visualeditor-reference-tooltip' ) );
 };
 
+ve.ce.ReferenceNode.prototype.onUpdate = function () {
+  // TODO: react on updates
+};
 
 /* Registration */
 

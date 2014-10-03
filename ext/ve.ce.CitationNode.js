@@ -5,12 +5,15 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
 
   // DOM changes
   this.$element
-    .addClass( 've-ce-citationNode' )
+    .addClass( 'citation ve-ce-citationNode' )
     // Add em space for selection highlighting
     .text( model.getAttribute('label') );
 
   // Mixin constructors
   ve.ce.FocusableNode.call( this, this.$element, config );
+
+  this.model.connect( this, { 'update': 'onUpdate' } );
+
 };
 
 /* Inheritance */
@@ -31,6 +34,11 @@ ve.ce.CitationNode.prototype.createHighlight = function () {
   return ve.ce.FocusableNode.prototype.createHighlight.call( this )
     .addClass( 've-ce-citation-highlight' )
     .attr( 'title', ve.msg( 'visualeditor-citationnode-tooltip' ) );
+};
+
+ve.ce.CitationNode.prototype.onUpdate = function () {
+  var label = this.model.getAttribute('label');
+  this.$element.text(label);
 };
 
 
