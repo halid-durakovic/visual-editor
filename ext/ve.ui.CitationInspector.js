@@ -34,6 +34,8 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
     classes: ['tab', 'newReferencesTab']
   });
 
+  this.$selectedFlag = $('<div>').addClass('selected-flag').text('Selected');
+
   // set when opening a tab
   this.activeTab = null;
 
@@ -256,14 +258,18 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('cursor'); this.cursorIdx = -1; }, this ));
 
       $(this.referenceElements).removeClass('selected');
+      this.$selectedFlag.remove();
+
       // TODO we should count citations for each reference somewhere
       if (this.citationNode) {
         // find the cited reference
         for (var i = 0; i < this.referenceElements.length; i++) {
           var refEl = this.referenceElements[i];
+          var $refEl = $(refEl);
           var ref = $.data(refEl, 'model');
           if (ref.getAttribute('label') === this.citationNode.getAttribute('label')) {
-            $(refEl).addClass('selected');
+            $refEl.addClass('selected')
+              .append(this.$selectedFlag);
             OO.ui.Element.scrollIntoView(refEl);
             break;
           }
@@ -378,6 +384,9 @@ ve.ui.CitationInspector.prototype.filterReferences = function( ) {
   patterns = this.searchField.$input.val().trim().toLowerCase().split(/\s+/);
   refEls = this.referenceElements;
 
+  $(this.referenceElements).removeClass('cursor');
+  this.cursorIdx = -1;
+
   ranking = [];
 
   // a simple AND on all given keywords
@@ -401,17 +410,20 @@ ve.ui.CitationInspector.prototype.filterReferences = function( ) {
   });
 
   var frag = window.document.createDocumentFragment();
-
+  var count = 0;
   for (i = 0; i < ranking.length; i++) {
+    var el = ranking[i].el;
     if (ranking[i].count > 0) {
       frag.appendChild(ranking[i].el);
+      if (el.classList.contains('selected')) {
+        this.cursorIdx = count;
+      }
+      count++;
     }
   }
 
   this.$referenceList.empty();
   this.$referenceList[0].appendChild(frag);
-  this.cursorIdx = -1;
-  $(this.referenceElements).removeClass('cursor');
 };
 
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {

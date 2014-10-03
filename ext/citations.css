@@ -182,6 +182,22 @@ span.citation {
   background-color: #4A90E2;
 }
 
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .buttons {
+  visibility: hidden;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .selected-flag {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  padding: 1px 10px 1px 10px;
+  border: solid 1px #4A90E2;
+  background-color: #4A90E2;
+  color: white;
+  font-weight: bold;
+}
+
+
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor:not(.selected) {
   border: solid 1px #333333;
 }
