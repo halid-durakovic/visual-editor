@@ -44,6 +44,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   // created when adding the first reference or extracted from document
   this.bibliography = null;
   this.referenceElements = null;
+  this.refIndex = {};
 
   // extracted from fragment on setup when the inspector is opened for an existing citation
   this.citationNode = null;
@@ -179,7 +180,6 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       }
 
       this.openExistingReferences();
-      this.cursorIdx = -1;
 
     }, this );
 };
@@ -187,11 +187,9 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
 ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   var references, reference, $reference, $label, $content, i;
 
-  // already open
-  if (this.activeTab === this.referencesTab) return;
-
   this.$referenceList.empty();
   this.referenceElements = [];
+  this.refIndex = {};
 
   if (this.bibliography) {
     references = this.bibliography.getAttribute( 'entries' );
@@ -204,7 +202,7 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
       $content = $('<div>').addClass('content')
         .text(reference.getAttribute('content'));
       $reference.append([$label, $content]);
-      $reference.data('model', reference);
+      this.refIndex[reference.getAttribute('label')] = reference;
 
       this.referenceElements.push($reference[0]);
 
@@ -230,9 +228,6 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
 };
 
 ve.ui.CitationInspector.prototype.openNewReferences = function () {
-  // already open
-  if (this.activeTab === this.newReferencesTab) return;
-
   this.$referenceList.empty();
 
   // TODO: load references according to search field
@@ -266,8 +261,11 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
         for (var i = 0; i < this.referenceElements.length; i++) {
           var refEl = this.referenceElements[i];
           var $refEl = $(refEl);
-          var ref = $.data(refEl, 'model');
-          if (ref.getAttribute('label') === this.citationNode.getAttribute('label')) {
+          var $label = $refEl.find('.label');
+          var ref = this.refIndex[$label.text()];
+          if (!ref) {
+            console.error("ohoohh, couldn't find reference model for element");
+          } else if (ref.getAttribute('label') === this.citationNode.getAttribute('label')) {
             $refEl.addClass('selected')
               .append(this.$selectedFlag);
             OO.ui.Element.scrollIntoView(refEl);
@@ -314,8 +312,11 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
 
   if (e.keyCode === OO.ui.Keys.ENTER) {
     refEl = referenceEls[this.cursorIdx];
-    reference = $.data(refEl, 'model');
-    if (reference) {
+    var labelEl = refEl.querySelector('.label');
+    reference = this.refIndex[labelEl.textContent];
+    if (!reference) {
+      console.error('ohoohh, could not find reference model');
+    } else {
       this.selectReference(reference);
       this.close( { action: 'edit' } );
     }
@@ -424,6 +425,12 @@ ve.ui.CitationInspector.prototype.filterReferences = function( ) {
 
   this.$referenceList.empty();
   this.$referenceList[0].appendChild(frag);
+
+  if (this.citationNode) {
+    this.$referenceList.addClass('selected');
+  } else {
+    this.$referenceList.removeClass('selected');
+  }
 };
 
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {

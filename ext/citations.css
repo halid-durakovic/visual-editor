@@ -167,10 +167,19 @@ span.citation {
   position: absolute;
   top: 0px;
   right: 0px;
-  padding: 1px 10px 1px 10px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-labelElement-label {
+  color: #333333;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement {
+  border: solid 1px #cccccc;
+  background-color: #f0f0f0;
+  padding: 1px 5px 1px 5px;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.selected .reference .buttons .oo-ui-labelElement-label {
   color: #aaaaaa;
 }
 
