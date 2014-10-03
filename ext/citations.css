@@ -41,6 +41,7 @@ span.citation {
 }
 
 
+
 /* Hacking the style for CitationManager */
 
 .oo-ui-window-frame.ve-ui-citationManager {
@@ -49,7 +50,7 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-head {
-  background-color: #CCCCCC;
+  background-color: #fff;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-head .oo-ui-processDialog-location {
@@ -74,27 +75,26 @@ span.citation {
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .toolbar {
   display: block;
   overflow: hidden;
-  padding: 2px;
+  height: 40px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar {
   display: inline;
   float: left;
-  height: 31px;
-  border: solid 1px #cccccc;
-  background-color: white;
+  padding-top: 5px;
+  height: 30px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .label {
   float:left;
-  font-variant: small-caps;
-  padding-left: 5px;
+  text-transform: uppercase;
+  font-size: 10px;
+  line-height: 20px;
+  font-weight: bold;
+  padding-left: 15px;
   padding-right: 5px;
-  /* center vertically */
-  position: relative;
-  top: 50%;
-  transform: translateY(-50%);
-  /* end center vertically */
+  padding-top: 5px;
+  color: #777;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .citation-search-field {
@@ -104,25 +104,27 @@ span.citation {
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .citation-search-field input {
   border: none;
   box-shadow: none;
+  background: transparent;
+  font-size: 14px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs {
-  padding-right: 14px;
+  overflow: hidden;
+  position: absolute;
+  right: 0px;
+  top: 9px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab {
-  display: inline-block;
   float: right;
   padding-left: 10px;
   padding-right: 10px;
   padding-top: 5px;
   padding-bottom: 5px;
-  border: 1px solid #e0e0e0;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab.active {
-  border: 1px solid #b6b6b6;
-  background: #FAFAFA;
+  background: #fff;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab .oo-ui-labelElement-label {
@@ -130,8 +132,13 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list {
-  overflow: scroll;
-  height: 100%;
+  background: white;
+  overflow: auto;
+  position: absolute;
+  top: 40px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference {
@@ -140,9 +147,11 @@ span.citation {
   padding-left: 20px;
   padding-right: 20%;
   padding-bottom: 10px;
-  border: solid 1px #e9e9e9;
+  border-bottom: solid 1px #e9e9e9;
+  background: #fff;
   min-height: 40px;
 }
+
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference:last-child {
   /* TODO: make that the last element is fully visible despite the fixed footer bar */;
@@ -154,7 +163,7 @@ span.citation {
   left: 0px;
   font-size: 12px;
   font-weight: bold;
-  background-color: #979797;
+  background-color: rgba(0,0,0,0.3);
   color: #ffffff;
   padding: 1px 5px 1px 5px;
 }
@@ -165,8 +174,8 @@ span.citation {
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons {
   position: absolute;
-  top: 0px;
-  right: 0px;
+  top: 25px;
+  right: 20px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-labelElement-label {
@@ -174,21 +183,31 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement {
-  border: solid 1px #cccccc;
-  background-color: #f0f0f0;
-  padding: 1px 5px 1px 5px;
+  background-color: #555;
+  color: white;
+  padding: 6px 10px;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement:hover,
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor .buttons .oo-ui-buttonElement {
+  background-color: #333;
+  color: white;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.selected .reference .buttons .oo-ui-labelElement-label {
-  color: #aaaaaa;
+  color: #fff;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: bold;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected {
-  border: solid 1px #4A90E2;
+  background: #4A90E2;
+  color: #fff;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .label {
-  background-color: #4A90E2;
+  background-color: rgba(0,0,0,0.3);
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .buttons {
@@ -197,8 +216,8 @@ span.citation {
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .selected-flag {
   position: absolute;
-  top: 0px;
-  right: 0px;
+  top: 25px;
+  right: 20px;
   padding: 1px 10px 1px 10px;
   border: solid 1px #4A90E2;
   background-color: #4A90E2;
@@ -206,15 +225,17 @@ span.citation {
   font-weight: bold;
 }
 
-
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor:not(.selected) {
-  border: solid 1px #333333;
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor {
+  background: #f1f1f1;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor:not(.selected) .label {
-  background-color: #333333;
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor.selected {
+  background: #3F7DC6;
 }
 
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.cursor .label {
+  background-color: rgba(0,0,0,0.7);
+}
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-foot {
   min-height: 30px;
