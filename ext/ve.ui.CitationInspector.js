@@ -102,6 +102,9 @@ ve.ui.CitationInspector.prototype.initialize = function () {
   var $searchFieldLabel = $('<span>').addClass('label').text('Find Reference');
   $searchbar.append([ $searchFieldLabel, this.searchField.$element ] );
 
+  // Add placeholder
+  this.searchField.$input.attr("placeholder", "Type to search...")
+
   var $tabs = $('<div>').addClass('tabs')
     // HACK: strange - we need to add the elements in reverse order
     .append([ this.newReferencesTab.$element, this.referencesTab.$element ]);
