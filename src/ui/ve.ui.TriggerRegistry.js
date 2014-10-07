@@ -1,8 +1,7 @@
 /*!
  * VisualEditor UserInterface TriggerRegistry class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -42,12 +41,12 @@ ve.ui.TriggerRegistry.prototype.register = function ( name, triggers ) {
 
 	if ( ve.isPlainObject( triggers ) ) {
 		if ( platformKey in triggers ) {
-			triggerList = ve.isArray( triggers[platformKey] ) ? triggers[platformKey] : [ triggers[platformKey] ];
+			triggerList = Array.isArray( triggers[platformKey] ) ? triggers[platformKey] : [ triggers[platformKey] ];
 		} else {
 			return;
 		}
 	} else {
-		triggerList = ve.isArray( triggers ) ? triggers : [ triggers ];
+		triggerList = Array.isArray( triggers ) ? triggers : [ triggers ];
 	}
 
 	// Validate arguments
@@ -104,6 +103,12 @@ ve.ui.triggerRegistry.register(
 );
 ve.ui.triggerRegistry.register(
 	'underline', { mac: new ve.ui.Trigger( 'cmd+u' ), pc: new ve.ui.Trigger( 'ctrl+u' ) }
+);
+ve.ui.triggerRegistry.register(
+	'code', { mac: new ve.ui.Trigger( 'cmd+shift+6' ), pc: new ve.ui.Trigger( 'ctrl+shift+6' ) }
+);
+ve.ui.triggerRegistry.register(
+	'strikethrough', { mac: new ve.ui.Trigger( 'cmd+shift+5' ), pc: new ve.ui.Trigger( 'ctrl+shift+5' ) }
 );
 ve.ui.triggerRegistry.register(
 	'subscript', { mac: new ve.ui.Trigger( 'cmd+,' ), pc: new ve.ui.Trigger( 'ctrl+,' ) }

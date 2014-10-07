@@ -1,8 +1,7 @@
 /*!
  * VisualEditor ContentEditable Surface tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.ce.Surface' );
@@ -13,11 +12,10 @@ ve.test.utils.runSurfaceHandleSpecialKeyTest = function ( assert, html, range, o
 	var i, method, args,
 		selection,
 		actions = {
-			backspace: [ 'handleDelete', {}, -1 ],
-			delete: [ 'handleDelete', {}, 1 ],
-			cut: [ 'handleDelete', {}, 0 ],
-			modifiedBackspace: [ 'handleDelete', { ctrlKey: true }, -1 ],
-			modifiedDelete: [ 'handleDelete', { ctrlKey: true }, 1 ],
+			backspace: [ 'handleDelete', { keyCode: OO.ui.Keys.BACKSPACE } ],
+			delete: [ 'handleDelete', { keyCode: OO.ui.Keys.DELETE } ],
+			modifiedBackspace: [ 'handleDelete', { keyCode: OO.ui.Keys.BACKSPACE, ctrlKey: true } ],
+			modifiedDelete: [ 'handleDelete', { keyCode: OO.ui.Keys.DELETE, ctrlKey: true } ],
 			enter: [ 'handleEnter', {} ],
 			modifiedEnter: [ 'handleEnter', { shiftKey: true } ]
 		},
@@ -135,15 +133,6 @@ QUnit.test( 'handleDelete', function ( assert ) {
 				},
 				expectedRange: new ve.Range( 39 ),
 				msg: 'Focusable node deleted if selected first'
-			},
-			{
-				range: new ve.Range( 39, 41 ),
-				operations: ['cut'],
-				expectedData: function ( data ) {
-					data.splice( 39, 2 );
-				},
-				expectedRange: new ve.Range( 39 ),
-				msg: 'Focusable node deleted by cut'
 			},
 			{
 				range: new ve.Range( 0, 63 ),
@@ -467,7 +456,7 @@ QUnit.test( 'onContentChange', function ( assert ) {
 } );
 
 QUnit.test( 'getClipboardHash', 1, function ( assert ) {
-	assert.equal(
+	assert.strictEqual(
 		ve.ce.Surface.static.getClipboardHash(
 			$( $.parseHTML( '  <p class="foo"> Bar </p>\n\t<span class="baz"></span> Quux <h1><span></span>Whee</h1>' ) )
 		),
@@ -542,7 +531,7 @@ QUnit.test( 'onCopy', function ( assert ) {
 
 		clipboardKey = testClipboardData['text/xcustom'];
 
-		assert.equal( clipboardKey, view.clipboardId + '-0', msg + ': clipboardId set' );
+		assert.strictEqual( clipboardKey, view.clipboardId + '-0', msg + ': clipboardId set' );
 
 		parts = clipboardKey.split( '-' );
 		clipboardIndex = parts[1];
@@ -840,6 +829,27 @@ QUnit.test( 'beforePaste/afterPaste', function ( assert ) {
 					]
 				],
 				msg: 'RDFa attributes restored/overwritten from data-ve-attributes'
+			},
+			{
+				range: new ve.Range( 0 ),
+				pasteHtml: 'foo\n<!-- StartFragment --><p>Bar</p><!--EndFragment-->baz',
+				useClipboardData: true,
+				expectedRange: new ve.Range( 5 ),
+				expectedOps: [
+					[
+						{
+							type: 'replace',
+							insert: [
+								{ type: 'paragraph' },
+								'B', 'a', 'r',
+								{ type: '/paragraph' }
+							],
+							remove: []
+						},
+						{ type: 'retain', length: docLen }
+					]
+				],
+				msg: 'Start/EndFragment comments trimmed from clipboardData'
 			}
 		];
 
@@ -929,12 +939,12 @@ QUnit.test( 'getNearestCorrectOffset', function ( assert ) {
 
 	for ( dir = -1; dir <= 1; dir += 2 ) {
 		for ( i = 0; i < data.getLength(); i++ ) {
-			assert.equal( view.getNearestCorrectOffset( i, dir ), expected[dir][i], 'Direction: ' + dir + ' Offset: ' + i );
+			assert.strictEqual( view.getNearestCorrectOffset( i, dir ), expected[dir][i], 'Direction: ' + dir + ' Offset: ' + i );
 		}
 	}
 } );
 
-QUnit.test( 'getSelection', function ( assert ) {
+QUnit.test( 'getRangeSelection', function ( assert ) {
 	var i, j, l, surface, selection, expectedNode, internlListNode, node, msg,
 		expect = 0,
 		cases = [
@@ -1059,20 +1069,20 @@ QUnit.test( 'getSelection', function ( assert ) {
 			msg = ' at ' + j + ' in ' + cases[i].msg;
 			node = surface.getView().getDocument().getDocumentNode().getNodeFromOffset( j );
 			if ( node.isFocusable() ) {
-				assert.equal( null, cases[i].expected[j], 'Focusable node at ' + j );
+				assert.strictEqual( null, cases[i].expected[j], 'Focusable node at ' + j );
 			} else {
-				selection = surface.getView().getSelection( new ve.Range( j ) );
+				selection = surface.getView().getRangeSelection( new ve.Range( j ) );
 				if ( selection.end ) {
 					expectedNode = $( '<div>' ).html( cases[i].expected[j].startNode )[0].childNodes[0];
 					assert.equalDomElement( selection.start.node, expectedNode, 'Start node ' + msg );
-					assert.equal( selection.start.offset, cases[i].expected[j].startOffset, 'Start offfset ' + msg );
+					assert.strictEqual( selection.start.offset, cases[i].expected[j].startOffset, 'Start offfset ' + msg );
 					expectedNode = $( '<div>' ).html( cases[i].expected[j].endNode )[0].childNodes[0];
 					assert.equalDomElement( selection.end.node, expectedNode, 'End node ' + msg );
-					assert.equal( selection.end.offset, cases[i].expected[j].endOffset, 'End offfset ' + msg );
+					assert.strictEqual( selection.end.offset, cases[i].expected[j].endOffset, 'End offfset ' + msg );
 				} else {
 					expectedNode = $( '<div>' ).html( cases[i].expected[j].startNode )[0].childNodes[0];
 					assert.equalDomElement( selection.start.node, expectedNode, 'Node ' + msg );
-					assert.equal( selection.start.offset, cases[i].expected[j].startOffset, 'Offset ' + msg );
+					assert.strictEqual( selection.start.offset, cases[i].expected[j].startOffset, 'Offset ' + msg );
 				}
 			}
 		}
@@ -1081,15 +1091,14 @@ QUnit.test( 'getSelection', function ( assert ) {
 } );
 
 /* Methods with return values */
-// TODO: ve.ce.Surface#hasSlugAtOffset
 // TODO: ve.ce.Surface#needsPawn
 // TODO: ve.ce.Surface#getSurface
 // TODO: ve.ce.Surface#getModel
 // TODO: ve.ce.Surface#getDocument
 // TODO: ve.ce.Surface#getFocusedNode
 // TODO: ve.ce.Surface#isRenderingLocked
-// TODO: ve.ce.Surface#getClientSelectionRect
-// TODO: ve.ce.Surface#getRelativeSelectionRect
+// TODO: ve.ce.Surface#getSelectionBoundingRect
+// TODO: ve.ce.Surface#getSelectionStartAndEndRects
 
 /* Methods without return values */
 // TODO: ve.ce.Surface#initialize

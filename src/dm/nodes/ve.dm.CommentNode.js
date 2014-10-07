@@ -1,25 +1,31 @@
 /*!
  * VisualEditor DataModel CommentNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
  * @class
  * @abstract
  * @extends ve.dm.LeafNode
+ * @mixins ve.dm.FocusableNode
  *
  * @constructor
  * @param {Object} element Reference to element in meta-linmod
  */
 ve.dm.CommentNode = function VeDmCommentNode( element ) {
+	// Parent constructor
 	ve.dm.CommentNode.super.call( this, element );
+
+	// Mixin constructors
+	ve.dm.FocusableNode.call( this );
 };
 
 /* Inheritance */
 
 OO.inheritClass( ve.dm.CommentNode, ve.dm.LeafNode );
+
+OO.mixinClass( ve.dm.CommentNode, ve.dm.FocusableNode );
 
 /* Static Properties */
 

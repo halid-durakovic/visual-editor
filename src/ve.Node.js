@@ -1,8 +1,7 @@
 /*!
  * VisualEditor Node class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -225,13 +224,13 @@ ve.Node.prototype.detach = function () {
  *
  * For each traversed node, the callback function will be passed the traversed node as a parameter.
  *
- * @param {Function} callback Callback method to be called for every traversed node
  * @method
+ * @param {Function} callback Callback method to be called for every traversed node. Returning false stops the traversal.
  */
 ve.Node.prototype.traverseUpstream = function ( callback ) {
 	var node = this;
 	while ( node ) {
-		if ( callback ( node ) === false ) {
+		if ( callback( node ) === false ) {
 			break;
 		}
 		node = node.getParent();

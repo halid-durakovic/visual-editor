@@ -30,35 +30,42 @@
 		"scripts": [
 			"lib/oojs-ui/oojs-ui.js"
 		],
-		"styles": [
-			"lib/oojs-ui/oojs-ui.svg.css"
-		],
 		"dependencies": [
 			"oojs",
 			"jquery"
 		]
 	},
 	"oojs-ui-apex": {
+		"scripts": [
+			"lib/oojs-ui/oojs-ui-apex.js"
+		],
 		"styles": [
-			"lib/oojs-ui/oojs-ui-apex.css"
+			"lib/oojs-ui/oojs-ui-apex.svg.css"
 		],
 		"dependencies": [
 			"oojs-ui"
 		]
 	},
 	"oojs-ui-minerva": {
+		"scripts": [
+			"lib/oojs-ui/oojs-ui-minerva.js"
+		],
 		"styles": [
-			"lib/oojs-ui/oojs-ui-minerva.css"
+			"lib/oojs-ui/oojs-ui-minerva.svg.css"
 		],
 		"dependencies": [
 			"oojs-ui"
 		]
 	},
-	"rangy": {
+	"oojs-ui-mediawiki": {
 		"scripts": [
-			"lib/rangy/rangy-core-1.3.js",
-			"lib/rangy/rangy-position-1.3.js",
-			"lib/rangy/rangy-export.js"
+			"lib/oojs-ui/oojs-ui-mediawiki.js"
+		],
+		"styles": [
+			"lib/oojs-ui/oojs-ui-mediawiki.svg.css"
+		],
+		"dependencies": [
+			"oojs-ui"
 		]
 	},
 	"unicodejs": {
@@ -107,7 +114,6 @@
 			"jquery",
 			"oojs",
 			"oojs-ui",
-			"rangy",
 			"jquery.i18n",
 			"jquery.uls.data"
 		]
@@ -153,6 +159,7 @@
 			"src/dm/ve.dm.AnnotationFactory.js",
 			"src/dm/ve.dm.AnnotationSet.js",
 			"src/dm/ve.dm.MetaItemFactory.js",
+			"src/dm/ve.dm.FocusableNode.js",
 			"src/dm/ve.dm.Scalable.js",
 			"src/dm/ve.dm.ResizableNode.js",
 			"src/dm/ve.dm.Node.js",
@@ -596,14 +603,6 @@
 			"visualEditor.standalone.build",
 			"visualEditor.desktop.build",
 			"visualEditor.mobile.build"
-		]
-	},
-	"visualEditor.buildfiles.intro": {
-		"scripts": [
-			"build/intro.txt"
-		],
-		"styles": [
-			"build/intro.txt"
 		]
 	},
 	"visualEditor.dist": {

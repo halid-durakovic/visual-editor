@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel SurfaceFragment tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.dm.SurfaceFragment' );
@@ -25,8 +24,8 @@ QUnit.test( 'constructor', 8, function ( assert ) {
 	assert.strictEqual( fragment.isNull(), false, 'valid fragment is not null' );
 	// Invalid range and autoSelect
 	fragment = new ve.dm.SurfaceFragment( surface, new ve.Range( -100, 100 ), 'truthy' );
-	assert.equal( fragment.getRange().from, 0, 'range is clamped between 0 and document length' );
-	assert.equal( fragment.getRange().to, doc.data.getLength(), 'range is clamped between 0 and document length' );
+	assert.strictEqual( fragment.getRange().from, 0, 'range is clamped between 0 and document length' );
+	assert.strictEqual( fragment.getRange().to, doc.data.getLength(), 'range is clamped between 0 and document length' );
 	assert.strictEqual( fragment.willAutoSelect(), false, 'noAutoSelect values are boolean' );
 } );
 
@@ -103,7 +102,7 @@ QUnit.test( 'expandRange (closest)', 1, function ( assert ) {
 	var doc = ve.dm.example.createExampleDocument(),
 		surface = new ve.dm.Surface( doc ),
 		fragment = new ve.dm.SurfaceFragment( surface, new ve.Range( 20, 21 ) ),
-		exapandedFragment = fragment.expandRange( 'closest', 'invalid type' );
+		exapandedFragment = fragment.expandRange( 'closest', function () {} );
 	assert.strictEqual(
 		exapandedFragment.isNull(),
 		true,
@@ -192,6 +191,90 @@ QUnit.test( 'removeContent', 6, function ( assert ) {
 		new ve.Range( 1 ),
 		'removing content collapses range'
 	);
+} );
+
+ve.test.utils.runSurfaceFragmentDeleteTest = function ( assert, html, range, directionAfterRemove, expectedData, expectedRange, msg ) {
+	var data, doc, surface, fragment;
+
+	if ( html ) {
+		doc = new ve.dm.Document(
+			ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( html ) )
+		);
+	} else {
+		doc = ve.dm.example.createExampleDocument();
+	}
+	surface = new ve.dm.Surface( doc );
+	fragment = new ve.dm.SurfaceFragment( surface, range );
+
+	data = ve.copy( fragment.getDocument().getFullData() );
+	expectedData( data );
+
+	fragment.delete( directionAfterRemove );
+
+	assert.deepEqualWithDomElements( fragment.getDocument().getFullData(), data, msg + ': data' );
+	assert.equalRange( fragment.getRange(), expectedRange, msg + ': range' );
+};
+
+QUnit.test( 'delete', function ( assert ) {
+	var i,
+		cases = [
+			{
+				range: new ve.Range( 1, 4 ),
+				directionAfterRemove: -1,
+				expectedData: function ( data ) {
+					data.splice( 1, 3 );
+				},
+				expectedRange: new ve.Range( 1 ),
+				msg: 'Selection deleted by backspace'
+			},
+			{
+				range: new ve.Range( 1, 4 ),
+				directionAfterRemove: 1,
+				expectedData: function ( data ) {
+					data.splice( 1, 3 );
+				},
+				expectedRange: new ve.Range( 1 ),
+				msg: 'Selection deleted by delete'
+			},
+			{
+				range: new ve.Range( 39, 41 ),
+				directionAfterRemove: 1,
+				expectedData: function ( data ) {
+					data.splice( 39, 2 );
+				},
+				expectedRange: new ve.Range( 39 ),
+				msg: 'Focusable node deleted if selected first'
+			},
+			{
+				range: new ve.Range( 39, 41 ),
+				expectedData: function ( data ) {
+					data.splice( 39, 2 );
+				},
+				expectedRange: new ve.Range( 39 ),
+				msg: 'Focusable node deleted by cut'
+			},
+			{
+				range: new ve.Range( 0, 63 ),
+				directionAfterRemove: -1,
+				expectedData: function ( data ) {
+					data.splice( 0, 61,
+							{ type: 'paragraph' },
+							{ type: '/paragraph' }
+						);
+				},
+				expectedRange: new ve.Range( 1 ),
+				msg: 'Backspace after select all spanning entire document creates empty paragraph'
+			}
+		];
+
+	QUnit.expect( cases.length * 2 );
+
+	for ( i = 0; i < cases.length; i++ ) {
+		ve.test.utils.runSurfaceFragmentDeleteTest(
+			assert, cases[i].html, cases[i].range, cases[i].directionAfterRemove,
+			cases[i].expectedData, cases[i].expectedRange, cases[i].msg
+		);
+	}
 } );
 
 QUnit.test( 'insertContent', 8, function ( assert ) {

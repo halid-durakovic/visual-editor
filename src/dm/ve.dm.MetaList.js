@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel MetaList class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -32,7 +31,7 @@ ve.dm.MetaList = function VeDmMetaList( surface ) {
 	// Populate from document
 	metadata = this.document.getMetadata();
 	for ( i in metadata ) {
-		if ( metadata.hasOwnProperty( i ) && ve.isArray( metadata[i] ) ) {
+		if ( metadata.hasOwnProperty( i ) && Array.isArray( metadata[i] ) ) {
 			for ( j = 0, jlen = metadata[i].length; j < jlen; j++ ) {
 				item = ve.dm.metaItemFactory.createFromElement( metadata[i][j] );
 				group = this.groups[item.getGroup()];

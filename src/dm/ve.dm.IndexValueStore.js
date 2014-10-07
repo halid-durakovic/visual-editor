@@ -1,8 +1,7 @@
 /*!
  * VisualEditor IndexValueStore class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -41,7 +40,7 @@ ve.dm.IndexValueStore.prototype.index = function ( value, hash, overwrite ) {
 		if ( index === null ) {
 			index = this.valueStore.length;
 		}
-		if ( ve.isArray( value ) ) {
+		if ( Array.isArray( value ) ) {
 			this.valueStore[index] = ve.copy( value );
 		} else if ( typeof value === 'object' ) {
 			this.valueStore[index] = ve.cloneObject( value );

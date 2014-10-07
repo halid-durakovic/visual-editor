@@ -1,8 +1,7 @@
 /*!
  * VisualEditor UserInterface DesktopContext class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -19,11 +18,11 @@ ve.ui.DesktopContext = function VeUiDesktopContext( surface, config ) {
 	// Parent constructor
 	ve.ui.DesktopContext.super.call( this, surface, config );
 
-	// Properites
+	// Properties
 	this.popup = new OO.ui.PopupWidget( { $: this.$, $container: this.surface.$element } );
 	this.transitioning = null;
 	this.suppressed = false;
-	this.onWindowResizeHandler = ve.bind( this.onWindowResize, this );
+	this.onWindowResizeHandler = ve.bind( this.onPosition, this );
 	this.$window = this.$( this.getElementWindow() );
 
 	// Events
@@ -34,7 +33,10 @@ ve.ui.DesktopContext = function VeUiDesktopContext( surface, config ) {
 		relocationEnd: 'onUnsuppress',
 		blur: 'onSuppress',
 		focus: 'onUnsuppress',
-		position: 'onSurfacePosition'
+		position: 'onPosition'
+	} );
+	this.surface.getModel().connect( this, {
+		select: 'onPosition'
 	} );
 	this.$window.on( 'resize', this.onWindowResizeHandler );
 	this.$element.on( 'mousedown', false );
@@ -107,45 +109,12 @@ ve.ui.DesktopContext.prototype.onUnsuppress = function () {
 };
 
 /**
- * Handle surface position event.
+ * Handle cursor position change event.
  */
-ve.ui.DesktopContext.prototype.onSurfacePosition = function () {
+ve.ui.DesktopContext.prototype.onPosition = function () {
 	if ( this.isVisible() ) {
-		this.updateDimensions( true );
+		this.updateDimensionsDebounced();
 	}
-};
-
-/**
- * Handle window resize events.
- *
- * @param {jQuery.Event} e Window resize event
- */
-ve.ui.DesktopContext.prototype.onWindowResize = function () {
-	if ( this.isVisible() ) {
-		this.updateDimensions();
-	}
-};
-
-/**
- * Check if context can be embedded onto the currently focused node.
- *
- * @return {boolean} Context can be embedded
- */
-ve.ui.DesktopContext.prototype.isEmbeddable = function () {
-	var dim,
-		node = this.surface.getView().getFocusedNode();
-
-	if ( node && node.isFocusable() && !this.hasInspector() ) {
-		dim = node.getDimensions();
-		return (
-			// HACK: `5` and `10` are estimates of what `0.25em` and `0.5em` (the margins of the
-			// menu when embedded) are in pixels, what needs to actually be done is to take
-			// measurements to find the margins and use those value instead
-			dim.height > this.menu.$element.outerHeight() + 5 &&
-			dim.width > this.menu.$element.outerWidth() + 10
-		);
-	}
-	return false;
 };
 
 /**
@@ -196,7 +165,7 @@ ve.ui.DesktopContext.prototype.toggle = function ( show ) {
 		if ( this.inspector ) {
 			this.inspectors.updateWindowSize( this.inspector );
 		}
-		this.updateDimensions();
+		this.updateDimensionsDebounced();
 	} else if ( this.inspector ) {
 		this.inspector.close();
 	}
@@ -207,47 +176,68 @@ ve.ui.DesktopContext.prototype.toggle = function ( show ) {
 /**
  * @inheritdoc
  */
-ve.ui.DesktopContext.prototype.updateDimensions = function ( transition ) {
-	var $container, cursorPosition, position, rtl,
+ve.ui.DesktopContext.prototype.updateDimensions = function () {
+	var $container, startAndEndRects, position, embeddable, middle,
+		rtl = this.surface.getModel().getDocument().getDir() === 'rtl',
 		surface = this.surface.getView(),
 		focusedNode = surface.getFocusedNode(),
-		embeddable = this.isEmbeddable();
+		boundingRect = surface.getSelectionBoundingRect();
 
 	$container = this.inspector ? this.inspector.$frame : this.menu.$element;
-	cursorPosition = surface.getRelativeSelectionRect();
 
-	if ( focusedNode ) {
-		rtl = this.surface.getModel().getDocument().getDir() === 'rtl';
+	if ( !boundingRect ) {
+		// If !boundingRect, the surface apparently isn't selected.
+		// This shouldn't happen because the context is only supposed to be
+		// displayed in response to a selection, but it sometimes does happen due
+		// to browser weirdness.
+		// Skip updating the cursor position, but still update the width and height.
+		this.popup.toggleAnchor( true );
+		this.popup.align = 'center';
+	} else if ( focusedNode && !focusedNode.isContent() ) {
+		embeddable = !this.hasInspector() &&
+			boundingRect.height > this.menu.$element.outerHeight() + 5 &&
+			boundingRect.width > this.menu.$element.outerWidth() + 10;
 		this.popup.toggleAnchor( !embeddable );
 		if ( embeddable ) {
 			// Embedded context position depends on directionality
 			position = {
-				x: rtl ? cursorPosition.left : cursorPosition.right,
-				y: cursorPosition.top
+				x: rtl ? boundingRect.left : boundingRect.right,
+				y: boundingRect.top
 			};
 			this.popup.align = rtl ? 'left' : 'right';
 		} else {
-			// Get the position of the focusedNode:
+			// Position the context underneath the center of the node
+			middle = ( boundingRect.left + boundingRect.right ) / 2;
 			position = {
-				x: ( cursorPosition.left + cursorPosition.right ) / 2,
-				y: cursorPosition.bottom
+				x: middle,
+				y: boundingRect.bottom
 			};
 			this.popup.align = 'center';
 		}
 	} else {
-		// We're on top of a selected text
-		if ( cursorPosition ) {
-			position = {
-				x: cursorPosition.right,
-				y: cursorPosition.bottom
-			};
+		// The selection is text or an inline focused node
+		startAndEndRects = surface.getSelectionStartAndEndRects();
+		if ( startAndEndRects ) {
+			middle = ( boundingRect.left + boundingRect.right ) / 2;
+			if (
+				( !rtl && startAndEndRects.end.right > middle ) ||
+				( rtl && startAndEndRects.end.left < middle )
+			) {
+				// If the middle position is within the end rect, use it
+				position = {
+					x: middle,
+					y: boundingRect.bottom
+				};
+			} else {
+				// ..otherwise use the side of the end rect
+				position = {
+					x: rtl ? startAndEndRects.end.left : startAndEndRects.end.right,
+					y: startAndEndRects.end.bottom
+				};
+			}
 		}
-		// If !cursorPosition, the surface apparently isn't selected, so getRelativeSelectionRect()
-		// returned null. This shouldn't happen because the context is only supposed to be
-		// displayed in response to a selection, but for some reason this does happen when opening
-		// an inspector without changing the selection.
-		// Skip updating the cursor position, but still update the width and height.
 
+		this.popup.toggleAnchor( true );
 		this.popup.align = 'center';
 	}
 
@@ -255,11 +245,17 @@ ve.ui.DesktopContext.prototype.updateDimensions = function ( transition ) {
 		this.$element.css( { left: position.x, top: position.y } );
 	}
 
+	// HACK: setSize() has to be called at the end because it reads this.popup.align,
+	// which we set directly in the code above
 	this.popup.setSize(
 		$container.outerWidth( true ),
-		$container.outerHeight( true ),
-		false && transition
+		$container.outerHeight( true )
 	);
+
+	// PopupWidget normally is clippable, suppress that to be able to scroll it into view.
+	// Needs to be repeated before every call, as it resets itself when the popup is shown or hidden.
+	this.popup.toggleClipping( false );
+	this.popup.scrollElementIntoView();
 
 	return this;
 };
@@ -270,6 +266,7 @@ ve.ui.DesktopContext.prototype.updateDimensions = function ( transition ) {
 ve.ui.DesktopContext.prototype.destroy = function () {
 	// Disconnect
 	this.surface.getView().disconnect( this );
+	this.surface.getModel().disconnect( this );
 	this.$window.off( 'resize', this.onWindowResizeHandler );
 
 	// Parent method

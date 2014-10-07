@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel BranchNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -25,8 +24,11 @@ ve.dm.BranchNode = function VeDmBranchNode( element, children ) {
 	// Parent constructor
 	ve.dm.Node.call( this, element );
 
+	// Properties
+	this.slugPositions = {};
+
 	// TODO: children is only ever used in tests
-	if ( ve.isArray( children ) && children.length ) {
+	if ( Array.isArray( children ) && children.length ) {
 		this.splice.apply( this, [0, 0].concat( children ) );
 	}
 };
@@ -143,6 +145,80 @@ ve.dm.BranchNode.prototype.splice = function () {
 	}
 
 	this.adjustLength( diff, true );
+	this.setupSlugs();
 	this.emit.apply( this, ['splice'].concat( args ) );
+
 	return removals;
+};
+
+/**
+ * Setup a sparse array of booleans indicating where to place slugs
+ */
+ve.dm.BranchNode.prototype.setupSlugs = function () {
+	var i, len,
+		isBlock = this.canHaveChildrenNotContent(),
+		childTypes = this.getChildNodeTypes(),
+		canContainParagraph = childTypes === null || ve.indexOf( 'paragraph', childTypes ) !== -1;
+
+	this.slugPositions = {};
+
+	if ( isBlock && !canContainParagraph ) {
+		// Don't put slugs in nodes which can't contain paragraphs
+		return;
+	}
+
+	// If this content branch no longer has any non-internal items, insert a slug to keep the node
+	// from becoming invisible/unfocusable. In Firefox, backspace after Ctrl+A leaves the document
+	// completely empty, so this ensures DocumentNode gets a slug.
+	if (
+		this.getLength() === 0 ||
+		( this.children.length === 1 && this.children[0].isInternal() )
+	) {
+		this.slugPositions[0] = true;
+	} else {
+		// Iterate over all children of this branch and add slugs in appropriate places
+		for ( i = 0, len = this.children.length; i < len; i++ ) {
+			// Don't put slugs after internal nodes
+			if ( this.children[i].isInternal() ) {
+				continue;
+			}
+			// First sluggable child (left side)
+			if ( i === 0 && this.children[i].canHaveSlugBefore() ) {
+				this.slugPositions[i] = true;
+			}
+			if ( this.children[i].canHaveSlugAfter() ) {
+				if (
+					// Last sluggable child (right side)
+					i === this.children.length - 1 ||
+					// Sluggable child followed by another sluggable child (in between)
+					( this.children[i + 1] && this.children[i + 1].canHaveSlugBefore() )
+				) {
+					this.slugPositions[i + 1] = true;
+				}
+			}
+		}
+	}
+};
+
+/**
+ * Check in the branch node has a slug at a particular offset
+ *
+ * @method
+ * @param {number} offset Offset to check for a slug at
+ * @returns {boolean} There is a slug at the offset
+ */
+ve.dm.BranchNode.prototype.hasSlugAtOffset = function ( offset ) {
+	var i,
+		startOffset = this.getOffset() + ( this.isWrapped() ? 1 : 0 );
+
+	if ( offset === startOffset ) {
+		return !!this.slugPositions[0];
+	}
+	for ( i = 0; i < this.children.length; i++ ) {
+		startOffset += this.children[i].getOuterLength();
+		if ( offset === startOffset ) {
+			return !!this.slugPositions[i + 1];
+		}
+	}
+	return false;
 };

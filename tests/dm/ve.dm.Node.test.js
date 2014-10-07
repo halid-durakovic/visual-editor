@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Node tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.dm.Node' );
@@ -26,12 +25,12 @@ ve.dm.nodeFactory.register( ve.dm.NodeStub );
 
 QUnit.test( 'canHaveChildren', 1, function ( assert ) {
 	var node = new ve.dm.NodeStub();
-	assert.equal( node.canHaveChildren(), false );
+	assert.strictEqual( node.canHaveChildren(), false );
 } );
 
 QUnit.test( 'canHaveChildrenNotContent', 1, function ( assert ) {
 	var node = new ve.dm.NodeStub();
-	assert.equal( node.canHaveChildrenNotContent(), false );
+	assert.strictEqual( node.canHaveChildrenNotContent(), false );
 } );
 
 QUnit.test( 'getLength', 2, function ( assert ) {

@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel NodeFactory class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -102,7 +101,7 @@ ve.dm.NodeFactory.prototype.canNodeHaveChildren = function ( type ) {
 		// If childNodeTypes is null any child is allowed, if it's an array of at least one element
 		// than at least one kind of node is allowed
 		var types = this.registry[type].static.childNodeTypes;
-		return types === null || ( ve.isArray( types ) && types.length > 0 );
+		return types === null || ( Array.isArray( types ) && types.length > 0 );
 	}
 	throw new Error( 'Unknown node type: ' + type );
 };
@@ -189,6 +188,21 @@ ve.dm.NodeFactory.prototype.canNodeTakeAnnotationType = function ( type, annotat
 ve.dm.NodeFactory.prototype.isNodeContent = function ( type ) {
 	if ( type in this.registry ) {
 		return this.registry[type].static.isContent;
+	}
+	throw new Error( 'Unknown node type: ' + type );
+};
+
+/**
+ * Check if the node is focusable.
+ *
+ * @method
+ * @param {string} type Node type
+ * @returns {boolean} Whether the node is focusable
+ * @throws {Error} Unknown node type
+ */
+ve.dm.NodeFactory.prototype.isNodeFocusable = function ( type ) {
+	if ( type in this.registry ) {
+		return this.registry[type].static.isFocusable;
 	}
 	throw new Error( 'Unknown node type: ' + type );
 };

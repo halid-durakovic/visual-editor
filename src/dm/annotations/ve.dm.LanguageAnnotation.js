@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel LanguageAnnotation class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -31,7 +30,9 @@ ve.dm.LanguageAnnotation.static.name = 'meta/language';
 ve.dm.LanguageAnnotation.static.matchTagNames = [ 'span' ];
 
 ve.dm.LanguageAnnotation.static.matchFunction = function ( domElement ) {
-	return ( domElement.getAttribute( 'lang' ) || domElement.getAttribute( 'dir' ) );
+	var lang = domElement.getAttribute( 'lang' ),
+		dir = domElement.getAttribute( 'dir' );
+	return lang || dir === 'ltr' || dir === 'rtl';
 };
 
 ve.dm.LanguageAnnotation.static.applyToAppendedContent = true;

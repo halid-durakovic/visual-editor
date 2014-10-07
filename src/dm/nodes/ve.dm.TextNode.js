@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel TextNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -35,6 +34,16 @@ ve.dm.TextNode.static.isWrapped = false;
 ve.dm.TextNode.static.isContent = true;
 
 ve.dm.TextNode.static.matchTagNames = [];
+
+/* Methods */
+
+ve.dm.TextNode.prototype.canHaveSlugBefore = function () {
+	return false;
+};
+
+ve.dm.TextNode.prototype.canHaveSlugAfter = function () {
+	return false;
+};
 
 /* Registration */
 

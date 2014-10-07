@@ -1,8 +1,7 @@
 /*!
  * VisualEditor EventSequencer class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -210,7 +209,7 @@ ve.EventSequencer.prototype.afterOne = function ( listeners ) {
  * @chainable
  */
 ve.EventSequencer.prototype.afterLoop = function ( listeners ) {
-	if ( !ve.isArray( listeners ) ) {
+	if ( !Array.isArray( listeners ) ) {
 		listeners = [listeners];
 	}
 	Array.prototype.push.apply( this.afterLoopListeners, listeners );
@@ -224,7 +223,7 @@ ve.EventSequencer.prototype.afterLoop = function ( listeners ) {
  * @chainable
  */
 ve.EventSequencer.prototype.afterLoopOne = function ( listeners ) {
-	if ( !ve.isArray( listeners ) ) {
+	if ( !Array.isArray( listeners ) ) {
 		listeners = [listeners];
 	}
 	Array.prototype.push.apply( this.afterLoopOneListeners, listeners );

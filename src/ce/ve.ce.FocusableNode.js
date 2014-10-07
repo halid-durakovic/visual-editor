@@ -1,8 +1,7 @@
 /*!
  * VisualEditor ContentEditable FocusableNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -32,7 +31,9 @@ ve.ce.FocusableNode = function VeCeFocusableNode( $focusable ) {
 	this.$highlights = this.$( '<div>' ).addClass( 've-ce-focusableNode-highlights' );
 	this.$focusable = $focusable || this.$element;
 	this.surface = null;
+	this.rects = null;
 	this.boundingRect = null;
+	this.startAndEndRects = null;
 
 	// Events
 	this.connect( this, {
@@ -44,6 +45,10 @@ ve.ce.FocusableNode = function VeCeFocusableNode( $focusable ) {
 	} );
 };
 
+/* Inheritance */
+
+OO.initClass( ve.ce.FocusableNode );
+
 /* Events */
 
 /**
@@ -53,12 +58,6 @@ ve.ce.FocusableNode = function VeCeFocusableNode( $focusable ) {
 /**
  * @event blur
  */
-
-/* Static Methods */
-
-ve.ce.FocusableNode.static = {};
-
-ve.ce.FocusableNode.static.isFocusable = true;
 
 /* Methods */
 
@@ -359,7 +358,6 @@ ve.ce.FocusableNode.prototype.createHighlights = function () {
 			'mouseout.ve-ce-focusableNode': ve.bind( this.onSurfaceMouseOut, this )
 		} );
 	}
-	this.surface.getModel().getDocument().connect( this, { transact: 'positionHighlights' } );
 	this.surface.connect( this, { position: 'positionHighlights' } );
 };
 
@@ -374,7 +372,6 @@ ve.ce.FocusableNode.prototype.clearHighlights = function () {
 	}
 	this.$highlights.remove().empty();
 	this.surface.$element.off( '.ve-ce-focusableNode' );
-	this.surface.getModel().getDocument().disconnect( this, { transact: 'positionHighlights' } );
 	this.surface.disconnect( this, { position: 'positionHighlights' } );
 	this.highlighted = false;
 	this.boundingRect = null;
@@ -391,20 +388,11 @@ ve.ce.FocusableNode.prototype.redrawHighlights = function () {
 };
 
 /**
- * Positions highlights, and remove collapsed ones
- *
- * @method
+ * Calculate position of highlights
  */
-ve.ce.FocusableNode.prototype.positionHighlights = function () {
-	if ( !this.highlighted ) {
-		return;
-	}
-
-	var i, l, top, left, bottom, right,
-		outerRects = [],
+ve.ce.FocusableNode.prototype.calculateHighlights = function () {
+	var i, l, rects = [], filteredRects = [],
 		surfaceOffset = this.surface.getSurface().getBoundingClientRect();
-
-	this.$highlights.empty();
 
 	function contains( rect1, rect2 ) {
 		return rect2.left >= rect1.left &&
@@ -423,80 +411,132 @@ ve.ce.FocusableNode.prototype.positionHighlights = function () {
 		clientRects = this.getClientRects();
 
 		for ( i = 0, il = clientRects.length; i < il; i++ ) {
-			// Elements with width/height of 0 return a clientRect with
-			// w/h of 1. As elements with an actual w/h of 1 aren't that
-			// useful, just throw away anything that is <= 1
-			if ( clientRects[i].width <= 1 || clientRects[i].height <= 1 ) {
-				continue;
-			}
 			contained = false;
-			for ( j = 0, jl = outerRects.length; j < jl; j++ ) {
+			for ( j = 0, jl = rects.length; j < jl; j++ ) {
 				// This rect is contained by an existing rect, discard
-				if ( contains( outerRects[j], clientRects[i] ) ) {
+				if ( contains( rects[j], clientRects[i] ) ) {
 					contained = true;
 					break;
 				}
 				// An existing rect is contained by this rect, discard the existing rect
-				if ( contains( clientRects[i], outerRects[j] ) ) {
-					outerRects.splice( j, 1 );
+				if ( contains( clientRects[i], rects[j] ) ) {
+					rects.splice( j, 1 );
 					j--;
 					jl--;
 				}
 			}
 			if ( !contained ) {
-				outerRects.push( clientRects[i] );
+				rects.push( clientRects[i] );
 			}
 		}
 	} );
 
-	this.boundingRect = {
-		top: Infinity,
-		left: Infinity,
-		bottom: -Infinity,
-		right: -Infinity
-	};
+	// Elements with a width/height of 0 return a clientRect with a width/height of 1
+	// As elements with an actual width/height of 1 aren't that useful anyway, just
+	// throw away anything that is <=1
+	filteredRects = rects.filter( function ( rect ) {
+		return rect.width > 1 && rect.height > 1;
+	} );
+	// But if this filtering doesn't leave any rects at all, then we do want to use the 1px rects
+	if ( filteredRects.length > 0 ) {
+		rects = filteredRects;
+	}
 
-	for ( i = 0, l = outerRects.length; i < l; i++ ) {
-		top = outerRects[i].top - surfaceOffset.top;
-		left = outerRects[i].left - surfaceOffset.left;
-		bottom = outerRects[i].bottom - surfaceOffset.top;
-		right = outerRects[i].right - surfaceOffset.left;
+	this.boundingRect = null;
+	// startAndEndRects is lazily evaluated in getStartAndEndRects from rects
+	this.startAndEndRects = null;
+
+	for ( i = 0, l = rects.length; i < l; i++ ) {
+		// Translate to relative
+		rects[i] = ve.translateRect( rects[i], -surfaceOffset.left, -surfaceOffset.top );
 		this.$highlights.append(
 			this.createHighlight().css( {
-				top: top,
-				left: left,
-				height: outerRects[i].height,
-				width: outerRects[i].width
+				top: rects[i].top,
+				left: rects[i].left,
+				width: rects[i].width,
+				height: rects[i].height
 			} )
 		);
-		this.boundingRect.top = Math.min( this.boundingRect.top, top );
-		this.boundingRect.left = Math.min( this.boundingRect.left, left );
-		this.boundingRect.bottom = Math.max( this.boundingRect.bottom, bottom );
-		this.boundingRect.right = Math.max( this.boundingRect.right, right );
+
+		if ( !this.boundingRect ) {
+			this.boundingRect = ve.copy( rects[i] );
+		} else {
+			this.boundingRect.top = Math.min( this.boundingRect.top, rects[i].top );
+			this.boundingRect.left = Math.min( this.boundingRect.left, rects[i].left );
+			this.boundingRect.bottom = Math.max( this.boundingRect.bottom, rects[i].bottom );
+			this.boundingRect.right = Math.max( this.boundingRect.right, rects[i].right );
+		}
 	}
+	if ( this.boundingRect ) {
+		this.boundingRect.width = this.boundingRect.right - this.boundingRect.left;
+		this.boundingRect.height = this.boundingRect.bottom - this.boundingRect.top;
+	}
+
+	this.rects = rects;
+};
+
+/**
+ * Positions highlights, and remove collapsed ones
+ *
+ * @method
+ */
+ve.ce.FocusableNode.prototype.positionHighlights = function () {
+	if ( !this.highlighted ) {
+		return;
+	}
+
+	var i, l;
+
+	this.calculateHighlights();
+	this.$highlights.empty();
+
+	for ( i = 0, l = this.rects.length; i < l; i++ ) {
+		this.$highlights.append(
+			this.createHighlight().css( {
+				top: this.rects[i].top,
+				left: this.rects[i].left,
+				width: this.rects[i].width,
+				height: this.rects[i].height
+			} )
+		);
+	}
+};
+
+/**
+ * Get list of rectangles outlining the shape of the node relative to the surface
+ *
+ * @return {Object[]} List of rectangle objects
+ */
+ve.ce.FocusableNode.prototype.getRects = function () {
+	if ( !this.highlighted ) {
+		this.calculateHighlights();
+	}
+	return this.rects;
 };
 
 /**
  * Get the bounding rectangle of the focusable node highight relative to the surface
  *
- * @return {Object} Top, left, bottom & right positions of the focusable node relative to the surface
+ * @return {Object|null} Top, left, bottom & right positions of the focusable node relative to the surface
  */
 ve.ce.FocusableNode.prototype.getBoundingRect = function () {
 	if ( !this.highlighted ) {
-		this.createHighlights();
+		this.calculateHighlights();
 	}
 	return this.boundingRect;
 };
 
 /**
- * Get the dimensions of the focusable node highight
+ * Get start and end rectangles of an inline focusable node relative to the surface
  *
- * @return {Object} Width and height of the focusable node
+ * @return {Object|null} Start and end rectangles
  */
-ve.ce.FocusableNode.prototype.getDimensions = function () {
-	var boundingRect = this.getBoundingRect();
-	return {
-		width: boundingRect.right - boundingRect.left,
-		height: boundingRect.bottom - boundingRect.top
-	};
+ve.ce.FocusableNode.prototype.getStartAndEndRects = function () {
+	if ( !this.highlighted ) {
+		this.calculateHighlights();
+	}
+	if ( !this.startAndEndRects ) {
+		this.startAndEndRects = ve.getStartAndEndRects( this.rects );
+	}
+	return this.startAndEndRects;
 };

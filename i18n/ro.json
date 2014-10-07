@@ -27,6 +27,7 @@
 	"visualeditor-commentinspector-edit": "Modificare comentariu",
 	"visualeditor-commentinspector-title": "Comentariu",
 	"visualeditor-commentinspector-tooltip": "Comentariu",
+	"visualeditor-contextitemwidget-label-secondary": "Modificare",
 	"visualeditor-dialog-action-apply": "Aplică modificările",
 	"visualeditor-dialog-action-cancel": "Revocare",
 	"visualeditor-dialog-action-done": "Realizat",
@@ -87,5 +88,5 @@
 	"visualeditor-toolbar-structure": "Structură",
 	"visualeditor-toolbar-style-tooltip": "Stilul textului",
 	"visualeditor-toolbar-text-style": "Stil",
-	"visualeditor-version-label": "Versiune"
+	"visualeditor-version-label": "Versiunea"
 }

@@ -1,8 +1,7 @@
 /*!
  * VisualEditor UserInterface CommandHelpDialog class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -131,7 +130,16 @@ ve.ui.CommandHelpDialog.static.getCommandGroups = function () {
 				{ trigger: 'superscript', msg: 'visualeditor-annotationbutton-superscript-tooltip' },
 				{ trigger: 'subscript', msg: 'visualeditor-annotationbutton-subscript-tooltip' },
 				{ trigger: 'underline', msg: 'visualeditor-annotationbutton-underline-tooltip' },
+				{ trigger: 'code', msg: 'visualeditor-annotationbutton-code-tooltip' },
+				{ trigger: 'strikethrough', msg: 'visualeditor-annotationbutton-strikethrough-tooltip' },
 				{ trigger: 'clear', msg: 'visualeditor-clearbutton-tooltip' }
+			]
+		},
+		history: {
+			title: 'visualeditor-shortcuts-history',
+			commands: [
+				{ trigger: 'undo', msg: 'visualeditor-historybutton-undo-tooltip' },
+				{ trigger: 'redo', msg: 'visualeditor-historybutton-redo-tooltip' }
 			]
 		},
 		formatting: {
@@ -142,13 +150,6 @@ ve.ui.CommandHelpDialog.static.getCommandGroups = function () {
 				{ trigger: 'preformatted', msg: 'visualeditor-formatdropdown-format-preformatted' },
 				{ trigger: 'indent', msg: 'visualeditor-indentationbutton-indent-tooltip' },
 				{ trigger: 'outdent', msg: 'visualeditor-indentationbutton-outdent-tooltip' }
-			]
-		},
-		history: {
-			title: 'visualeditor-shortcuts-history',
-			commands: [
-				{ trigger: 'undo', msg: 'visualeditor-historybutton-undo-tooltip' },
-				{ trigger: 'redo', msg: 'visualeditor-historybutton-redo-tooltip' }
 			]
 		},
 		clipboard: {

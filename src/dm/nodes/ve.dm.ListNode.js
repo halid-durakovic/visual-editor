@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel ListNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -44,6 +43,12 @@ ve.dm.ListNode.static.toDataElement = function ( domElements ) {
 ve.dm.ListNode.static.toDomElements = function ( dataElement, doc ) {
 	var tag = dataElement.attributes && dataElement.attributes.style === 'number' ? 'ol' : 'ul';
 	return [ doc.createElement( tag ) ];
+};
+
+/* Methods */
+
+ve.dm.ListNode.prototype.canHaveSlugAfter = function () {
+	return false;
 };
 
 /* Registration */

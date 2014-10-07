@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel AlienNode, AlienBlockNode and AlienInlineNode classes.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -11,6 +10,7 @@
  * @class
  * @abstract
  * @extends ve.dm.LeafNode
+ * @mixins ve.dm.FocusableNode
  * @mixins ve.dm.GeneratedContentNode
  *
  * @constructor
@@ -22,11 +22,14 @@ ve.dm.AlienNode = function VeDmAlienNode() {
 
 	// Mixin constructors
 	ve.dm.GeneratedContentNode.call( this );
+	ve.dm.FocusableNode.call( this );
 };
 
 /* Inheritance */
 
 OO.inheritClass( ve.dm.AlienNode, ve.dm.LeafNode );
+
+OO.mixinClass( ve.dm.AlienNode, ve.dm.FocusableNode );
 
 OO.mixinClass( ve.dm.AlienNode, ve.dm.GeneratedContentNode );
 

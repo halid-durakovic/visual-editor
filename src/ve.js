@@ -1,8 +1,7 @@
 /*!
  * VisualEditor namespace.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 ( function () {
@@ -99,13 +98,6 @@
 	 * @returns {boolean}
 	 */
 	ve.isEmptyObject = $.isEmptyObject;
-
-	/**
-	 * @method
-	 * @until ES5: Array#isArray
-	 * @inheritdoc Array#isArray
-	 */
-	ve.isArray = Array.isArray;
 
 	/**
 	 * Wrapper for Function#bind.
@@ -223,7 +215,7 @@
 			// cross-browser - 1024 seems to be a safe batch size on all browsers
 			var splice, index = 0, batchSize = 1024, toRemove = remove, spliced, removed = [];
 
-			splice = ve.isArray( arr ) ? arraySplice : arr.splice;
+			splice = Array.isArray( arr ) ? arraySplice : arr.splice;
 
 			if ( data.length === 0 ) {
 				// Special case: data is empty, so we're just doing a removal
@@ -722,6 +714,9 @@
 	 *
 	 * To create an empty document, pass the empty string.
 	 *
+	 * If your input is both valid HTML and valid XML, and you need to work around style
+	 * normalization bugs in Internet Explorer, use #parseXhtml and #serializeXhtml.
+	 *
 	 * @param {string} html HTML string
 	 * @returns {HTMLDocument} Document constructed from the HTML string
 	 */
@@ -850,7 +845,7 @@
 	};
 
 	/**
-	 * Helper function for ve#properInnerHtml and #properOuterHtml.
+	 * Helper function for #properInnerHtml, #properOuterHtml and #serializeXhtml.
 	 *
 	 * Detect whether the browser has broken `<pre>` serialization, and if so return a clone
 	 * of the node with extra newlines added to make it serialize properly. If the browser is not
@@ -891,6 +886,133 @@
 		return $element.get( 0 );
 	};
 
+	/**
+	 * Helper function for #transformStyleAttributes.
+	 *
+	 * Normalize an attribute value. In compliant browsers, this should be
+	 * a no-op, but in IE style attributes are normalized on all elements and
+	 * bgcolor attributes are normalized on some elements (like `<tr>`).
+	 *
+	 * @param {string} name Attribute name
+	 * @param {string} value Attribute value
+	 * @param {string} [nodeName='div'] Element name
+	 * @return {string} Normalized attribute value
+	 */
+	ve.normalizeAttributeValue = function ( name, value, nodeName ) {
+		var node = document.createElement( nodeName || 'div' );
+		node.setAttribute( name, value );
+		// IE normalizes invalid CSS to empty string, then if you normalize
+		// an empty string again it becomes null. Return an empty string
+		// instead of null to make this function idempotent.
+		return node.getAttribute( name ) || '';
+	};
+
+	/**
+	 * Helper function for #parseXhtml and #serializeXhtml.
+	 *
+	 * Map attributes that are broken in IE to attributes prefixed with data-ve-
+	 * or vice versa.
+	 *
+	 * @param {string} html HTML string. Must also be valid XML
+	 * @param {boolean} unmask Map the masked attributes back to their originals
+	 * @returns {string} HTML string modified to mask/unmask broken attributes
+	 */
+	ve.transformStyleAttributes = function ( html, unmask ) {
+		var xmlDoc, fromAttr, toAttr, i, len,
+			maskAttrs = [
+				'style', // IE normalizes 'color:#ffd' to 'color: rgb(255, 255, 221);'
+				'bgcolor' // IE normalizes '#FFDEAD' to '#ffdead'
+			];
+
+		// Parse the HTML into an XML DOM
+		xmlDoc = new DOMParser().parseFromString( html, 'text/xml' );
+
+		// Go through and mask/unmask each attribute on all elements that have it
+		for ( i = 0, len = maskAttrs.length; i < len; i++ ) {
+			fromAttr = unmask ? 'data-ve-' + maskAttrs[i] : maskAttrs[i];
+			toAttr = unmask ? maskAttrs[i] : 'data-ve-' + maskAttrs[i];
+			/*jshint loopfunc:true */
+			$( xmlDoc ).find( '[' + fromAttr + ']' ).each( function () {
+				var toAttrValue, fromAttrNormalized,
+					fromAttrValue = this.getAttribute( fromAttr );
+
+				if ( unmask ) {
+					this.removeAttribute( fromAttr );
+
+					// If the data-ve- version doesn't normalize to the same value,
+					// the attribute must have changed, so don't overwrite it
+					fromAttrNormalized = ve.normalizeAttributeValue( toAttr, fromAttrValue, this.nodeName );
+					// toAttr can't not be set, but IE returns null if the value was ''
+					toAttrValue = this.getAttribute( toAttr ) || '';
+					if ( toAttrValue !== fromAttrNormalized ) {
+						return;
+					}
+				}
+
+				this.setAttribute( toAttr, fromAttrValue );
+			} );
+		}
+
+		// HACK: Inject empty text nodes into empty non-void tags to prevent
+		// things like <a></a> from being serialized as <a /> and wreaking havoc
+		$( xmlDoc ).find( ':empty:not(' + ve.elementTypes.void.join( ',' ) + ')' ).each( function () {
+			this.appendChild( xmlDoc.createTextNode( '' ) );
+		} );
+
+		// Serialize back to a string
+		return new XMLSerializer().serializeToString( xmlDoc );
+	};
+
+	/**
+	 * Parse an HTML string into an HTML DOM, while masking attributes affected by
+	 * normalization bugs if a broken browser is detected.
+	 * Since this process uses an XML parser, the input must be valid XML as well as HTML.
+	 *
+	 * @param {string} html HTML string. Must also be valid XML
+	 * @return {HTMLDocument} HTML DOM
+	 */
+	ve.parseXhtml = function ( html ) {
+		// Feature-detect style attribute breakage in IE
+		if ( ve.isStyleAttributeBroken === undefined ) {
+			ve.isStyleAttributeBroken = ve.normalizeAttributeValue( 'style', 'color:#ffd' ) !== 'color:#ffd';
+		}
+		if ( ve.isStyleAttributeBroken ) {
+			html = ve.transformStyleAttributes( html, false );
+		}
+		return ve.createDocumentFromHtml( html );
+	};
+
+	/**
+	 * Serialize an HTML DOM created with #parseXhtml back to an HTML string, unmasking any
+	 * attributes that were masked.
+	 *
+	 * @param {HTMLDocument} doc HTML DOM
+	 * @return {string} Serialized HTML string
+	 */
+	ve.serializeXhtml = function ( doc ) {
+		var xml;
+		// Feature-detect style attribute breakage in IE
+		if ( ve.isStyleAttributeBroken === undefined ) {
+			ve.isStyleAttributeBroken = ve.normalizeAttributeValue( 'style', 'color:#ffd' ) !== 'color:#ffd';
+		}
+		if ( !ve.isStyleAttributeBroken ) {
+			// Use outerHTML if possible because in Firefox, XMLSerializer URL-encodes
+			// hrefs but outerHTML doesn't
+			return ve.properOuterHtml( doc.documentElement );
+		}
+
+		xml = new XMLSerializer().serializeToString( ve.fixupPreBug( doc.documentElement ) );
+		// HACK: strip out xmlns
+		xml = xml.replace( '<html xmlns="http://www.w3.org/1999/xhtml"', '<html' );
+		return ve.transformStyleAttributes( xml, true );
+	};
+
+	/**
+	 * Wrapper for node.normalize(). The native implementation is broken in IE,
+	 * so we use our own implementation in that case.
+	 *
+	 * @param {Node} node Node to normalize
+	 */
 	ve.normalizeNode = function ( node ) {
 		var p, nodeIterator, textNode;
 		if ( ve.isNormalizeBroken === undefined ) {
@@ -946,7 +1068,7 @@
 	 */
 	ve.contains = function ( containers, contained, matchContainers ) {
 		var i;
-		if ( !ve.isArray( containers ) ) {
+		if ( !Array.isArray( containers ) ) {
 			containers = [ containers ];
 		}
 		for ( i = containers.length - 1; i >= 0; i-- ) {
@@ -955,6 +1077,72 @@
 			}
 		}
 		return false;
+	};
+
+	/**
+	 * Translate rect by some fixed vector and return a new offset object
+	 * @param {Object} rect Offset object containing all or any of top, left, bottom, right, width & height
+	 * @param {number} x Horizontal translation
+	 * @param {number} y Vertical translation
+	 * @return {Object} Translated rect
+	 */
+	ve.translateRect = function ( rect, x, y ) {
+		var translatedRect = {};
+		if ( rect.top !== undefined ) {
+			translatedRect.top = rect.top + y;
+		}
+		if ( rect.bottom !== undefined ) {
+			translatedRect.bottom = rect.bottom + y;
+		}
+		if ( rect.left !== undefined ) {
+			translatedRect.left = rect.left + x;
+		}
+		if ( rect.right !== undefined ) {
+			translatedRect.right = rect.right + x;
+		}
+		if ( rect.width !== undefined ) {
+			translatedRect.width = rect.width;
+		}
+		if ( rect.height !== undefined ) {
+			translatedRect.height = rect.height;
+		}
+		return translatedRect;
+	};
+
+	/**
+	 * Get the start and end rectangles (in a text flow sense) from a list of rectangles
+	 * @param {Array} rects Full list of rectangles
+	 * @return {Object|null} Object containing two rectangles: start and end, or null if there are no rectangles
+	 */
+	ve.getStartAndEndRects = function ( rects ) {
+		var i, l, startRect, endRect;
+		if ( !rects || !rects.length ) {
+			return null;
+		}
+		for ( i = 0, l = rects.length; i < l; i++ ) {
+			if ( !startRect || rects[i].top < startRect.top ) {
+				// Use ve.extendObject as ve.copy copies non-plain objects by reference
+				startRect = ve.extendObject( {}, rects[i] );
+			} else if ( rects[i].top === startRect.top ) {
+				// Merge rects with the same top coordinate
+				startRect.left = Math.min( startRect.left, rects[i].left );
+				startRect.right = Math.max( startRect.right, rects[i].right );
+				startRect.width = startRect.right - startRect.left;
+			}
+			if ( !endRect || rects[i].bottom > endRect.bottom ) {
+				// Use ve.extendObject as ve.copy copies non-plain objects by reference
+				endRect = ve.extendObject( {}, rects[i] );
+			} else if ( rects[i].bottom === endRect.bottom ) {
+				// Merge rects with the same bottom coordinate
+				endRect.left = Math.min( endRect.left, rects[i].left );
+				endRect.right = Math.max( endRect.right, rects[i].right );
+				endRect.width = startRect.right - startRect.left;
+			}
+		}
+		return {
+			start: startRect,
+			end: endRect
+		};
 	};
 
 	/**

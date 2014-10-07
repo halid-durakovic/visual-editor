@@ -1,8 +1,7 @@
 /*!
  * VisualEditor ContentEditable Node class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -46,20 +45,6 @@ OO.mixinClass( ve.ce.Node, ve.Node );
  * @inheritable
  */
 ve.ce.Node.static.splitOnEnter = false;
-
-/**
- * Whether this node type can be focused.
- *
- * If this is set to true on a node, it should implement:
- *
- *     setFocused( boolean val )
- *     boolean isFocused()
- *
- * @static
- * @property
- * @inheritable
- */
-ve.ce.Node.static.isFocusable = false;
 
 /**
  * Command to execute when Enter is pressed while this node is selected, or when the node is double-clicked.
@@ -177,35 +162,18 @@ ve.ce.Node.prototype.handlesOwnChildren = function () {
 /**
  * Check if the node is focusable
  *
- * @see #static-isFocusable
+ * This method passes through to the model.
+ *
+ * If this is set to true on a node, it should implement:
+ *
+ *     setFocused( boolean val )
+ *     boolean isFocused()
+ *
  * @returns {boolean} Node is focusable
  */
 ve.ce.Node.prototype.isFocusable = function () {
-	return this.constructor.static.isFocusable;
+	return this.model.isFocusable();
 };
-
-/**
- * Check if the node can have a slug before it.
- *
- * TODO: Figure out a way to remove the hard-coding for text nodes here.
- *
- * @method
- * @returns {boolean} Whether the node can have a slug before it
- */
-ve.ce.Node.prototype.canHaveSlugBefore = function () {
-	return !this.canContainContent() &&
-		this.getParentNodeTypes() === null &&
-		this.type !== 'text' &&
-		this.type !== 'list';
-};
-
-/**
- * Check if the node can have a slug after it.
- *
- * @method
- * @returns {boolean} Whether the node can have a slug after it
- */
-ve.ce.Node.prototype.canHaveSlugAfter = ve.ce.Node.prototype.canHaveSlugBefore;
 
 /**
  * Get the length of the node.

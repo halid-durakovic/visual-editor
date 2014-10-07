@@ -4,8 +4,7 @@
 	/*!
 	 * VisualEditor standalone demo
 	 *
-	 * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
-	 * @license The MIT License (MIT); see LICENSE.txt
+	 * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
 	 */
 	-->
 	<head>
@@ -13,17 +12,13 @@
 		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 		<title>VisualEditor Standalone Demo</title>
 
-		<!-- oojs-ui -->
-		<link rel=stylesheet href="../../lib/oojs-ui/oojs-ui.svg.css" class="stylesheet-ltr">
-		<link rel=stylesheet href="../../lib/oojs-ui/oojs-ui.svg.rtl.css" class="stylesheet-rtl" disabled>
-
 		<!-- visualEditor.standalone.build -->
 		<link rel=stylesheet href="../../src/init/sa/styles/ve.init.sa.css">
 		<link rel=stylesheet href="../../src/ui/styles/ve.ui.DebugBar.css">
 
 		<!-- oojs-ui-apex -->
-		<link rel=stylesheet href="../../lib/oojs-ui/oojs-ui-apex.css" class="stylesheet-ltr">
-		<link rel=stylesheet href="../../lib/oojs-ui/oojs-ui-apex.rtl.css" class="stylesheet-rtl" disabled>
+		<link rel=stylesheet href="../../lib/oojs-ui/oojs-ui-apex.svg.css" class="stylesheet-ltr">
+		<link rel=stylesheet href="../../lib/oojs-ui/oojs-ui-apex.svg.rtl.css" class="stylesheet-rtl" disabled>
 
 		<!-- visualEditor.core.build -->
 		<link rel=stylesheet href="../../src/ce/styles/nodes/ve.ce.FocusableNode.css">
@@ -81,11 +76,6 @@
 		<!-- oojs-ui -->
 		<script src="../../lib/oojs-ui/oojs-ui.js"></script>
 
-		<!-- rangy -->
-		<script src="../../lib/rangy/rangy-core-1.3.js"></script>
-		<script src="../../lib/rangy/rangy-position-1.3.js"></script>
-		<script src="../../lib/rangy/rangy-export.js"></script>
-
 		<!-- jquery.i18n -->
 		<script src="../../lib/jquery.i18n/src/jquery.i18n.js"></script>
 		<script src="../../lib/jquery.i18n/src/jquery.i18n.messagestore.js"></script>
@@ -128,6 +118,9 @@
 		<script src="../../src/init/sa/ve.init.sa.Platform.js"></script>
 		<script src="../../src/init/sa/ve.init.sa.Target.js"></script>
 
+		<!-- oojs-ui-apex -->
+		<script src="../../lib/oojs-ui/oojs-ui-apex.js"></script>
+
 		<!-- visualEditor.core.build -->
 		<script src="../../src/ve.Range.js"></script>
 		<script src="../../src/ve.Node.js"></script>
@@ -143,6 +136,7 @@
 		<script src="../../src/dm/ve.dm.AnnotationFactory.js"></script>
 		<script src="../../src/dm/ve.dm.AnnotationSet.js"></script>
 		<script src="../../src/dm/ve.dm.MetaItemFactory.js"></script>
+		<script src="../../src/dm/ve.dm.FocusableNode.js"></script>
 		<script src="../../src/dm/ve.dm.Scalable.js"></script>
 		<script src="../../src/dm/ve.dm.ResizableNode.js"></script>
 		<script src="../../src/dm/ve.dm.Node.js"></script>
@@ -332,6 +326,21 @@
 		<script src="../../src/ui/inspectors/ve.ui.LanguageInspector.js"></script>
 		<script src="../../src/ui/inspectors/ve.ui.SpecialCharacterInspector.js"></script>
 
+		<!-- Citation plugin -->
+
+		<link rel=stylesheet href="../../ext/citations.css">
+		<script src="../../ext/ve.dm.CitationNode.js"></script>
+		<script src="../../ext/ve.ce.CitationNode.js"></script>
+		<script src="../../ext/ve.dm.ReferenceNode.js"></script>
+		<script src="../../ext/ve.ce.ReferenceNode.js"></script>
+		<script src="../../ext/ve.dm.BibliographyNode.js"></script>
+		<script src="../../ext/ve.ce.BibliographyNode.js"></script>
+		<script src="../../ext/ve.ui.CitationInspector.js"></script>
+		<script src="../../ext/ve.ui.CitationTool.js"></script>
+		<script src="../../ext/ve.ui.CitationLookupService.js"></script>
+		<script src="../../ext/ve.ui.CrossrefCitationLookup.js"></script>
+
+
 		<!-- visualEditor.desktop.build -->
 		<script src="../../src/ui/ve.ui.DesktopSurface.js"></script>
 		<script src="../../src/ui/ve.ui.DesktopContext.js"></script>
@@ -358,7 +367,9 @@
 			"image": "pages/image.html",
 			"isolation": "pages/isolation.html",
 			"rtl": "pages/rtl.html",
-			"simple": "pages/simple.html"
+			"simple": "pages/simple.html",
+			"tables": "pages/tables.html",
+			"citations": "pages/citations.html"
 		};
 		</script>
 

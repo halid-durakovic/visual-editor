@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Transaction tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.dm.Transaction' );
@@ -1730,7 +1729,7 @@ QUnit.test( 'translateOffset', function ( assert ) {
 	};
 	QUnit.expect( 2 * ve.getObjectKeys( mapping ).length );
 	for ( offset in mapping ) {
-		expected = ve.isArray( mapping[offset] ) ? mapping[offset] : [ mapping[offset], mapping[offset] ];
+		expected = Array.isArray( mapping[offset] ) ? mapping[offset] : [ mapping[offset], mapping[offset] ];
 		assert.strictEqual( tx.translateOffset( Number( offset ) ), expected[1], offset );
 		assert.strictEqual( tx.translateOffset( Number( offset ), true ), expected[0], offset + ' (excludeInsertion)' );
 	}
@@ -2318,46 +2317,46 @@ QUnit.test( 'isNoOp', function ( assert ) {
 		tx = ve.dm.Transaction.newFromReplacement(
 			d, new ve.Range( 1 ), [], false
 		);
-		assert.equal( tx.isNoOp(), true );
+		assert.strictEqual( tx.isNoOp(), true );
 
 		tx = ve.dm.Transaction.newFromInsertion(
 			d, 1, []
 		);
-		assert.equal( tx.isNoOp(), true );
+		assert.strictEqual( tx.isNoOp(), true );
 
 		tx = ve.dm.Transaction.newFromRemoval(
 			d, new ve.Range(1), false
 		);
-		assert.equal( tx.isNoOp(), true );
+		assert.strictEqual( tx.isNoOp(), true );
 
 		if ( !isListMetaDoc ) {
 			tx = ve.dm.Transaction.newFromDocumentInsertion(
 				d, 1,
 				ve.dm.example.createExampleDocument(), new ve.Range( 0 )
 			);
-			assert.equal( tx.isNoOp(), true );
+			assert.strictEqual( tx.isNoOp(), true );
 		}
 
 		tx = ve.dm.Transaction.newFromAttributeChanges(
 			d, isListMetaDoc ? 1 : 0, {}
 		);
-		assert.equal( tx.isNoOp(), true );
+		assert.strictEqual( tx.isNoOp(), true );
 
 		tx = ve.dm.Transaction.newFromAnnotation(
 			d, new ve.Range( 1 ), 'set', new ve.dm.ItalicAnnotation()
 		);
-		assert.equal( tx.isNoOp(), true );
+		assert.strictEqual( tx.isNoOp(), true );
 
 		tx = ve.dm.Transaction.newFromMetadataInsertion(
 			d, 1, 0, []
 		);
-		assert.equal( tx.isNoOp(), true );
+		assert.strictEqual( tx.isNoOp(), true );
 
 		if ( !isDoc ) {
 			tx = ve.dm.Transaction.newFromMetadataRemoval(
 				d, 0, new ve.Range( 1 )
 			);
-			assert.equal( tx.isNoOp(), true );
+			assert.strictEqual( tx.isNoOp(), true );
 		}
 
 		// metadata replacement never creates no-op

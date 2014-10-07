@@ -1,8 +1,7 @@
 /*!
  * VisualEditor BranchNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -20,7 +19,7 @@
  * @param {ve.Node[]} children Array of children to add
  */
 ve.BranchNode = function VeBranchNode( children ) {
-	this.children = ve.isArray( children ) ? children : [];
+	this.children = Array.isArray( children ) ? children : [];
 };
 
 /* Methods */

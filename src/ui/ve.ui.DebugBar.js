@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DebugBar class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -165,7 +164,7 @@ ve.ui.DebugBar.prototype.onDumpModelButtonClick = function () {
 					$label.addClass( 've-ui-debugBar-dump-element' );
 					text = element.type;
 					annotations = element.annotations;
-				} else if ( ve.isArray( element ) ) {
+				} else if ( Array.isArray( element ) ) {
 					$label.addClass( 've-ui-debugBar-dump-achar' );
 					text = element[0];
 					annotations = element[1];

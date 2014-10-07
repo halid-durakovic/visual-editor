@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Node class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -97,6 +96,15 @@ ve.dm.Node.static.isWrapped = true;
  * @inheritable
  */
 ve.dm.Node.static.isContent = false;
+
+/**
+ * Whether this node type can be focused. Focusable nodes react to selections differently.
+ *
+ * @static
+ * @property {boolean}
+ * @inheritable
+ */
+ve.dm.Node.static.isFocusable = false;
 
 /**
  * Whether this node type can contain content. The children of content container nodes must be
@@ -329,6 +337,16 @@ ve.dm.Node.prototype.canHaveChildrenNotContent = function () {
 };
 
 /**
+ * Check if the node is an internal node
+ *
+ * @method
+ * @returns {boolean} Node is an internal node
+ */
+ve.dm.Node.prototype.isInternal = function () {
+	return this.constructor.static.isInternal;
+};
+
+/**
  * Check if the node has a wrapped element in the document data.
  *
  * @method
@@ -357,6 +375,34 @@ ve.dm.Node.prototype.canContainContent = function () {
 ve.dm.Node.prototype.isContent = function () {
 	return this.constructor.static.isContent;
 };
+
+/**
+ * Check if the node is focusable.
+ *
+ * @method
+ * @returns {boolean} Node is focusable
+ */
+ve.dm.Node.prototype.isFocusable = function () {
+	return this.constructor.static.isFocusable;
+};
+
+/**
+ * Check if the node can have a slug before it.
+ *
+ * @method
+ * @returns {boolean} Whether the node can have a slug before it
+ */
+ve.dm.Node.prototype.canHaveSlugBefore = function () {
+	return !this.canContainContent() && this.getParentNodeTypes() === null;
+};
+
+/**
+ * Check if the node can have a slug after it.
+ *
+ * @method
+ * @returns {boolean} Whether the node can have a slug after it
+ */
+ve.dm.Node.prototype.canHaveSlugAfter = ve.dm.Node.prototype.canHaveSlugBefore;
 
 /**
  * Check if the node has significant whitespace.
@@ -439,17 +485,6 @@ ve.dm.Node.prototype.getRange = function () {
 		offset++;
 	}
 	return new ve.Range( offset, offset + this.length );
-};
-
-/**
- * Get the range outside the node.
- *
- * @method
- * @returns {ve.Range} Outer node range
- */
-ve.dm.Node.prototype.getOuterRange = function () {
-	var offset = this.getOffset();
-	return new ve.Range( offset, offset + this.getOuterLength() );
 };
 
 /**

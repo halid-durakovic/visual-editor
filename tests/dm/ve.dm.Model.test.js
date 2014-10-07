@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Model tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.dm.Model' );
@@ -113,7 +112,7 @@ QUnit.test( 'matchesAttributeSpec', function ( assert ) {
 
 	QUnit.expect( cases.length );
 	for ( i = 0; i < cases.length; i++ ) {
-		assert.equal(
+		assert.strictEqual(
 			ve.dm.Model.matchesAttributeSpec( cases[i].attr, cases[i].spec ),
 			cases[i].result,
 			cases[i].msg

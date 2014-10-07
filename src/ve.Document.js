@@ -1,8 +1,7 @@
 /*!
  * VisualEditor Document class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -12,7 +11,7 @@
  * @mixins OO.EventEmitter
  *
  * @constructor
- * @param {ve.Node} model Model to observe
+ * @param {ve.Node} documentNode Document node
  */
 ve.Document = function VeDocument( documentNode ) {
 	// Mixin constructors
@@ -39,6 +38,21 @@ ve.Document.prototype.getDocumentNode = function () {
 };
 
 /**
+ * Get a node a an offset.
+ *
+ * @method
+ * @param {number} offset Offset to get node at
+ * @returns {ve.Node|null} Node at offset
+ */
+ve.Document.prototype.getBranchNodeFromOffset = function ( offset ) {
+	var node = this.getDocumentNode().getNodeFromOffset( offset );
+	if ( node && !node.hasChildren() ) {
+		node = node.getParent();
+	}
+	return node;
+};
+
+/**
  * Gets a list of nodes and the ranges within them that a selection of the document covers.
  *
  * @method
@@ -54,7 +68,7 @@ ve.Document.prototype.getDocumentNode = function () {
  *   range is in a single node)
  * @returns {Array} List of objects describing nodes in the selection and the ranges therein:
  *
- * - `node`: Reference to a ve.dm.Node
+ * - `node`: Reference to a ve.Node
  * - `range`: ve.Range, missing if the entire node is covered
  * - `index`: Index of the node in its parent, missing if node has no parent
  * - `indexInNode`: If range is a zero-length range between two children of node,

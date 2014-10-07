@@ -1,8 +1,7 @@
 /*!
  * VisualEditor UserInterface ListAction class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -82,7 +81,7 @@ ve.ui.ListAction.prototype.wrap = function ( style ) {
 	if (
 		selection.isCollapsed() &&
 		!documentModel.data.isContentOffset( selection.to ) &&
-		this.surface.view.documentView.getSlugAtOffset( selection.to )
+		documentModel.hasSlugAtOffset( selection.to )
 	) {
 		// Inside block level slug
 		surfaceModel.change( ve.dm.Transaction.newFromInsertion(
@@ -159,7 +158,7 @@ ve.ui.ListAction.prototype.unwrap = function () {
 	surfaceModel.breakpoint();
 
 	do {
-		node = documentModel.getNodeFromOffset( surfaceModel.getSelection().start );
+		node = documentModel.getBranchNodeFromOffset( surfaceModel.getSelection().start );
 	} while ( node.hasMatchingAncestor( 'list' ) && this.surface.execute( 'indentation', 'decrease' ) );
 
 	surfaceModel.breakpoint();

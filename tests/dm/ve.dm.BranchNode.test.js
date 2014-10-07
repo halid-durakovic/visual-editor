@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel BranchNode tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.dm.BranchNode' );
@@ -26,12 +25,12 @@ ve.dm.nodeFactory.register( ve.dm.BranchNodeStub );
 
 QUnit.test( 'canHaveChildren', 1, function ( assert ) {
 	var node = new ve.dm.BranchNodeStub();
-	assert.equal( node.canHaveChildren(), true );
+	assert.strictEqual( node.canHaveChildren(), true );
 } );
 
 QUnit.test( 'canHaveChildrenNotContent', 1, function ( assert ) {
 	var node = new ve.dm.BranchNodeStub();
-	assert.equal( node.canHaveChildrenNotContent(), true );
+	assert.strictEqual( node.canHaveChildrenNotContent(), true );
 } );
 
 QUnit.test( 'setRoot', 3, function ( assert ) {

@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Fragment class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -67,7 +66,7 @@ ve.dm.SurfaceFragment.prototype.getTranslatedRange = function ( txs, noUpdate ) 
 
 	var i, len, range;
 
-	if ( !ve.isArray( txs ) ) {
+	if ( !Array.isArray( txs ) ) {
 		txs = [ txs ];
 	}
 
@@ -121,19 +120,24 @@ ve.dm.SurfaceFragment.prototype.getSelectedModels = function ( all ) {
 };
 
 /**
- * Update range based on un-applied transactions in the surface.
+ * Update range based on un-applied transactions in the surface, or specified range.
  *
  * @method
+ * @param {ve.Range} [range] Optional range to set
  */
-ve.dm.SurfaceFragment.prototype.update = function () {
+ve.dm.SurfaceFragment.prototype.update = function ( range ) {
 	// Handle null fragment
 	if ( this.isNull() ) {
 		return;
 	}
 
 	var txs;
-	// Small optimisation: check history pointer is in the past
-	if ( this.historyPointer < this.document.getCompleteHistoryLength() ) {
+	if ( range ) {
+		this.range = range;
+		this.historyPointer = this.document.getCompleteHistoryLength();
+		this.leafNodes = null;
+	} else if ( this.historyPointer < this.document.getCompleteHistoryLength() ) {
+		// Small optimisation: check history pointer is in the past
 		txs = this.document.getCompleteHistorySince( this.historyPointer );
 		this.range = this.getTranslatedRange( txs, true );
 		this.historyPointer += txs.length;
@@ -157,10 +161,8 @@ ve.dm.SurfaceFragment.prototype.change = function ( txs, range ) {
 
 	this.surface.change( txs, !this.noAutoSelect && ( range || this.getTranslatedRange( txs ) ) );
 	if ( range ) {
-		// Let this.range auto-translate for what we just did
-		this.update();
-		// Overwrite it
-		this.range = range;
+		// Overwrite the range
+		this.update( range );
 	}
 };
 
@@ -349,7 +351,7 @@ ve.dm.SurfaceFragment.prototype.trimRange = function () {
  *  - `annotation`: Expands to cover a given annotation (argument) within the current range
  *  - `root`: Expands to cover the entire document
  *  - `siblings`: Expands to cover all sibling nodes
- *  - `closest`: Expands to cover the closest common ancestor node of a give type (argument)
+ *  - `closest`: Expands to cover the closest common ancestor node of a give type (ve.dm.Node)
  *  - `parent`: Expands to cover the closest common parent node
  * @param {Mixed} [type] Parameter to use with scope method if needed
  * @returns {ve.dm.SurfaceFragment} Expanded fragment
@@ -369,10 +371,7 @@ ve.dm.SurfaceFragment.prototype.expandRange = function ( scope, type ) {
 				newRange = ve.Range.newCoveringRange( [
 					this.document.data.getNearestWordRange( this.getRange( true ).start ),
 					this.document.data.getNearestWordRange( this.getRange( true ).end )
-				] );
-				if ( oldRange.isBackwards() ) {
-					newRange = newRange.flip();
-				}
+				], oldRange.isBackwards() );
 			} else {
 				// optimisation for zero-length ranges
 				newRange = this.document.data.getNearestWordRange( oldRange.start );
@@ -410,7 +409,7 @@ ve.dm.SurfaceFragment.prototype.expandRange = function ( scope, type ) {
 			// Grow range to cover closest common ancestor node of given type
 			node = this.document.selectNodes( oldRange, 'siblings' )[0].node;
 			parent = node.getParent();
-			while ( parent && parent.getType() !== type ) {
+			while ( parent && !( parent instanceof type ) ) {
 				node = parent;
 				parent = parent.getParent();
 			}
@@ -804,6 +803,98 @@ ve.dm.SurfaceFragment.prototype.removeContent = function () {
 };
 
 /**
+ * Delete content and correct selection
+ *
+ * @method
+ * @param {number} [directionAfterDelete=-1] Direction to move after delete: 1 or -1 or 0
+ * @chainable
+ */
+ve.dm.SurfaceFragment.prototype.delete = function ( directionAfterDelete ) {
+	var rangeAfterRemove, internalListRange,
+		tx, startNode, endNode, endNodeData, nodeToDelete,
+		rangeToRemove = this.getRange();
+
+	if ( rangeToRemove.isCollapsed() ) {
+		return this;
+	}
+
+	// If selection spans entire document (e.g. CTRL+A in Firefox) then
+	// replace with an empty paragraph
+	internalListRange = this.document.getInternalList().getListNode().getOuterRange();
+	if ( rangeToRemove.start === 0 && rangeToRemove.end >= internalListRange.start ) {
+		tx = ve.dm.Transaction.newFromReplacement( this.document, new ve.Range( 0, internalListRange.start ), [
+			{ type: 'paragraph' },
+			{ type: '/paragraph' }
+		] );
+		this.change( tx );
+		rangeAfterRemove = new ve.Range( 1 );
+	} else {
+		tx = ve.dm.Transaction.newFromRemoval( this.document, rangeToRemove );
+		this.change( tx );
+		rangeAfterRemove = tx.translateRange( rangeToRemove );
+	}
+	if ( !rangeAfterRemove.isCollapsed() ) {
+		// If after processing removal transaction range is not collapsed it means that not
+		// everything got merged nicely (at this moment transaction processor is capable of merging
+		// nodes of the same type and at the same depth level only), so we process with another
+		// merging that takes remaing data from endNode and inserts it at the end of startNode,
+		// endNode or recrusivly its parent (if have only one child) gets removed.
+		//
+		// If startNode has no content then we just delete that node instead of merging.
+		// This prevents content being inserted into empty structure which, e.g. and empty heading
+		// will be deleted, rather than "converting" the paragraph beneath to a heading.
+
+		endNode = this.document.getBranchNodeFromOffset( rangeAfterRemove.end, false );
+
+		// If endNode is within our rangeAfterRemove, then we shouldn't delete it
+		if ( endNode.getRange().start >= rangeAfterRemove.end ) {
+			startNode = this.document.getBranchNodeFromOffset( rangeAfterRemove.start, false );
+			if ( startNode.getRange().isCollapsed() ) {
+				// Remove startNode
+				this.change( [
+					ve.dm.Transaction.newFromRemoval(
+						this.document, startNode.getOuterRange()
+					)
+				] );
+			} else {
+				endNodeData = this.document.getData( endNode.getRange() );
+				nodeToDelete = endNode;
+				nodeToDelete.traverseUpstream( function ( node ) {
+					var parent = node.getParent();
+					if ( parent.children.length === 1 ) {
+						nodeToDelete = parent;
+						return true;
+					} else {
+						return false;
+					}
+				} );
+				// Move contents of endNode into startNode, and delete nodeToDelete
+				this.change( [
+					ve.dm.Transaction.newFromRemoval(
+						this.document, nodeToDelete.getOuterRange()
+					),
+					ve.dm.Transaction.newFromInsertion(
+						this.document, rangeAfterRemove.start, endNodeData
+					)
+				] );
+			}
+		}
+		rangeAfterRemove = new ve.Range( rangeAfterRemove.start );
+	}
+	// rangeAfterRemove is now guaranteed to be collapsed so make sure that it is a content offset
+	if ( !this.document.data.isContentOffset( rangeAfterRemove.start ) ) {
+		rangeAfterRemove = this.document.getRelativeRange(
+			rangeAfterRemove,
+			// If undefined (e.g. cut), default to backwards movement
+			directionAfterDelete || -1
+		);
+	}
+	this.update( rangeAfterRemove );
+
+	return this;
+};
+
+/**
  * Convert each content branch in the fragment from one type to another.
  *
  * @method
@@ -849,7 +940,7 @@ ve.dm.SurfaceFragment.prototype.wrapNodes = function ( wrapper ) {
 		return this;
 	}
 
-	if ( !ve.isArray( wrapper ) ) {
+	if ( !Array.isArray( wrapper ) ) {
 		wrapper = [wrapper];
 	}
 	this.change(
@@ -930,7 +1021,7 @@ ve.dm.SurfaceFragment.prototype.rewrapNodes = function ( depth, wrapper ) {
 	var i,
 		unwrapper = [];
 
-	if ( !ve.isArray( wrapper ) ) {
+	if ( !Array.isArray( wrapper ) ) {
 		wrapper = [wrapper];
 	}
 
@@ -974,7 +1065,7 @@ ve.dm.SurfaceFragment.prototype.wrapAllNodes = function ( wrapper ) {
 		return this;
 	}
 
-	if ( !ve.isArray( wrapper ) ) {
+	if ( !Array.isArray( wrapper ) ) {
 		wrapper = [wrapper];
 	}
 
@@ -1015,7 +1106,7 @@ ve.dm.SurfaceFragment.prototype.rewrapAllNodes = function ( depth, wrapper ) {
 			this.getRange( true ).end - depth
 		);
 
-	if ( !ve.isArray( wrapper ) ) {
+	if ( !Array.isArray( wrapper ) ) {
 		wrapper = [wrapper];
 	}
 

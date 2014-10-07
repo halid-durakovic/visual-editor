@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Document tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.dm.Document' );
@@ -34,11 +33,11 @@ QUnit.test( 'constructor', 11, function ( assert ) {
 	assert.deepEqualWithDomElements( doc.getMetadata(), new Array( 5 ),
 		'sparse metadata array is created'
 	);
-	assert.equal( doc.getHtmlDocument().body.innerHTML, '', 'Empty HTML document is created' );
+	assert.strictEqual( doc.getHtmlDocument().body.innerHTML, '', 'Empty HTML document is created' );
 
 	htmlDoc = ve.createDocumentFromHtml( 'abcd' );
 	doc = new ve.dm.Document( [ 'a', 'b', 'c', 'd' ], htmlDoc );
-	assert.equal( doc.getHtmlDocument(), htmlDoc, 'Provided HTML document is used' );
+	assert.strictEqual( doc.getHtmlDocument(), htmlDoc, 'Provided HTML document is used' );
 
 	data = new ve.dm.ElementLinearData(
 		new ve.dm.IndexValueStore(),
@@ -50,7 +49,7 @@ QUnit.test( 'constructor', 11, function ( assert ) {
 		new ve.dm.DocumentNode( [ new ve.dm.ParagraphNode( { type: 'paragraph' } ) ] ),
 		'empty paragraph no longer has a text node'
 	);
-	assert.equal( doc.data, data, 'ElementLinearData is stored by reference' );
+	assert.strictEqual( doc.data, data, 'ElementLinearData is stored by reference' );
 
 	doc = ve.dm.example.createExampleDocument( 'withMeta' );
 	assert.deepEqualWithDomElements( doc.getData(), ve.dm.example.withMetaPlainData,
@@ -123,7 +122,274 @@ QUnit.test( 'cloneFromRange', function ( assert ) {
 	}
 } );
 
-QUnit.test( 'getNodeFromOffset', function ( assert ) {
+QUnit.test( 'getRelativeOffset', function ( assert ) {
+	var i, j,
+		expectCount = 0,
+		documentModel = ve.dm.example.createExampleDocument( 'alienData' ),
+		tests = [
+			{
+				direction: 1,
+				unit: 'character',
+				cases: [
+					{ input: 0, output: 1 },
+					{ input: 2, output: 3 },
+					{ input: 3, output: 4 },
+					{ input: 4, output: 5 },
+					{ input: 6, output: 7 },
+					{ input: 7, output: 9 },
+					{ input: 10, output: 10 }
+				]
+			},
+			{
+				direction: 1,
+				unit: 'word',
+				cases: [
+					{ input: 0, output: 1 },
+					{ input: 2, output: 3 },
+					{ input: 3, output: 4 },
+					{ input: 4, output: 5 },
+					{ input: 6, output: 7 },
+					{ input: 7, output: 9 },
+					{ input: 10, output: 10 }
+				]
+			},
+			{
+				direction: -1,
+				unit: 'character',
+				cases: [
+					{ input: 10, output: 9 },
+					{ input: 8, output: 7 },
+					{ input: 7, output: 6 },
+					{ input: 6, output: 5 },
+					{ input: 4, output: 3 },
+					{ input: 3, output: 1 },
+					{ input: 0, output: 0 }
+				]
+			},
+			{
+				direction: -1,
+				unit: 'word',
+				cases: [
+					{ input: 10, output: 9 },
+					{ input: 8, output: 7 },
+					{ input: 7, output: 6 },
+					{ input: 6, output: 5 },
+					{ input: 4, output: 3 },
+					{ input: 3, output: 1 },
+					{ input: 0, output: 0 }
+				]
+			}
+		];
+	for ( i = 0; i < tests.length; i++ ) {
+		for ( j = 0; j < tests[i].cases.length; j++ ) {
+			assert.strictEqual(
+				documentModel.getRelativeOffset(
+					tests[i].cases[j].input,
+					tests[i].direction,
+					tests[i].unit
+				),
+				tests[i].cases[j].output,
+				tests[i].cases[j].input + ', ' + tests[i].direction + ', ' + tests[i].unit
+			);
+		}
+		expectCount += tests[i].cases.length;
+	}
+	QUnit.expect( expectCount );
+} );
+
+QUnit.test( 'getRelativeRange', function ( assert ) {
+	var documentModel, i, j,
+		expectCount = 0,
+		tests = [
+			{
+				data: [
+					/* 0 */ { type: 'paragraph' },
+					/* 1 */ 'a',
+					/* 2 */ { type: 'alienInline' },
+					/* 3 */ { type: '/alienInline' },
+					/* 4 */ 'b',
+					/* 5 */ { type: '/paragraph' }
+				],
+				cases: [
+					{
+						direction: 1,
+						given: new ve.Range( 1 ),
+						expected: new ve.Range( 2 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 2 ),
+						expected: new ve.Range( 2, 4 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 2, 4 ),
+						expected: new ve.Range( 4 )
+					},
+
+					{
+						direction: 1,
+						expand: true,
+						given: new ve.Range( 1 ),
+						expected: new ve.Range( 1, 2 )
+					},
+					{
+						direction: 1,
+						expand: true,
+						given: new ve.Range( 1, 2 ),
+						expected: new ve.Range( 1, 4 )
+					},
+					{
+						direction: 1,
+						expand: true,
+						given: new ve.Range( 1, 4 ),
+						expected: new ve.Range( 1, 5 )
+					}
+				]
+			},
+			{
+				data: [
+					/* 0 */ { type: 'paragraph' },
+					/* 1 */ { type: 'alienInline' },
+					/* 2 */ { type: '/alienInline' },
+					/* 3 */ { type: 'alienInline' },
+					/* 4 */ { type: '/alienInline' },
+					/* 5 */ { type: '/paragraph' }
+				],
+				cases: [
+					{
+						direction: 1,
+						given: new ve.Range( 3 ),
+						expected: new ve.Range( 3, 5 )
+					},
+					{
+						direction: 1,
+						expand: true,
+						given: new ve.Range( 1, 3 ),
+						expected: new ve.Range( 1, 5 )
+					},
+					{
+						direction: -1,
+						expand: true,
+						given: new ve.Range( 1, 5 ),
+						expected: new ve.Range( 1, 3 )
+					},
+					{
+						direction: 1,
+						expand: true,
+						given: new ve.Range( 5, 1 ),
+						expected: new ve.Range( 5, 3 )
+					}
+				]
+			},
+			{
+				data: ve.copy( ve.dm.example.alienData ),
+				cases: [
+					{
+						direction: 1,
+						given: new ve.Range( 0 ),
+						expected: new ve.Range( 0, 2 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 0, 2 ),
+						expected: new ve.Range( 3 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 3 ),
+						expected: new ve.Range( 4 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 4 ),
+						expected: new ve.Range( 4, 6 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 4, 6),
+						expected: new ve.Range( 6 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 6 ),
+						expected: new ve.Range( 7 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 7 ),
+						expected: new ve.Range( 8, 10 )
+					},
+					{
+						direction: 1,
+						given: new ve.Range( 10 ),
+						expected: new ve.Range( 10 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 10 ),
+						expected: new ve.Range( 10, 8 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 10, 8 ),
+						expected: new ve.Range( 7 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 7 ),
+						expected: new ve.Range( 6 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 6 ),
+						expected: new ve.Range( 6, 4 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 6, 4 ),
+						expected: new ve.Range( 4 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 4 ),
+						expected: new ve.Range( 3 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 3 ),
+						expected: new ve.Range( 2, 0 )
+					},
+					{
+						direction: -1,
+						given: new ve.Range( 2, 0 ),
+						expected: new ve.Range( 0 )
+					}
+				]
+			}
+		];
+	for ( i = 0; i < tests.length; i++ ) {
+		documentModel = new ve.dm.Document( tests[i].data );
+		for ( j = 0; j < tests[i].cases.length; j++ ) {
+			expectCount++;
+			assert.equalRange(
+				documentModel.getRelativeRange(
+					tests[i].cases[j].given,
+					tests[i].cases[j].direction,
+					'character',
+					!!tests[i].cases[j].expand
+				),
+				tests[i].cases[j].expected,
+				'Test document ' + i +
+				', range ' + tests[i].cases[j].given.toJSON() +
+				', direction ' + tests[i].cases[j].direction
+			);
+		}
+	}
+	QUnit.expect( expectCount );
+} );
+
+QUnit.test( 'getBranchNodeFromOffset', function ( assert ) {
 	var i, j, node,
 		doc = ve.dm.example.createExampleDocument(),
 		root = doc.getDocumentNode().getRoot(),
@@ -197,8 +463,24 @@ QUnit.test( 'getNodeFromOffset', function ( assert ) {
 		for ( j = 0; j < expected[i].length; j++ ) {
 			node = node.children[expected[i][j]];
 		}
-		assert.ok( node === doc.getNodeFromOffset( i ), 'reference at offset ' + i );
+		assert.ok( node === doc.getBranchNodeFromOffset( i ), 'reference at offset ' + i );
 	}
+} );
+
+QUnit.test( 'hasSlugAtOffset', function ( assert ) {
+	var i, l,
+		expected = {
+			0: true,
+			10: true
+		},
+		doc = ve.dm.example.createExampleDocument( 'alienData' );
+
+	QUnit.expect( doc.data.getLength() + 1 );
+
+	for ( i = 0, l = doc.data.getLength(); i <= l; i++ ) {
+		assert.strictEqual( doc.hasSlugAtOffset( i ), !!expected[i], 'hasSlugAtOffset ' + i + ' = ' + !!expected[i] );
+	}
+
 } );
 
 QUnit.test( 'getDataFromNode', 3, function ( assert ) {

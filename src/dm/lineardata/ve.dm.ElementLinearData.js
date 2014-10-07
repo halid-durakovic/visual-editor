@@ -3,8 +3,7 @@
  *
  * Class containing element linear data and an index-value store.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -40,10 +39,10 @@ ve.dm.ElementLinearData.static.compareUnannotated = function ( a, b ) {
 
 	var aPlain = a, bPlain = b;
 
-	if ( ve.isArray( a ) ) {
+	if ( Array.isArray( a ) ) {
 		aPlain = a[0];
 	}
-	if ( ve.isArray( b ) ) {
+	if ( Array.isArray( b ) ) {
 		bPlain = b[0];
 	}
 	if ( a && a.type ) {
@@ -96,7 +95,7 @@ ve.dm.ElementLinearData.prototype.isContentOffset = function ( offset ) {
 			// <paragraph>|a|</paragraph>
 			( typeof left === 'string' || typeof right === 'string' ) ||
 			// Same checks but for annotated characters - isArray is slower, try it next
-			( ve.isArray( left ) || ve.isArray( right ) ) ||
+			( Array.isArray( left ) || Array.isArray( right ) ) ||
 			// The most expensive test are last, these deal with elements
 			(
 				// Right of a leaf
@@ -362,7 +361,7 @@ ve.dm.ElementLinearData.prototype.setAnnotationIndexesAtOffset = function ( offs
 /** */
 ve.dm.ElementLinearData.prototype.getCharacterData = function ( offset ) {
 	var item = this.getData( offset );
-	return ve.isArray( item ) ? item[0] : item;
+	return Array.isArray( item ) ? item[0] : item;
 };
 
 /**
@@ -740,25 +739,24 @@ ve.dm.ElementLinearData.prototype.getNearestWordRange = function ( offset ) {
  * Currently this is just all annotations still in use.
  *
  * @method
+ * @param {ve.Range} range Range to get store values for
  * @returns {Object} Object containing all store values, indexed by store index
  */
-ve.dm.ElementLinearData.prototype.getUsedStoreValues = function () {
-	var i, indexes, j, valueStore = {};
-	i = this.getLength();
-	while ( i-- ) {
+ve.dm.ElementLinearData.prototype.getUsedStoreValuesFromRange = function ( range ) {
+	var i, index, indexes, j,
+		valueStore = {};
+
+	for ( i = range.start; i < range.end; i++ ) {
 		// Annotations
 		// Use ignoreClose to save time; no need to count every element annotation twice
 		indexes = this.getAnnotationIndexesFromOffset( i, true );
 		j = indexes.length;
 		while ( j-- ) {
-			// Just flag item as in use for now - we will add its value
-			// in a separate loop to avoid multiple store lookups
-			valueStore[indexes[j]] = true;
+			index = indexes[j];
+			if ( !( index in valueStore ) ) {
+				valueStore[index] = this.getStore().value( index );
+			}
 		}
-	}
-	for ( i in valueStore ) {
-		// Fill in actual store values
-		valueStore[i] = this.getStore().value( i );
 	}
 	return valueStore;
 };

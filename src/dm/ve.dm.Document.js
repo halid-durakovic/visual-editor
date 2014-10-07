@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Document class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -60,7 +59,7 @@ ve.dm.Document = function VeDmDocument( data, htmlDocument, parentDocument, inte
 		// Raw linear model data
 		fullData = new ve.dm.FlatLinearData(
 			new ve.dm.IndexValueStore(),
-			ve.isArray( data ) ? data : []
+			Array.isArray( data ) ? data : []
 		);
 	}
 	this.store = fullData.getStore();
@@ -164,7 +163,7 @@ ve.dm.Document.static.addAnnotationsToData = function ( data, annotationSet ) {
 		if ( data[i].type ) {
 			// Element
 			continue;
-		} else if ( !ve.isArray( data[i] ) ) {
+		} else if ( !Array.isArray( data[i] ) ) {
 			// Wrap in array
 			data[i] = [data[i]];
 			newAnnotationSet = annotationSet.clone();
@@ -377,8 +376,8 @@ ve.dm.Document.prototype.cloneSliceFromRange = function ( range ) {
 	var i, first, last, firstNode, lastNode,
 		data, slice, originalRange, balancedRange,
 		balancedNodes, needsContext,
-		startNode = this.getNodeFromOffset( range.start ),
-		endNode = this.getNodeFromOffset( range.end ),
+		startNode = this.getBranchNodeFromOffset( range.start ),
+		endNode = this.getBranchNodeFromOffset( range.end ),
 		selection = this.selectNodes( range, 'siblings' ),
 		balanceOpenings = [],
 		balanceClosings = [],
@@ -590,22 +589,191 @@ ve.dm.Document.prototype.getFullData = function ( range, edgeMetadata ) {
 };
 
 /**
- * Get a node from an offset.
+ * Get the nearest word boundary.
  *
  * @method
- * @param offset
- * @returns {ve.dm.Node} Node at offset
+ * @param {number} offset Offset to start from
+ * @param {number} [direction] Direction to prefer matching offset in, -1 for left and 1 for right
+ * @returns {number} Nearest word boundary
  */
-ve.dm.Document.prototype.getNodeFromOffset = function ( offset ) {
-	// FIXME duplicated from ve.ce.Document
+ve.dm.Document.prototype.getSiblingWordBoundary = function ( offset, direction ) {
+	var dataString = new ve.dm.DataString( this.getData() );
+	return unicodeJS.wordbreak.moveBreakOffset( direction, dataString, offset, true );
+};
+
+/**
+ * Get the relative word or character boundary.
+ *
+ * @method
+ * @param {number} offset Offset to start from
+ * @param {number} direction Direction to prefer matching offset in, -1 for left and 1 for right
+ * @param {string} [unit] Unit [word|character]
+ * @returns {number} Relative offset
+ */
+ve.dm.Document.prototype.getRelativeOffset = function ( offset, direction, unit ) {
+	var relativeContentOffset, relativeStructuralOffset, newOffset, adjacentDataOffset, isFocusable,
+		data = this.data;
+	if ( unit === 'word' ) { // word
+		// Method getSiblingWordBoundary does not "move/jump" over element data. If passed offset is
+		// an element data offset then the same offset is returned - and in such case this method
+		// fallback to the other path (character) which does "move/jump" over element data.
+		newOffset = this.getSiblingWordBoundary( offset, direction );
+		if ( offset === newOffset ) {
+			newOffset = this.getRelativeOffset( offset, direction, 'character' );
+		}
+		return newOffset;
+	} else { // character
+		// Check if we are adjacent to a focusable node
+		adjacentDataOffset = offset + ( direction > 0 ? 0 : -1 );
+		if (
+			data.isElementData( adjacentDataOffset ) &&
+			ve.dm.nodeFactory.isNodeFocusable( data.getType( adjacentDataOffset ) )
+		) {
+			// We are adjacent to a focusableNode, move inside it
+			return offset + direction;
+		}
+		relativeContentOffset = data.getRelativeContentOffset( offset, direction );
+		relativeStructuralOffset = data.getRelativeStructuralOffset( offset, direction, true );
+		// Check the structural offset is not in the wrong direction
+		if ( ( relativeStructuralOffset - offset < 0 ? -1 : 1 ) !== direction ) {
+			relativeStructuralOffset = offset;
+		} else {
+			isFocusable = ( relativeStructuralOffset - offset < 0 ? -1 : 1 ) === direction &&
+				data.isElementData( relativeStructuralOffset + direction ) &&
+				ve.dm.nodeFactory.isNodeFocusable( data.getType( relativeStructuralOffset + direction ) );
+		}
+		// Check if we've moved into a slug or a focusableNode
+		if ( isFocusable || this.hasSlugAtOffset( relativeStructuralOffset ) ) {
+			if ( isFocusable ) {
+				relativeStructuralOffset += direction;
+			}
+			// Check if the relative content offset is in the opposite direction we are trying to go
+			if (
+				relativeContentOffset === offset ||
+				( relativeContentOffset - offset < 0 ? -1 : 1 ) !== direction
+			) {
+				return relativeStructuralOffset;
+			}
+			// There's a slug neaby, go into it if it's closer
+			return direction > 0 ?
+				Math.min( relativeContentOffset, relativeStructuralOffset ) :
+				Math.max( relativeContentOffset, relativeStructuralOffset );
+		} else {
+			// Don't allow the offset to move in the wrong direction
+			return direction > 0 ?
+				Math.max( relativeContentOffset, offset ) :
+				Math.min( relativeContentOffset, offset );
+		}
+	}
+};
+
+/**
+ * Get the relative range.
+ *
+ * @method
+ * @param {ve.Range} range Input range
+ * @param {number} direction Direction to look in, +1 or -1
+ * @param {string} unit Unit [word|character]
+ * @param {boolean} expand Expanding range
+ * @returns {ve.Range} Relative range
+ */
+ve.dm.Document.prototype.getRelativeRange = function ( range, direction, unit, expand ) {
+	var contentOrSlugOffset,
+		focusableNode,
+		newOffset,
+		newRange,
+		to = range.to;
+
+	// If you have a non-collapsed range and you move, collapse to the end
+	// in the direction you moved, provided you end up at a content or slug offset
+	if ( !range.isCollapsed() && !expand ) {
+		newOffset = direction > 0 ? range.end : range.start;
+		if ( this.data.isContentOffset( newOffset ) || this.hasSlugAtOffset( newOffset ) ) {
+			return new ve.Range( newOffset );
+		} else {
+			to = newOffset;
+		}
+	}
+
+	contentOrSlugOffset = this.getRelativeOffset( to, direction, unit );
+
+	focusableNode = this.getNearestFocusableNode( to, direction, contentOrSlugOffset );
+	if ( focusableNode ) {
+		newRange = focusableNode.getOuterRange( direction === -1 );
+	} else {
+		newRange = new ve.Range( contentOrSlugOffset );
+	}
+	if ( expand ) {
+		return new ve.Range( range.from, newRange.to );
+	} else {
+		return newRange;
+	}
+};
+
+/**
+ * Get the nearest focusable node.
+ *
+ * @method
+ * @param {number} offset Offset to start looking at
+ * @param {number} direction Direction to look in, +1 or -1
+ * @param {number} limit Stop looking after reaching certain offset
+ */
+ve.dm.Document.prototype.getNearestFocusableNode = function ( offset, direction, limit ) {
+	// It is never an offset of the node, but just an offset for which getNodeFromOffset should
+	// return that node. Usually it would be node offset + 1 or offset of node closing tag.
+	var coveredOffset;
+	this.data.getRelativeOffset(
+		offset,
+		direction === 1 ? 0 : -1,
+		function ( index, limit ) {
+			// Our result must be between offset and limit
+			if ( index >= Math.max( offset, limit ) || index < Math.min( offset, limit ) ) {
+				return true;
+			}
+			if (
+				this.isOpenElementData( index ) &&
+				ve.dm.nodeFactory.isNodeFocusable( this.getType( index ) )
+			) {
+				coveredOffset = index + 1;
+				return true;
+			}
+			if (
+				this.isCloseElementData( index ) &&
+				ve.dm.nodeFactory.isNodeFocusable( this.getType( index ) )
+			) {
+				coveredOffset = index;
+				return true;
+			}
+		},
+		limit
+	);
+	if ( coveredOffset ) {
+		return this.getDocumentNode().getNodeFromOffset( coveredOffset );
+	} else {
+		return null;
+	}
+};
+
+/**
+ * @inheritdoc
+ */
+ve.dm.Document.prototype.getBranchNodeFromOffset = function ( offset ) {
 	if ( offset < 0 || offset > this.data.getLength() ) {
-		throw new Error( 've.dm.Document.getNodeFromOffset(): offset ' + offset + ' is out of bounds' );
+		throw new Error( 've.dm.Document.getBranchNodeFromOffset(): offset ' + offset + ' is out of bounds' );
 	}
-	var node = this.getDocumentNode().getNodeFromOffset( offset );
-	if ( !node.canHaveChildren() ) {
-		node = node.getParent();
-	}
-	return node;
+	return ve.Document.prototype.getBranchNodeFromOffset.call( this, offset );
+};
+
+/**
+ * Check if there is a slug at an offset.
+ *
+ * @method
+ * @param {number} offset Offset to check for a slug at
+ * @returns {boolean} There is a slug at the offset
+ */
+ve.dm.Document.prototype.hasSlugAtOffset = function ( offset ) {
+	var node = this.getBranchNodeFromOffset( offset );
+	return node ? node.hasSlugAtOffset( offset ) : false;
 };
 
 /**
@@ -643,7 +811,7 @@ ve.dm.Document.prototype.getText = function ( range ) {
 	for ( i = 0; i < data.length; i++ ) {
 		if ( typeof data[i] === 'string' ) {
 			str += data[i];
-		} else if ( ve.isArray( data[i] ) ) {
+		} else if ( Array.isArray( data[i] ) ) {
 			str += data[i][0];
 		}
 	}
@@ -850,7 +1018,7 @@ ve.dm.Document.prototype.fixupInsertion = function ( data, offset ) {
 		newData.push( element );
 	}
 
-	parentNode = this.getNodeFromOffset( offset );
+	parentNode = this.getBranchNodeFromOffset( offset );
 	parentType = parentNode.getType();
 	inTextNode = false;
 	isFirstChild = doc.data.isOpenElementData( offset - 1 );

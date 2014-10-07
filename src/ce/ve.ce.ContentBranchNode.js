@@ -1,8 +1,7 @@
 /*!
  * VisualEditor ContentEditable ContentBranchNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -161,7 +160,7 @@ ve.ce.ContentBranchNode.prototype.getRenderedContents = function () {
 
 	// Render HTML with annotations
 	for ( i = 0, ilen = annotatedHtml.length; i < ilen; i++ ) {
-		if ( ve.isArray( annotatedHtml[i] ) ) {
+		if ( Array.isArray( annotatedHtml[i] ) ) {
 			item = annotatedHtml[i][0];
 			itemAnnotations = new ve.dm.AnnotationSet( store, annotatedHtml[i][1] );
 		} else {

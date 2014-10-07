@@ -1,8 +1,7 @@
 /*!
  * VisualEditor Base method tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've' );
@@ -22,8 +21,6 @@ QUnit.module( 've' );
 // ve.isPlainObject: Tested upstream (jQuery)
 
 // ve.isEmptyObject: Tested upstream (jQuery)
-
-// ve.isArray: Tested upstream (jQuery)
 
 // ve.bind: Tested upstream (jQuery)
 
@@ -289,17 +286,17 @@ QUnit.test( 'createDocumentFromHtml', function ( assert ) {
 } );
 
 QUnit.test( 'isBlockElement/isVoidElement', 10, function ( assert ) {
-	assert.equal( ve.isBlockElement( 'div' ), true, '"div" is a block element' );
-	assert.equal( ve.isBlockElement( 'SPAN' ), false, '"SPAN" is not a block element' );
-	assert.equal( ve.isBlockElement( 'a' ), false, '"a" is not a block element' );
-	assert.equal( ve.isBlockElement( document.createElement( 'div' ) ), true, '<div> is a block element' );
-	assert.equal( ve.isBlockElement( document.createElement( 'span' ) ), false, '<span> is not a block element' );
+	assert.strictEqual( ve.isBlockElement( 'div' ), true, '"div" is a block element' );
+	assert.strictEqual( ve.isBlockElement( 'SPAN' ), false, '"SPAN" is not a block element' );
+	assert.strictEqual( ve.isBlockElement( 'a' ), false, '"a" is not a block element' );
+	assert.strictEqual( ve.isBlockElement( document.createElement( 'div' ) ), true, '<div> is a block element' );
+	assert.strictEqual( ve.isBlockElement( document.createElement( 'span' ) ), false, '<span> is not a block element' );
 
-	assert.equal( ve.isVoidElement( 'img' ), true, '"img" is a void element' );
-	assert.equal( ve.isVoidElement( 'DIV' ), false, '"DIV" is not a void element' );
-	assert.equal( ve.isVoidElement( 'span' ), false, '"span" is not a void element' );
-	assert.equal( ve.isVoidElement( document.createElement( 'img' ) ), true, '<img> is a void element' );
-	assert.equal( ve.isVoidElement( document.createElement( 'div' ) ), false, '<div> is not a void element' );
+	assert.strictEqual( ve.isVoidElement( 'img' ), true, '"img" is a void element' );
+	assert.strictEqual( ve.isVoidElement( 'DIV' ), false, '"DIV" is not a void element' );
+	assert.strictEqual( ve.isVoidElement( 'span' ), false, '"span" is not a void element' );
+	assert.strictEqual( ve.isVoidElement( document.createElement( 'img' ) ), true, '<img> is a void element' );
+	assert.strictEqual( ve.isVoidElement( document.createElement( 'div' ) ), false, '<div> is not a void element' );
 } );
 
 // TODO: ve.isUnattachedCombiningMark
@@ -339,16 +336,106 @@ QUnit.test( 'graphemeSafeSubstring', function ( assert ) {
 		];
 	QUnit.expect( cases.length * 2 );
 	for ( i = 0; i < cases.length; i++ ) {
-		assert.equal(
+		assert.strictEqual(
 			ve.graphemeSafeSubstring( text, cases[i].start, cases[i].end, true ),
 			cases[i].expected[0],
 			cases[i].msg + ' (outer)'
 		);
-		assert.equal(
+		assert.strictEqual(
 			ve.graphemeSafeSubstring( text, cases[i].start, cases[i].end, false ),
 			cases[i].expected[1],
 			cases[i].msg + ' (inner)'
 		);
+	}
+} );
+
+QUnit.test( 'transformStyleAttributes', function ( assert ) {
+	var i, wasStyleAttributeBroken, oldNormalizeAttributeValue,
+		normalizeColor = function ( name, value ) {
+			if ( name === 'style' && value === 'color:#ffd' ) {
+				return 'color: rgb(255, 255, 221);';
+			}
+			return value;
+		},
+		normalizeBgcolor = function ( name, value ) {
+			if ( name === 'bgcolor' ) {
+				return value && value.toLowerCase();
+			}
+			return value;
+		},
+		cases = [
+			{
+				msg: 'Empty tags are not changed self-closing tags',
+				before: '<html><head></head><body>Hello <a href="foo"></a> world</body></html>'
+			},
+			{
+				msg: 'HTML string with doctype is parsed correctly',
+				before: '<!DOCTYPE html><html><head><title>Foo</title></head><body>Hello</body></html>'
+			},
+			{
+				msg: 'Style attributes are masked then unmasked',
+				before: '<body><div style="color:#ffd">Hello</div></body>',
+				masked: '<body><div style="color:#ffd" data-ve-style="color:#ffd">Hello</div></body>'
+			},
+			{
+				msg: 'Style attributes that differ but normalize the same are overwritten when unmasked',
+				masked: '<body><div style="color: rgb(255, 255, 221);" data-ve-style="color:#ffd">Hello</div></body>',
+				after: '<body><div style="color:#ffd">Hello</div></body>',
+				normalize: normalizeColor
+			},
+			{
+				msg: 'Style attributes that do not normalize the same are not overwritten when unmasked',
+				masked: '<body><div style="color: rgb(0, 0, 0);" data-ve-style="color:#ffd">Hello</div></body>',
+				after: '<body><div style="color: rgb(0, 0, 0);">Hello</div></body>',
+				normalize: normalizeColor
+			},
+			{
+				msg: 'bgcolor attributes are masked then unmasked',
+				before: '<body><table><tr bgcolor="#FFDEAD"></tr></table></body>',
+				masked: '<body><table><tr bgcolor="#FFDEAD" data-ve-bgcolor="#FFDEAD"></tr></table></body>'
+			},
+			{
+				msg: 'bgcolor attributes that differ but normalize the same are overwritten when unmasked',
+				masked: '<body><table><tr bgcolor="#ffdead" data-ve-bgcolor="#FFDEAD"></tr></table></body>',
+				after: '<body><table><tr bgcolor="#FFDEAD"></tr></table></body>',
+				normalize: normalizeBgcolor
+			},
+			{
+				msg: 'bgcolor attributes that do not normalize the same are not overwritten when unmasked',
+				masked: '<body><table><tr bgcolor="#fffffa" data-ve-bgcolor="#FFDEAD"></tr></table></body>',
+				after: '<body><table><tr bgcolor="#fffffa"></tr></table></body>',
+				normalize: normalizeBgcolor
+			}
+		];
+	QUnit.expect( 2 * cases.length );
+
+	// Force transformStyleAttributes to think that we're in a broken browser
+	wasStyleAttributeBroken = ve.isStyleAttributeBroken;
+	ve.isStyleAttributeBroken = true;
+
+	for ( i = 0; i < cases.length; i++ ) {
+		if ( cases[i].normalize ) {
+			oldNormalizeAttributeValue = ve.normalizeAttributeValue;
+			ve.normalizeAttributeValue = cases[i].normalize;
+		}
+		if ( cases[i].before ) {
+			assert.strictEqual(
+				ve.transformStyleAttributes( cases[i].before, false ),
+				cases[i].masked || cases[i].before,
+				cases[i].msg + ' (masking)'
+			);
+		} else {
+			assert.ok( true, cases[i].msg + ' (no masking test)' );
+		}
+		assert.strictEqual(
+			ve.transformStyleAttributes( cases[i].masked || cases[i].before, true ),
+			cases[i].after || cases[i].before,
+			cases[i].msg + ' (unmasking)'
+		);
+
+		if ( cases[i].normalize ) {
+			ve.normalizeAttributeValue = oldNormalizeAttributeValue;
+		}
 	}
 } );
 

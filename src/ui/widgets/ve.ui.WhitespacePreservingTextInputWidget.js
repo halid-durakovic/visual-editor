@@ -1,8 +1,7 @@
 /*!
  * VisualEditor UserInterface WhitespacePreservingTextInputWidget class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -69,6 +68,10 @@ ve.ui.WhitespacePreservingTextInputWidget.prototype.setWhitespace = function ( w
  * @inheritdoc
  */
 ve.ui.WhitespacePreservingTextInputWidget.prototype.getValue = function () {
+	if ( !this.whitespace ) {
+		// In case getValue() is called from a parent constructor
+		return this.value;
+	}
 	return this.whitespace[0] + this.value + this.whitespace[1];
 };
 

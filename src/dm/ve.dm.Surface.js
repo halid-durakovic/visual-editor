@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Surface class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -23,7 +22,8 @@ ve.dm.Surface = function VeDmSurface( doc ) {
 	this.metaList = new ve.dm.MetaList( this );
 	this.selection = null;
 	this.selectionBefore = null;
-	this.selectedNodes = {};
+	this.branchNodes = {};
+	this.selectedNode = null;
 	this.newTransactions = [];
 	this.stagingStack = [];
 	this.undoStack = [];
@@ -306,7 +306,7 @@ ve.dm.Surface.prototype.getInsertionAnnotations = function () {
  * Set annotations that will be used upon insertion.
  *
  * @method
- * @param {ve.dm.AnnotationSet|null} Insertion anotations to use or null to disable them
+ * @param {ve.dm.AnnotationSet|null} Insertion annotations to use or null to disable them
  * @fires insertionAnnotationsChange
  * @fires contextChange
  */
@@ -319,9 +319,7 @@ ve.dm.Surface.prototype.setInsertionAnnotations = function ( annotations ) {
 		new ve.dm.AnnotationSet( this.documentModel.getStore() );
 
 	this.emit( 'insertionAnnotationsChange', this.insertionAnnotations );
-	if ( !this.isStaging() ) {
-		this.emit( 'contextChange' );
-	}
+	this.emit( 'contextChange' );
 };
 
 /**
@@ -345,9 +343,7 @@ ve.dm.Surface.prototype.addInsertionAnnotations = function ( annotations ) {
 	}
 
 	this.emit( 'insertionAnnotationsChange', this.insertionAnnotations );
-	if ( !this.isStaging() ) {
-		this.emit( 'contextChange' );
-	}
+	this.emit( 'contextChange' );
 };
 
 /**
@@ -371,9 +367,7 @@ ve.dm.Surface.prototype.removeInsertionAnnotations = function ( annotations ) {
 	}
 
 	this.emit( 'insertionAnnotationsChange', this.insertionAnnotations );
-	if ( !this.isStaging() ) {
-		this.emit( 'contextChange' );
-	}
+	this.emit( 'contextChange' );
 };
 
 /**
@@ -497,7 +491,7 @@ ve.dm.Surface.prototype.startQueueingContextChanges = function () {
 ve.dm.Surface.prototype.emitContextChange = function () {
 	if ( this.queueingContextChanges ) {
 		this.contextChangeQueued = true;
-	} else if ( !this.isStaging() ) {
+	} else {
 		this.emit( 'contextChange' );
 	}
 };
@@ -516,9 +510,7 @@ ve.dm.Surface.prototype.stopQueueingContextChanges = function () {
 		this.queueingContextChanges = false;
 		if ( this.contextChangeQueued ) {
 			this.contextChangeQueued = false;
-			if ( !this.isStaging() ) {
-				this.emit( 'contextChange' );
-			}
+			this.emit( 'contextChange' );
 		}
 	}
 };
@@ -533,7 +525,8 @@ ve.dm.Surface.prototype.stopQueueingContextChanges = function () {
  */
 ve.dm.Surface.prototype.setSelection = function ( selection ) {
 	var left, right, leftAnnotations, rightAnnotations, insertionAnnotations,
-		selectedNodes = {},
+		startNode, selectedNode,
+		branchNodes = {},
 		oldSelection = this.selection,
 		contextChange = false,
 		linearData = this.documentModel.data;
@@ -548,38 +541,35 @@ ve.dm.Surface.prototype.setSelection = function ( selection ) {
 		return;
 	}
 
-	// Detect if selected nodes changed
-	selectedNodes.start = selection ? this.documentModel.getNodeFromOffset( selection.start ) : null;
-	if ( selection && selection.getLength() ) {
-		selectedNodes.end = this.documentModel.getNodeFromOffset( selection.end );
-	}
-	if (
-		selectedNodes.start !== this.selectedNodes.start ||
-		selectedNodes.end !== this.selectedNodes.end
-	) {
-		contextChange = true;
-	}
+	if ( selection ) {
+		// Update branch nodes
+		branchNodes.start = this.documentModel.getBranchNodeFromOffset( selection.start );
+		if ( selection.getLength() ) {
+			branchNodes.end = this.documentModel.getBranchNodeFromOffset( selection.end );
+		}
+		// Update selected node
+		if ( !selection.isCollapsed() ) {
+			startNode = this.documentModel.documentNode.getNodeFromOffset( selection.start + 1 );
+			if ( startNode && startNode.getOuterRange().equalsSelection( selection ) ) {
+				selectedNode = startNode;
+			}
+		}
 
-	// Update state
-	this.selectedNodes = selectedNodes;
-	this.selection = selection;
-
-	if ( this.selection ) {
 		// Figure out which annotations to use for insertions
-		if ( this.selection.isCollapsed() ) {
+		if ( selection.isCollapsed() ) {
 			// Get annotations from either side of the cursor
-			left = Math.max( 0, this.selection.start - 1 );
+			left = Math.max( 0, selection.start - 1 );
 			if ( !linearData.isContentOffset( left ) ) {
 				left = -1;
 			}
-			right = Math.max( 0, this.selection.start );
+			right = Math.max( 0, selection.start );
 			if ( !linearData.isContentOffset( right ) ) {
 				right = -1;
 			}
 		} else {
 			// Get annotations from the first character of the selection
-			left = linearData.getNearestContentOffset( this.selection.start );
-			right = linearData.getNearestContentOffset( this.selection.end );
+			left = linearData.getNearestContentOffset( selection.start );
+			right = linearData.getNearestContentOffset( selection.end );
 		}
 		if ( left === -1 ) {
 			// No content offset to our left, use empty set
@@ -609,6 +599,20 @@ ve.dm.Surface.prototype.setSelection = function ( selection ) {
 		}
 	}
 
+	// If branchNodes or selectedNode changed emit a contextChange
+	if (
+		selectedNode !== this.selectedNode ||
+		branchNodes.start !== this.branchNodes.start ||
+		branchNodes.end !== this.branchNodes.end
+	) {
+		contextChange = true;
+	}
+
+	// Update state
+	this.selection = selection;
+	this.branchNodes = branchNodes;
+	this.selectedNode = selectedNode;
+
 	// Emit events
 	if ( !oldSelection || !oldSelection.equals( this.selection ) ) {
 		this.emit( 'select', this.selection && this.selection.clone() );
@@ -616,6 +620,7 @@ ve.dm.Surface.prototype.setSelection = function ( selection ) {
 	if ( contextChange ) {
 		this.emitContextChange();
 	}
+
 };
 
 /**
@@ -623,9 +628,16 @@ ve.dm.Surface.prototype.setSelection = function ( selection ) {
  */
 ve.dm.Surface.prototype.selectFirstContentOffset = function () {
 	var firstOffset = this.getDocument().data.getNearestContentOffset( 0, 1 );
-	this.setSelection(
-		new ve.Range( firstOffset !== -1 ? firstOffset : 1 )
-	);
+	if ( firstOffset !== -1 ) {
+		// Found a content offset
+		this.setSelection( new ve.Range( firstOffset ) );
+	} else if ( this.getDocument().hasSlugAtOffset( 0 ) ) {
+		// Found a slug at 0
+		this.setSelection( new ve.Range( 0 ) );
+	} else {
+		// Document is full of slugless structural nodes, just give up
+		this.setSelection( null );
+	}
 };
 
 /**
@@ -813,4 +825,13 @@ ve.dm.Surface.prototype.onDocumentTransact = function ( tx ) {
 		this.setSelection( tx.translateRange( this.selection ) );
 	}
 	this.emit( 'documentUpdate', tx );
+};
+
+/**
+ * Get the selected node covering the current range, or null
+ *
+ * @return {ve.dm.Node|null} Selected node
+ */
+ve.dm.Surface.prototype.getSelectedNode = function () {
+	return this.selectedNode;
 };

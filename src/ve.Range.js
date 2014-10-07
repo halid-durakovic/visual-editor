@@ -1,8 +1,7 @@
 /*!
  * VisualEditor Range class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -48,18 +47,6 @@ ve.Range = function VeRange( from, to ) {
 ve.Range.newFromJSON = function ( json ) {
 	var args = JSON.parse( json );
 	return new ve.Range( args[0], args[1] );
-};
-
-/**
- * Create a new range that's a translated version of another.
- *
- * @static
- * @param {ve.Range} range Range to base new range on
- * @param {number} distance Distance to move range by
- * @returns {ve.Range} New translated range
- */
-ve.Range.newFromTranslatedRange = function ( range, distance ) {
-	return new ve.Range( range.from + distance, range.to + distance );
 };
 
 /**
@@ -115,6 +102,16 @@ ve.Range.prototype.containsOffset = function ( offset ) {
 };
 
 /**
+ * Check if another range is within the range.
+ *
+ * @param {ve.Range} offset Range to check
+ * @returns {boolean} If other range is within the range
+ */
+ve.Range.prototype.containsRange = function ( range ) {
+	return range.start >= this.start && range.end < this.end;
+};
+
+/**
  * Get the length of the range.
  *
  * @returns {number} Length of range
@@ -130,6 +127,16 @@ ve.Range.prototype.getLength = function () {
  */
 ve.Range.prototype.flip = function () {
 	return new ve.Range( this.to, this.from );
+};
+
+/**
+ * Get a range that's a translated version of this one.
+ *
+ * @param {number} distance Distance to move range by
+ * @returns {ve.Range} New translated range
+ */
+ve.Range.prototype.translate = function ( distance ) {
+	return new ve.Range( this.from + distance, this.to + distance );
 };
 
 /**
@@ -155,7 +162,7 @@ ve.Range.prototype.equalsSelection = function ( other ) {
 /**
  * Create a new range with a limited length.
  *
- * @param {number} length Length of the new range (negative for left-side truncation)
+ * @param {number} length Length of the new range (negative for truncate from right)
  * @returns {ve.Range} A new range
  */
 ve.Range.prototype.truncate = function ( length ) {
@@ -168,6 +175,16 @@ ve.Range.prototype.truncate = function ( length ) {
 			Math.max( this.end + length, this.start ), this.end
 		);
 	}
+};
+
+/**
+ * Expand a range to include another range, preserving direction.
+ *
+ * @param {ve.Range} other Range to expand to include
+ * @return {ve.Range} Range covering this range and other
+ */
+ve.Range.prototype.expand = function ( other ) {
+	return ve.Range.newCoveringRange( [this, other], this.isBackwards() );
 };
 
 /**

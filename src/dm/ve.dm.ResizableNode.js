@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Resizable node.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -14,11 +13,13 @@
  * @abstract
  * @constructor
  */
-ve.dm.ResizableNode = function VeDmResizableNode( config ) {
-	config = config || {};
-
+ve.dm.ResizableNode = function VeDmResizableNode() {
 	this.scalable = null;
 };
+
+/* Inheritance */
+
+OO.initClass( ve.dm.ResizableNode );
 
 /**
  * Get a scalable object for this node.

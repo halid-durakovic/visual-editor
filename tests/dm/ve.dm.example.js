@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel example data sets.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -45,7 +44,7 @@ ve.dm.example.preprocessAnnotations = function ( data, store ) {
 	for ( i = 0; i < data.length; i++ ) {
 		key = data[i].annotations ? 'annotations' : 1;
 		// check for shorthand annotation objects in array
-		if ( ve.isArray( data[i][key] ) && data[i][key][0].type ) {
+		if ( Array.isArray( data[i][key] ) && data[i][key][0].type ) {
 			data[i][key] = ve.dm.example.createAnnotationSet( store, data[i][key] ).getIndexes();
 		}
 	}

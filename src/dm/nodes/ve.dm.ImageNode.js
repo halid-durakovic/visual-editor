@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel ImageNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -10,6 +9,7 @@
  *
  * @class
  * @abstract
+ * @mixins ve.dm.FocusableNode
  * @mixins ve.dm.ResizableNode
  *
  * @constructor
@@ -17,9 +17,14 @@
 ve.dm.ImageNode = function VeDmImageNode() {
 	// Mixin constructor
 	ve.dm.ResizableNode.call( this );
+
+	// Mixin constructors
+	ve.dm.FocusableNode.call( this );
 };
 
 /* Inheritance */
+
+OO.mixinClass( ve.dm.ImageNode, ve.dm.FocusableNode );
 
 OO.mixinClass( ve.dm.ImageNode, ve.dm.ResizableNode );
 

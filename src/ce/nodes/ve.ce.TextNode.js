@@ -1,8 +1,7 @@
 /*!
  * VisualEditor ContentEditable TextNode class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -49,7 +48,7 @@ ve.ce.TextNode.prototype.getAnnotatedHtml = function () {
 		significantWhitespace = this.getModel().getParent().hasSignificantWhitespace();
 
 	function setChar( chr, index, data ) {
-		if ( ve.isArray( data[index] ) ) {
+		if ( Array.isArray( data[index] ) ) {
 			// Don't modify the original array, clone it first
 			data[index] = data[index].slice( 0 );
 			data[index][0] = chr;
@@ -59,7 +58,7 @@ ve.ce.TextNode.prototype.getAnnotatedHtml = function () {
 	}
 
 	function getChar( index, data ) {
-		if ( ve.isArray( data[index] ) ) {
+		if ( Array.isArray( data[index] ) ) {
 			return data[index][0];
 		} else {
 			return data[index];

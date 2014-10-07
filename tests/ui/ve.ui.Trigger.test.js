@@ -1,8 +1,7 @@
 /*!
  * VisualEditor UserInterface Trigger tests.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 QUnit.module( 've.ui.Trigger' );
@@ -22,12 +21,12 @@ QUnit.test( 'constructor', function ( assert ) {
 		];
 	QUnit.expect( 2 * tests.length );
 	for ( i = 0, len = tests.length; i < len; i++ ) {
-		assert.equal(
+		assert.strictEqual(
 			new ve.ui.Trigger( tests[i].trigger ).toString(),
 			tests[i].trigger,
 			'trigger is parsed correctly'
 		);
-		assert.equal(
+		assert.strictEqual(
 			new ve.ui.Trigger( tests[i].event ).toString(),
 			tests[i].trigger,
 			'event is parsed correctly'

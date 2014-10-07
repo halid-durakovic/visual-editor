@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Model class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -223,7 +222,7 @@ ve.dm.Model.matchesAttributeSpec = function ( attribute, spec ) {
 
 	function matchesArray( specArray ) {
 		var i, len;
-		if ( !ve.isArray( specArray ) ) {
+		if ( !Array.isArray( specArray ) ) {
 			specArray = [ specArray ];
 		}
 		for ( i = 0, len = specArray.length; i < len; i++ ) {
@@ -411,7 +410,7 @@ ve.dm.Model.prototype.hasAttributes = function ( attributes, strict ) {
 				return false;
 			}
 		}
-	} else if ( ve.isArray( attributes ) ) {
+	} else if ( Array.isArray( attributes ) ) {
 		for ( i = 0, len = attributes.length; i < len; i++ ) {
 			if ( !( attributes[i] in ourAttributes ) ) {
 				return false;

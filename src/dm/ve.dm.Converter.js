@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel Converter class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -349,7 +348,7 @@ ve.dm.Converter.prototype.canCloseWrapper = function () {
  */
 ve.dm.Converter.prototype.getDomElementsFromDataElement = function ( dataElements, doc, childDomElements ) {
 	var domElements,
-		dataElement = ve.isArray( dataElements ) ? dataElements[0] : dataElements,
+		dataElement = Array.isArray( dataElements ) ? dataElements[0] : dataElements,
 		nodeClass = this.modelRegistry.lookup( dataElement.type );
 
 	if ( !nodeClass ) {
@@ -359,7 +358,7 @@ ve.dm.Converter.prototype.getDomElementsFromDataElement = function ( dataElement
 		return false;
 	}
 	domElements = nodeClass.static.toDomElements( dataElements, doc, this, childDomElements );
-	if ( ( !domElements || !domElements.length ) && !( nodeClass.prototype instanceof ve.dm.Annotation ) ) {
+	if ( !Array.isArray( domElements ) && !( nodeClass.prototype instanceof ve.dm.Annotation ) ) {
 		throw new Error( 'toDomElements() failed to return an array when converting element of type ' + dataElement.type );
 	}
 	if ( dataElement.htmlAttributes ) {
@@ -380,7 +379,7 @@ ve.dm.Converter.prototype.createDataElements = function ( modelClass, domElement
 	if ( !dataElements ) {
 		return null;
 	}
-	if ( !ve.isArray( dataElements ) ) {
+	if ( !Array.isArray( dataElements ) ) {
 		dataElements = [ dataElements ];
 	}
 	return dataElements;
@@ -666,7 +665,7 @@ ve.dm.Converter.prototype.getDataFromDomSubtree = function ( domElement, wrapper
 					modelClass = ve.dm.AlienNode;
 					childNodes = modelClass.static.enableAboutGrouping ?
 						aboutGroup : [ childNode ];
-					childDataElements = this.createDataElement( modelClass, childNodes );
+					childDataElements = this.createDataElements( modelClass, childNodes );
 				} else {
 					// Update modelClass to reflect the type we got back
 					modelClass = this.modelRegistry.lookup( childDataElements[0].type );
@@ -1251,7 +1250,7 @@ ve.dm.Converter.prototype.getDomSubtreeFromData = function ( data, container, in
 				domElement.appendChild( doc.createTextNode( text ) );
 			}
 		} else if (
-			ve.isArray( data[i] ) ||
+			Array.isArray( data[i] ) ||
 			(
 				data[i].annotations !== undefined && (
 					this.metaItemFactory.lookup( data[i].type ) ||
@@ -1265,7 +1264,7 @@ ve.dm.Converter.prototype.getDomSubtreeFromData = function ( data, container, in
 			annotatedDomElementStack = [ annotatedDomElements ];
 			while (
 				data[i] !== undefined && (
-					ve.isArray( data[i] ) ||
+					Array.isArray( data[i] ) ||
 					(
 						data[i].annotations !== undefined && (
 							this.metaItemFactory.lookup( data[i].type ) ||
@@ -1297,7 +1296,7 @@ ve.dm.Converter.prototype.getDomSubtreeFromData = function ( data, container, in
 					for ( j = 0; j < childDomElements.length; j++ ) {
 						annotatedDomElements.push( childDomElements[j] );
 					}
-					if ( ve.isArray( dataElementOrSlice ) ) {
+					if ( Array.isArray( dataElementOrSlice ) ) {
 						i += dataElementOrSlice.length - 1;
 					} else {
 						i++; // Skip the closing
@@ -1528,7 +1527,7 @@ ve.dm.Converter.prototype.getDomSubtreeFromData = function ( data, container, in
 					}
 				}
 
-				if ( ve.isArray( dataElementOrSlice ) ) {
+				if ( Array.isArray( dataElementOrSlice ) ) {
 					i += dataElementOrSlice.length - 2;
 				}
 			}

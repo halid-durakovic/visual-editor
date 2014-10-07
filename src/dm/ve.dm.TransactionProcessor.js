@@ -1,8 +1,7 @@
 /*!
  * VisualEditor DataModel TransactionProcessor class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -466,7 +465,7 @@ ve.dm.TransactionProcessor.processors.replace = function ( op ) {
 								// Closing an unopened element at a higher
 								// (more negative) level than before
 								// Lazy-initialize scope
-								scope = scope || this.document.getNodeFromOffset( prevCursor );
+								scope = scope || this.document.getBranchNodeFromOffset( prevCursor );
 								// Push the full range of the old scope as an affected range
 								scopeStart = scope.getOffset();
 								scopeEnd = scopeStart + scope.getOuterLength();

@@ -1,10 +1,7 @@
-/*global rangy */
-
 /*!
  * VisualEditor ContentEditable Surface class.
  *
- * @copyright 2011-2014 VisualEditor Team and others; see AUTHORS.txt
- * @license The MIT License (MIT); see LICENSE.txt
+ * @copyright 2011-2014 VisualEditor Team and others; see http://ve.mit-license.org
  */
 
 /**
@@ -14,18 +11,19 @@
  * @mixins OO.EventEmitter
  *
  * @constructor
- * @param {ve.ce.Document} documentView Document to observe
+ * @param {ve.ce.Surface} surface Surface to observe
  */
-ve.ce.SurfaceObserver = function VeCeSurfaceObserver( documentView ) {
+ve.ce.SurfaceObserver = function VeCeSurfaceObserver( surface ) {
 	// Mixin constructors
 	OO.EventEmitter.call( this );
 
 	// Properties
-	this.documentView = documentView;
+	this.surface = surface;
+	this.documentView = surface.getDocument();
 	this.domDocument = null;
 	this.polling = false;
 	this.timeoutId = null;
-	this.frequency = 250; // ms
+	this.pollInterval = 250; // ms
 
 	// Initialization
 	this.clear();
@@ -72,7 +70,7 @@ OO.mixinClass( ve.ce.SurfaceObserver, OO.EventEmitter );
  * @param {ve.Range} range Initial range to use
  */
 ve.ce.SurfaceObserver.prototype.clear = function ( range ) {
-	this.rangyRange = null;
+	this.domRange = null;
 	this.range = range || null;
 	this.node = null;
 	this.text = null;
@@ -85,6 +83,7 @@ ve.ce.SurfaceObserver.prototype.clear = function ( range ) {
  * @method
  */
 ve.ce.SurfaceObserver.prototype.detach = function () {
+	this.surface = null;
 	this.documentView = null;
 	this.domDocument = null;
 };
@@ -115,10 +114,10 @@ ve.ce.SurfaceObserver.prototype.timerLoop = function ( firstTime ) {
 		this.pollOnce();
 	}
 	// only reach this point if pollOnce does not throw an exception
-	if ( this.frequency !== null ) {
+	if ( this.pollInterval !== null ) {
 		this.timeoutId = this.setTimeout(
 			ve.bind( this.timerLoop, this ),
-			this.frequency
+			this.pollInterval
 		);
 	}
 };
@@ -162,6 +161,17 @@ ve.ce.SurfaceObserver.prototype.pollOnceNoEmit = function () {
 };
 
 /**
+ * Poll to update SurfaceObserver, but only check for selection changes
+ *
+ * Used as an optimisation when you know the content hasn't changed
+ *
+ * @method
+ */
+ve.ce.SurfaceObserver.prototype.pollOnceSelection = function () {
+	this.pollOnceInternal( true, true );
+};
+
+/**
  * Poll for changes.
  *
  * TODO: fixing selection in certain cases, handling selection across multiple nodes in Firefox
@@ -172,11 +182,15 @@ ve.ce.SurfaceObserver.prototype.pollOnceNoEmit = function () {
  * @method
  * @private
  * @param {boolean} emitChanges Emit change events if selection changed
+ * @param {boolean} selectionOnly Check for selection changes only
  * @fires contentChange
  * @fires selectionChange
  */
-ve.ce.SurfaceObserver.prototype.pollOnceInternal = function ( emitChanges ) {
-	var $nodeOrSlug, node, text, hash, range, rangyRange, $slugWrapper, observer = this;
+ve.ce.SurfaceObserver.prototype.pollOnceInternal = function ( emitChanges, selectionOnly ) {
+	var $nodeOrSlug, node, text, hash, range, domRange, $slugWrapper,
+		domRangeChange = false,
+		slugChange = false,
+		observer = this;
 
 	if ( !this.domDocument ) {
 		return;
@@ -184,75 +198,85 @@ ve.ce.SurfaceObserver.prototype.pollOnceInternal = function ( emitChanges ) {
 
 	range = this.range;
 	node = this.node;
-	rangyRange = ve.ce.DomRange.newFromDomSelection( rangy.getSelection( this.domDocument ) );
+	domRange = ve.ce.DomRange.newFromDocument( this.domDocument );
 
-	if ( !rangyRange.equals( this.rangyRange ) ) {
-		this.rangyRange = rangyRange;
-		node = null;
-		$nodeOrSlug = $( rangyRange.anchorNode ).closest( '.ve-ce-branchNode, .ve-ce-branchNode-slug' );
-		if ( $nodeOrSlug.length ) {
-			range = rangyRange.getRange();
-			if ( $nodeOrSlug.hasClass( 've-ce-branchNode-slug' ) ) {
-				$slugWrapper = $nodeOrSlug.closest( '.ve-ce-branchNode-blockSlugWrapper' );
-			} else {
-				node = $nodeOrSlug.data( 'view' );
-				// Check this node belongs to our document
-				if ( node && node.root !== this.documentView.getDocumentNode() ) {
-					node = null;
-					range = null;
-				}
-			}
-		}
-
-		if ( this.$slugWrapper && !this.$slugWrapper.is( $slugWrapper ) ) {
-			this.$slugWrapper
-				.addClass( 've-ce-branchNode-blockSlugWrapper-unfocused' )
-				.removeClass( 've-ce-branchNode-blockSlugWrapper-focused' );
-			this.$slugWrapper = null;
-			// Emit 'position' on the surface view after the animation completes
-			this.setTimeout( function () {
-				if ( observer.documentView ) {
-					observer.documentView.documentNode.surface.emit( 'position' );
-				}
-			}, 200 );
-		}
-
-		if ( $slugWrapper && !$slugWrapper.is( this.$slugWrapper) ) {
-			this.$slugWrapper = $slugWrapper
-				.addClass( 've-ce-branchNode-blockSlugWrapper-focused' )
-				.removeClass( 've-ce-branchNode-blockSlugWrapper-unfocused' );
-		}
-
+	if ( !domRange.equals( this.domRange ) ) {
+		range = domRange.getRange();
+		this.domRange = domRange;
+		domRangeChange = true;
 	}
 
-	if ( this.node !== node ) {
-		if ( node === null ) {
-			this.text = null;
-			this.hash = null;
-			this.node = null;
-		} else {
-			this.text = ve.ce.getDomText( node.$element[0] );
-			this.hash = ve.ce.getDomHash( node.$element[0] );
-			this.node = node;
-		}
-	} else if ( node !== null ) {
-		text = ve.ce.getDomText( node.$element[0] );
-		hash = ve.ce.getDomHash( node.$element[0] );
-		if ( this.text !== text || this.hash !== hash ) {
-			if ( emitChanges ) {
-				this.emit(
-					'contentChange',
-					node,
-					{
-						text: this.text,
-						hash: this.hash,
-						range: this.range
-					},
-					{ text: text, hash: hash, range: range }
-				);
+	if ( !selectionOnly ) {
+		if ( domRangeChange ) {
+			node = null;
+			$nodeOrSlug = $( domRange.anchorNode ).closest( '.ve-ce-branchNode, .ve-ce-branchNode-slug' );
+			if ( $nodeOrSlug.length ) {
+				if ( $nodeOrSlug.hasClass( 've-ce-branchNode-slug' ) ) {
+					$slugWrapper = $nodeOrSlug.closest( '.ve-ce-branchNode-blockSlugWrapper' );
+				} else {
+					node = $nodeOrSlug.data( 'view' );
+					// Check this node belongs to our document
+					if ( node && node.root !== this.documentView.getDocumentNode() ) {
+						node = null;
+						range = null;
+					}
+				}
 			}
-			this.text = text;
-			this.hash = hash;
+
+			if ( this.$slugWrapper && !this.$slugWrapper.is( $slugWrapper ) ) {
+				this.$slugWrapper
+					.addClass( 've-ce-branchNode-blockSlugWrapper-unfocused' )
+					.removeClass( 've-ce-branchNode-blockSlugWrapper-focused' );
+				this.$slugWrapper = null;
+				slugChange = true;
+			}
+
+			if ( $slugWrapper && !$slugWrapper.is( this.$slugWrapper) ) {
+				this.$slugWrapper = $slugWrapper
+					.addClass( 've-ce-branchNode-blockSlugWrapper-focused' )
+					.removeClass( 've-ce-branchNode-blockSlugWrapper-unfocused' );
+				slugChange = true;
+			}
+
+			if ( slugChange ) {
+				// Emit 'position' on the surface view after the animation completes
+				this.setTimeout( function () {
+					if ( observer.surface ) {
+						observer.surface.emit( 'position' );
+					}
+				}, 200 );
+			}
+		}
+
+		if ( this.node !== node ) {
+			if ( node === null ) {
+				this.text = null;
+				this.hash = null;
+				this.node = null;
+			} else {
+				this.text = ve.ce.getDomText( node.$element[0] );
+				this.hash = ve.ce.getDomHash( node.$element[0] );
+				this.node = node;
+			}
+		} else if ( node !== null ) {
+			text = ve.ce.getDomText( node.$element[0] );
+			hash = ve.ce.getDomHash( node.$element[0] );
+			if ( this.text !== text || this.hash !== hash ) {
+				if ( emitChanges ) {
+					this.emit(
+						'contentChange',
+						node,
+						{
+							text: this.text,
+							hash: this.hash,
+							range: this.range
+						},
+						{ text: text, hash: hash, range: range }
+					);
+				}
+				this.text = text;
+				this.hash = hash;
+			}
 		}
 	}
 
