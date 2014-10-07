@@ -212,6 +212,7 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
   return ve.ui.CitationInspector.super.prototype.getTeardownProcess.call( this, data )
     .first( function () {
       $(this.$iframe[0].contentDocument).off('keydown', this.keyDownHandler);
+      this.$referenceList.empty();
     }, this );
 };
 
@@ -268,8 +269,7 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
 ve.ui.CitationInspector.prototype.openNewReferences = function () {
   this.$referenceList.empty();
 
-  // TODO: load references according to search field
-  this.$referenceList.text('This is not implemented yet.');
+  this.lookupExternalReferences();
 
   this.referencesTab.$element.removeClass('active');
   this.newReferencesTab.$element.addClass('active');
@@ -431,8 +431,24 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
   }
 };
 
+ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
+  service.find(searchStr, this).progress(function(data) {
+    window.console.log('CitationInspector received entry', data);
+    var $reference = $('<pre>');
+    $reference.text(JSON.stringify(data));
+    this.$referenceList.append($reference);
+  }).done(function() {
+    window.console.log('YAY');
+  });
+};
+
+
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
-  window.console.log("Soon we will lookup external references...");
+  var services = ve.ui.CitationLookupService.getServices();
+  var searchStr = this.searchField.$input.val();
+  for (var name in services) {
+    this._lookupExternalReferences(services[name], searchStr);
+  }
 };
 
 
