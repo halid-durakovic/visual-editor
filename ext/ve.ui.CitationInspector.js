@@ -185,6 +185,36 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
     }, this );
 };
 
+
+/**
+ * @inheritdoc
+ */
+ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
+  return ve.ui.CitationInspector.super.prototype.getReadyProcess.call( this, data )
+    .next( function () {
+      this.getFragment().getSurface().enable();
+      // TODO: pre-select the reference associated to the currently selected citation
+      //this.searchField.$input.on('keydown', this.keyDownHandler);
+      $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
+      this.searchField.$input.val('');
+      this.searchField.$input.focus();
+      this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('cursor'); this.cursorIdx = -1; }, this ));
+
+      this.openExistingReferences();
+    }, this );
+};
+
+/**
+ * @inheritdoc
+ */
+ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
+  data = data || {};
+  return ve.ui.CitationInspector.super.prototype.getTeardownProcess.call( this, data )
+    .first( function () {
+      $(this.$iframe[0].contentDocument).off('keydown', this.keyDownHandler);
+    }, this );
+};
+
 ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   var references, reference, $reference, $label, $content, i;
 
@@ -244,35 +274,6 @@ ve.ui.CitationInspector.prototype.openNewReferences = function () {
   this.referencesTab.$element.removeClass('active');
   this.newReferencesTab.$element.addClass('active');
   this.activeTab = this.newReferencesTab;
-};
-
-/**
- * @inheritdoc
- */
-ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
-  return ve.ui.CitationInspector.super.prototype.getReadyProcess.call( this, data )
-    .next( function () {
-      this.getFragment().getSurface().enable();
-      // TODO: pre-select the reference associated to the currently selected citation
-      //this.searchField.$input.on('keydown', this.keyDownHandler);
-      $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
-      this.searchField.$input.val('');
-      this.searchField.$input.focus();
-      this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('cursor'); this.cursorIdx = -1; }, this ));
-
-      this.openExistingReferences();
-    }, this );
-};
-
-/**
- * @inheritdoc
- */
-ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
-  data = data || {};
-  return ve.ui.CitationInspector.super.prototype.getTeardownProcess.call( this, data )
-    .first( function () {
-      $(this.$iframe[0].contentDocument).off('keydown', this.keyDownHandler);
-    }, this );
 };
 
 ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
