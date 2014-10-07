@@ -363,17 +363,8 @@ ve.ui.CitationInspector.prototype.acceptSearch = function() {
   }
 };
 
-
-ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
-  var refEls, patterns, i, j, pattern, re, refEl, ranking, item, content;
-
-  console.log("CitationInspector.showLocalReferences()", Date.now());
-
-  patterns = this.searchField.$input.val().trim().toLowerCase().split(/\s+/);
-  refEls = this.referenceElements;
-
-  $(refEls).removeClass('cursor');
-  this.cursorIdx = -1;
+ve.ui.CitationInspector.prototype.createOrRanking = function( refEls, patterns ) {
+  var ranking, j, i, item, content, pattern, re, refEl;
 
   ranking = [];
 
@@ -396,6 +387,23 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
   ranking.sort(function(a, b) {
     return -(a.count - b.count);
   });
+
+  return ranking.filter(function(entry) {
+    return entry.count > 0;
+  });
+};
+
+ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
+  var refEls, patterns, i, ranking;
+
+  window.console.log("CitationInspector.showLocalReferences()", Date.now());
+
+  patterns = this.searchField.$input.val().trim().toLowerCase().split(/\s+/);
+  refEls = this.referenceElements;
+  ranking = this.createOrRanking(refEls, patterns);
+
+  $(refEls).removeClass('cursor');
+  this.cursorIdx = -1;
 
   var frag = window.document.createDocumentFragment();
   var count = 0;
