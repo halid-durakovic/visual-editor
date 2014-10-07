@@ -21,7 +21,7 @@ var citationLabels = [];
 
 var updateReferences = function($el){
   console.log("Updating references...");
-  var citeproc, output;
+  var citeproc;
   var sys = new Sys(abbreviations);
   // Chicago Author-Date
   citeproc = new CSL.Engine(sys, CSLStyles.default);
@@ -29,7 +29,8 @@ var updateReferences = function($el){
     citationLabels.push(citeproc.appendCitationCluster(citations[i]));
   }
   $el.empty();
-  var htmlStr = citeproc.makeBibliography()[1].join('\n');
+  var bib = citeproc.makeBibliography();
+  var htmlStr = bib[1].join('\n');
   $el.html($(htmlStr));
 };
 
