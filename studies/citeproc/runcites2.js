@@ -17,18 +17,19 @@ var citations = [
   }
 ];
 
-var citationLables = [];
+var citationLabels = [];
 
 var updateReferences = function($el){
   var citeproc, output;
   var sys = new Sys(abbreviations);
   // Chicago Author-Date
-  citeproc = new CSL.Engine(sys, chicago_author_date);
+  citeproc = new CSL.Engine(sys, CSLStyles.default);
   for (var i = 0; i < citations.length; i++) {
     citationLabels.push(citeproc.appendCitationCluster(citations[i]));
   }
   $el.empty();
-  $el.html(citeproc.makeBibliography());
+  var htmlStr = citeproc.makeBibliography()[1].join('\n');
+  $el.html($(htmlStr));
 };
 
 $( function() {
