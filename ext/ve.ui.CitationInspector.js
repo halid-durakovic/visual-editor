@@ -103,7 +103,7 @@ ve.ui.CitationInspector.prototype.initialize = function () {
   $searchbar.append([ $searchFieldLabel, this.searchField.$element ] );
 
   // Add placeholder
-  this.searchField.$input.attr("placeholder", "Type to search...")
+  this.searchField.$input.attr("placeholder", "Type to search...");
 
   var $tabs = $('<div>').addClass('tabs')
     // HACK: strange - we need to add the elements in reverse order
@@ -182,23 +182,22 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
         }
       }
 
-      this.openExistingReferences();
-
     }, this );
 };
 
 ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   var references, reference, $reference, $label, $content, i;
 
-  this.$referenceList.empty();
   this.referenceElements = [];
   this.refIndex = {};
+  var $selectedRef;
 
   if (this.bibliography) {
     references = this.bibliography.getAttribute( 'entries' );
     for (i = 0; i < references.length; i++) {
       reference = references[i];
       if (reference.type !== 'reference') continue;
+
       $reference = $('<div>').addClass('reference');
       $label = $('<div>').addClass('label')
         .text(reference.getAttribute('label'));
@@ -207,8 +206,6 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
       $reference.append([$label, $content]);
       this.refIndex[reference.getAttribute('label')] = reference;
 
-      this.referenceElements.push($reference[0]);
-
       var $buttons = $('<div>').addClass('buttons');
       var selectButton = new OO.ui.ActionWidget({
         action: 'select',
@@ -216,11 +213,19 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
       });
       selectButton.connect(this, { click: [ 'executeAction', { action: 'select', reference: reference } ] });
       $buttons.append([ selectButton.$element ]);
-
       $reference.append($buttons);
 
-      this.$referenceList.append($reference);
+      if (this.citationNode && reference.getAttribute('label') === this.citationNode.getAttribute('label') ) {
+        $reference.addClass('selected')
+          .append(this.$selectedFlag);
+        $selectedRef = $reference;
+      }
+
+      this.referenceElements.push($reference[0]);
     }
+
+    this.showLocalReferences();
+
   } else {
     this.$referenceList.text('No References available. You should use the "New References Tab" to add new ones');
   }
@@ -255,30 +260,7 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       this.searchField.$input.focus();
       this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('cursor'); this.cursorIdx = -1; }, this ));
 
-      $(this.referenceElements).removeClass('selected');
-      this.$selectedFlag.remove();
-
-      // TODO we should count citations for each reference somewhere
-      if (this.citationNode) {
-        // find the cited reference
-        for (var i = 0; i < this.referenceElements.length; i++) {
-          var refEl = this.referenceElements[i];
-          var $refEl = $(refEl);
-          var $label = $refEl.find('.label');
-          var ref = this.refIndex[$label.text()];
-          if (!ref) {
-            console.error("ohoohh, couldn't find reference model for element");
-          } else if (ref.getAttribute('label') === this.citationNode.getAttribute('label')) {
-            $refEl.addClass('selected')
-              .append(this.$selectedFlag);
-            OO.ui.Element.scrollIntoView(refEl);
-            break;
-          }
-        }
-      }
-
-      this.filterReferences();
-
+      this.openExistingReferences();
     }, this );
 };
 
@@ -302,7 +284,7 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
       if (this.activeTab === this.referencesTab) {
         var pattern = this.searchField.$input.val();
         if (this.filterPattern !== pattern) {
-          this.filterReferences();
+          this.showLocalReferences();
         }
         this.filterPattern = pattern;
       }
@@ -318,7 +300,7 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
     var labelEl = refEl.querySelector('.label');
     reference = this.refIndex[labelEl.textContent];
     if (!reference) {
-      console.error('ohoohh, could not find reference model');
+      window.console.error('ohoohh, could not find reference model');
     } else {
       this.selectReference(reference);
       this.close( { action: 'edit' } );
@@ -375,26 +357,28 @@ ve.ui.CitationInspector.prototype.selectReference = function( reference ) {
 
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
   if (this.activeTab === this.referencesTab) {
-    this.filterReferences();
+    this.showLocalReferences();
   } else {
     this.lookupExternalReferences();
   }
 };
 
 
-ve.ui.CitationInspector.prototype.filterReferences = function( ) {
+ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
   var refEls, patterns, i, j, pattern, re, refEl, ranking, item, content;
+
+  console.log("CitationInspector.showLocalReferences()", Date.now());
 
   patterns = this.searchField.$input.val().trim().toLowerCase().split(/\s+/);
   refEls = this.referenceElements;
 
-  $(this.referenceElements).removeClass('cursor');
+  $(refEls).removeClass('cursor');
   this.cursorIdx = -1;
 
   ranking = [];
 
-  // a simple AND on all given keywords
-  // TODO: a smart ranking would be great
+  // This implements OR for all words within the search string
+  // plus a ranking by the count of matching words
   for (j = 0; j < refEls.length; j++) {
     refEl = refEls[j];
     item = { el: refEl, count: 0 };
@@ -428,6 +412,8 @@ ve.ui.CitationInspector.prototype.filterReferences = function( ) {
 
   this.$referenceList.empty();
   this.$referenceList[0].appendChild(frag);
+
+  if (this.cursorIdx >= 0) OO.ui.Element.scrollIntoView(this.$referenceList[0].children[this.cursorIdx]);
 
   if (this.citationNode) {
     this.$referenceList.addClass('selected');
