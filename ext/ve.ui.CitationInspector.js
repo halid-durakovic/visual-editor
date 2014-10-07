@@ -269,6 +269,7 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
 ve.ui.CitationInspector.prototype.openNewReferences = function () {
   this.$referenceList.empty();
 
+  this.newRefRenderer = new ve.ui.CiteprocRenderer(new ve.ui.CiteprocDefaultConfig());
   this.lookupExternalReferences();
 
   this.referencesTab.$element.removeClass('active');
@@ -433,10 +434,9 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
 
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
   service.find(searchStr, this).progress(function(data) {
-    window.console.log('CitationInspector received entry', data);
-    var $reference = $('<pre>');
-    $reference.text(JSON.stringify(data));
-    this.$referenceList.append($reference);
+    var id = this.newRefRenderer.addReference(data);
+    var $ref = this.newRefRenderer.getReference(id);
+    this.$referenceList.append($ref);
   }).done(function() {
     window.console.log('YAY');
   });
