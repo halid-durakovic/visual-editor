@@ -435,8 +435,10 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
   service.find(searchStr, this).progress(function(data) {
     var id = this.newRefRenderer.addReference(data);
-    var $ref = this.newRefRenderer.getReference(id);
-    this.$referenceList.append($ref);
+    var $reference = $('<div>').addClass('reference');
+    var $content = $('<div>').addClass('content').html(this.newRefRenderer.getContent(id));
+    $reference.append($content);
+    this.$referenceList.append($reference);
   }).done(function() {
     window.console.log('YAY');
   });
