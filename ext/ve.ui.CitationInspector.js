@@ -41,6 +41,16 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   // set when opening a tab
   this.currentTabName = "";
+  this.tabStates = {
+    "references": {
+      cursorIdx: -1,
+      searchStr: ""
+    },
+    "new": {
+      cursorIdx: -1,
+      searchStr: ""
+    }
+  };
 
   // either "search" or "select", set when typing into search field or when navigating cursor
   this.inputMethod = "";
@@ -56,7 +66,6 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   this.citationNode = null;
 
   // to support keyboard driven selection
-  this.cursorIdx = -1;
   this.filterPattern = "";
 
   this.removeButton.connect(this, { click: ['executeAction', 'remove' ] });
@@ -201,15 +210,19 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       // TODO: pre-select the reference associated to the currently selected citation
       //this.searchField.$input.on('keydown', this.keyDownHandler);
       $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
-      this.searchField.$input.val('');
       this.searchField.$input.focus(ve.bind( function() {
         $(this.referenceElements).removeClass('cursor');
         this.setInputMethod("search");
-        // this.cursorIdx = -1;
       }, this ));
       this.searchField.$input.focus();
 
-      this.openExistingReferences();
+      if (this.citationNode) {
+        this.openExistingReferences();
+      } else {
+        // when creating a new citation open with the same state as last-time
+        // This might be useful for the use-case where new references are added in a sequence.
+        this.openTab(this.currentTabName || 'references');
+      }
     }, this );
 };
 
@@ -225,12 +238,28 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
     }, this );
 };
 
+ve.ui.CitationInspector.prototype.openTab = function(name) {
+  switch (name) {
+    case 'references':
+      this.openExistingReferences();
+      break;
+    case 'new':
+      this.openNewReferences();
+      break;
+    default:
+      window.console.error("Illegal state:", name);
+  }
+};
+
 ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   var references, reference, $reference, $label, $content, i;
 
   this.referenceElements = [];
   this.refIndex = {};
   var $selectedRef;
+
+  var state = this.tabStates.references;
+  this.searchField.$input.val(state.searchStr);
 
   if (this.bibliography) {
     references = this.bibliography.getAttribute( 'entries' );
@@ -276,6 +305,9 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
 };
 
 ve.ui.CitationInspector.prototype.openNewReferences = function () {
+  var state = this.tabStates['new'];
+  this.searchField.$input.val(state.searchStr);
+
   this.$referenceList.empty();
 
   this.lookupExternalReferences();
@@ -291,31 +323,36 @@ ve.ui.CitationInspector.prototype.setInputMethod = function( method ) {
 };
 
 ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
-  var oldRef, newRef, referenceEls;
+  var oldRef, newRef, referenceEls, state, searchStr;
 
   if (e.keyCode !== OO.ui.Keys.UP && e.keyCode !== OO.ui.Keys.DOWN && e.keyCode !== OO.ui.Keys.ENTER) {
     // TODO: we should make sure that we react only to keyboard events that indeed change the search field
     this.setInputMethod("search");
+    state = this.getTabState();
 
     // Apply the search/filter while typing when showing local references
     if (this.currentTabName === "references") {
       window.setTimeout(ve.bind( function() {
         // filter is only in for local references where it is ok to do that on every change of the pattern
-        var pattern = this.searchField.$input.val();
-        if (this.filterPattern !== pattern) {
+        searchStr = this.searchField.$input.val().trim();
+        if (state.searchStr !== searchStr) {
+          state.searchStr = searchStr;
           this.showLocalReferences();
         }
-        this.filterPattern = pattern;
       }, this), 0);
     }
   }
   // UP || DOWN || ENTER
   else {
     referenceEls = this.$referenceList[0].children;
-
+    state = this.getTabState();
     if (e.keyCode === OO.ui.Keys.ENTER) {
       if (this.inputMethod === "search") {
-        this.acceptSearch();
+        searchStr = this.searchField.$input.val().trim();
+        if (state.searchStr !== searchStr) {
+          state.searchStr = searchStr;
+          this.acceptSearch();
+        }
       } else {
         this.acceptSelection();
       }
@@ -325,15 +362,15 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
       // When using the cursor the first time, just switch to select mode
       // without actually changing the cursor position
       if ( this.inputMethod === "search") {
-        newRef = referenceEls[this.cursorIdx];
-      } else if (e.keyCode === OO.ui.Keys.UP && this.cursorIdx >= 0) {
-        oldRef = referenceEls[this.cursorIdx];
-        this.cursorIdx--;
-        newRef = referenceEls[this.cursorIdx];
-      } else if (e.keyCode === OO.ui.Keys.DOWN && this.cursorIdx < referenceEls.length-1 ) {
-        oldRef = referenceEls[this.cursorIdx];
-        this.cursorIdx++;
-        newRef = referenceEls[this.cursorIdx];
+        newRef = referenceEls[state.cursorIdx];
+      } else if (e.keyCode === OO.ui.Keys.UP && state.cursorIdx >= 0) {
+        oldRef = referenceEls[state.cursorIdx];
+        state.cursorIdx--;
+        newRef = referenceEls[state.cursorIdx];
+      } else if (e.keyCode === OO.ui.Keys.DOWN && state.cursorIdx < referenceEls.length-1 ) {
+        oldRef = referenceEls[state.cursorIdx];
+        state.cursorIdx++;
+        newRef = referenceEls[state.cursorIdx];
       }
       if (oldRef) {
         $(oldRef).removeClass('cursor');
@@ -342,7 +379,7 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
         $(newRef).addClass('cursor');
         OO.ui.Element.scrollIntoView(newRef);
       }
-      if ( this.cursorIdx < 0 ) {
+      if ( state.cursorIdx < 0 ) {
         this.searchField.$input.focus();
       }
       this.setInputMethod("select");
@@ -373,10 +410,11 @@ ve.ui.CitationInspector.prototype.selectReference = function( reference ) {
 };
 
 ve.ui.CitationInspector.prototype.acceptSelection = function() {
-  var referenceEls, refEl, labelEl, reference;
+  var referenceEls, refEl, labelEl, reference, state;
 
+  state = this.getTabState();
   referenceEls = this.$referenceList[0].children;
-  refEl = referenceEls[this.cursorIdx];
+  refEl = referenceEls[state.cursorIdx];
 
   if (this.currentTabName === "references") {
     labelEl = refEl.querySelector('.label');
@@ -432,11 +470,16 @@ ve.ui.CitationInspector.prototype.createOrRanking = function( refEls, patterns )
 };
 
 ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
-  var refEls, patterns, i, ranking;
+  var refEls, patterns, i, ranking, state, searchStr;
 
-  window.console.log("CitationInspector.showLocalReferences()", Date.now());
+  searchStr = this.searchField.$input.val().trim();
+  state = this.tabStates.references;
 
-  patterns = this.searchField.$input.val().trim().toLowerCase().split(/\s+/);
+  if (state.searchStr !== searchStr) {
+    window.console.error("FIXME: search field is not in sync with tab state.", state, searchStr);
+  }
+
+  patterns = searchStr.toLowerCase().split(/\s+/);
   refEls = this.referenceElements;
   ranking = this.createOrRanking(refEls, patterns);
 
@@ -480,7 +523,6 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, 
   });
 };
 
-
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
   var searchStr = this.searchField.$input.val().trim();
   if (searchStr.length > 0) {
@@ -490,6 +532,9 @@ ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
   }
 };
 
+ve.ui.CitationInspector.prototype.getTabState = function() {
+  return this.tabStates[this.currentTabName];
+};
 
 /* Registration */
 
