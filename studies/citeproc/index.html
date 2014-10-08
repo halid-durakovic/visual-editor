@@ -1,16 +1,27 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link rel="stylesheet" type="text/css" href="./primitive.css" />
     <script type="text/javascript" src="../../lib/jquery/jquery.js"></script>
-    <script type="text/javascript" src="./loadabbrevs.js"></script>
-    <script type="text/javascript" src="./xmldom.js"></script>
-    <script type="text/javascript" src="./citeproc.js"></script>
-    <script type="text/javascript" src="./loadlocale.js"></script>
-    <script type="text/javascript" src="./loadsys.js"></script>
-    <script type="text/javascript" src="./loadcsl.js"></script>
-    <script type="text/javascript" src="./loadcites.js"></script>
-    <script type="text/javascript" src="./runcites.js"></script>
+    <script type="text/javascript" src="../../lib/oojs/oojs.jquery.js"></script>
+    <script type="text/javascript" src="../../lib/citeproc/xmldom.js"></script>
+    <script type="text/javascript" src="../../lib/citeproc/citeproc.js"></script>
+    <script type="text/javascript"> ve = { ui: {} }; </script>
+    <script type="text/javascript" src="../../ext/ve.ui.CiteprocDefaultConfig.js"></script>
+    <script type="text/javascript" src="../../ext/ve.ui.CiteprocRenderer.js"></script>
+    <script type="text/javascript" src="./example.js"></script>
+    <style type="text/css">
+      .reference {
+        padding: 20px;
+        border: solid 1px #ccc;
+      }
+      .reference .label {
+        float:left;
+        margin-right: 30px;
+      }
+      .reference .content {
+        display: inline-block;
+      }
+    </style>
   </head>
   <body>
     <div class='reference-list'>
