@@ -137,7 +137,6 @@ ve.ui.CitationInspector.prototype.initialize = function () {
  * @inheritdoc
  */
 ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
-  window.console.log('vi.ui.CitationInspector: action', action);
   if ( action === 'remove' ) {
     return new OO.ui.Process( function () {
       if (this.citationNode) {
@@ -389,7 +388,6 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
 };
 
 ve.ui.CitationInspector.prototype.selectReference = function( reference ) {
-  window.console.log("CitationInspector will insert a label into the article... soon", reference);
   var tx, fragment, surface, data;
 
   fragment = this.getFragment();
@@ -512,6 +510,7 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
 };
 
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
+  window.console.log('TODO: start a spinner somewhere to indicate that a query is running.');
   service.find(searchStr, this).progress(function(data) {
     var id = this.newRefRenderer.addReference(data);
     var $reference = $('<div>').addClass('reference');
@@ -519,7 +518,7 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, 
     $reference.append($content);
     this.$referenceList.append($reference);
   }).done(function() {
-    window.console.log('YAY');
+    window.console.log('TODO: stop query spinner.');
   });
 };
 
