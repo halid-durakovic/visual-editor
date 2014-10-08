@@ -5,6 +5,9 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   this.$frame.addClass('ve-ui-citationManager');
 
+  this.newRefRenderer = new ve.ui.CiteprocRenderer(new ve.ui.CiteprocDefaultConfig());
+  this.lookupServices = ve.ui.CitationLookupService.getServices();
+
   // created in initialize
   this.removeButton = new OO.ui.ActionWidget({
     action: 'remove',
@@ -269,7 +272,6 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
 ve.ui.CitationInspector.prototype.openNewReferences = function () {
   this.$referenceList.empty();
 
-  this.newRefRenderer = new ve.ui.CiteprocRenderer(new ve.ui.CiteprocDefaultConfig());
   this.lookupExternalReferences();
 
   this.referencesTab.$element.removeClass('active');
@@ -446,10 +448,9 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, 
 
 
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
-  var services = ve.ui.CitationLookupService.getServices();
   var searchStr = this.searchField.$input.val();
-  for (var name in services) {
-    this._lookupExternalReferences(services[name], searchStr);
+  for (var name in this.lookupServices) {
+    this._lookupExternalReferences(this.lookupServices[name], searchStr);
   }
 };
 
