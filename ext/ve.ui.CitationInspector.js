@@ -40,7 +40,10 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   this.$selectedFlag = $('<div>').addClass('selected-flag').text('Selected');
 
   // set when opening a tab
-  this.activeTab = null;
+  this.currentTabName = "";
+
+  // either "search" or "select", set when typing into search field or when navigating cursor
+  this.inputMethod = "";
 
   this.$referenceList = $('<div>').addClass('reference-list');
 
@@ -188,7 +191,6 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
     }, this );
 };
 
-
 /**
  * @inheritdoc
  */
@@ -200,8 +202,12 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       //this.searchField.$input.on('keydown', this.keyDownHandler);
       $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
       this.searchField.$input.val('');
+      this.searchField.$input.focus(ve.bind( function() {
+        $(this.referenceElements).removeClass('cursor');
+        this.setInputMethod("search");
+        // this.cursorIdx = -1;
+      }, this ));
       this.searchField.$input.focus();
-      this.searchField.$input.focus(ve.bind( function() { $(this.referenceElements).removeClass('cursor'); this.cursorIdx = -1; }, this ));
 
       this.openExistingReferences();
     }, this );
@@ -266,7 +272,7 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
 
   this.newReferencesTab.$element.removeClass('active');
   this.referencesTab.$element.addClass('active');
-  this.activeTab = this.referencesTab;
+  this.currentTabName = "references";
 };
 
 ve.ui.CitationInspector.prototype.openNewReferences = function () {
@@ -276,64 +282,71 @@ ve.ui.CitationInspector.prototype.openNewReferences = function () {
 
   this.referencesTab.$element.removeClass('active');
   this.newReferencesTab.$element.addClass('active');
-  this.activeTab = this.newReferencesTab;
+  this.currentTabName = "new";
+};
+
+ve.ui.CitationInspector.prototype.setInputMethod = function( method ) {
+  this.$referenceList.removeClass('search select').addClass(method);
+  this.inputMethod = method;
 };
 
 ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
-  var refEl, oldRef, newRef, fromSearchField, referenceEls, reference;
+  var oldRef, newRef, referenceEls;
 
   if (e.keyCode !== OO.ui.Keys.UP && e.keyCode !== OO.ui.Keys.DOWN && e.keyCode !== OO.ui.Keys.ENTER) {
-    window.setTimeout(ve.bind( function() {
-      // filter is only in for local references where it is ok to do that on every change of the pattern
-      if (this.activeTab === this.referencesTab) {
+    // TODO: we should make sure that we react only to keyboard events that indeed change the search field
+    this.setInputMethod("search");
+
+    // Apply the search/filter while typing when showing local references
+    if (this.currentTabName === "references") {
+      window.setTimeout(ve.bind( function() {
+        // filter is only in for local references where it is ok to do that on every change of the pattern
         var pattern = this.searchField.$input.val();
         if (this.filterPattern !== pattern) {
           this.showLocalReferences();
         }
         this.filterPattern = pattern;
-      }
-    }, this), 0);
-    return;
+      }, this), 0);
+    }
   }
+  // UP || DOWN || ENTER
+  else {
+    referenceEls = this.$referenceList[0].children;
 
-  fromSearchField = (e.srcElement === this.searchField.$input[0]);
-  referenceEls = this.$referenceList[0].children;
-
-  if (e.keyCode === OO.ui.Keys.ENTER) {
-    refEl = referenceEls[this.cursorIdx];
-    var labelEl = refEl.querySelector('.label');
-    reference = this.refIndex[labelEl.textContent];
-    if (!reference) {
-      window.console.error('ohoohh, could not find reference model');
+    if (e.keyCode === OO.ui.Keys.ENTER) {
+      if (this.inputMethod === "search") {
+        this.acceptSearch();
+      } else {
+        this.acceptSelection();
+      }
+      e.preventDefault();
+      return;
     } else {
-      this.selectReference(reference);
-      this.close( { action: 'edit' } );
-    }
-    e.preventDefault();
-    return;
-  } else {
-    if (e.keyCode === OO.ui.Keys.UP && this.cursorIdx >= 0) {
-      oldRef = referenceEls[this.cursorIdx];
-      this.cursorIdx--;
-      newRef = referenceEls[this.cursorIdx];
+      // When using the cursor the first time, just switch to select mode
+      // without actually changing the cursor position
+      if ( this.inputMethod === "search") {
+        newRef = referenceEls[this.cursorIdx];
+      } else if (e.keyCode === OO.ui.Keys.UP && this.cursorIdx >= 0) {
+        oldRef = referenceEls[this.cursorIdx];
+        this.cursorIdx--;
+        newRef = referenceEls[this.cursorIdx];
+      } else if (e.keyCode === OO.ui.Keys.DOWN && this.cursorIdx < referenceEls.length-1 ) {
+        oldRef = referenceEls[this.cursorIdx];
+        this.cursorIdx++;
+        newRef = referenceEls[this.cursorIdx];
+      }
+      if (oldRef) {
+        $(oldRef).removeClass('cursor');
+      }
+      if (newRef) {
+        $(newRef).addClass('cursor');
+        OO.ui.Element.scrollIntoView(newRef);
+      }
+      if ( this.cursorIdx < 0 ) {
+        this.searchField.$input.focus();
+      }
+      this.setInputMethod("select");
       e.preventDefault();
-    } else if (e.keyCode === OO.ui.Keys.DOWN && this.cursorIdx < referenceEls.length-1 ) {
-      oldRef = referenceEls[this.cursorIdx];
-      this.cursorIdx++;
-      newRef = referenceEls[this.cursorIdx];
-      e.preventDefault();
-    }
-    if (oldRef) {
-      $(oldRef).removeClass('cursor');
-    }
-    if (newRef) {
-      $(newRef).addClass('cursor');
-      OO.ui.Element.scrollIntoView(newRef);
-    }
-    if ( this.cursorIdx < 0 ) {
-      this.cursorIdx = -1;
-      this.searchField.$input.focus();
-    } else if (fromSearchField) {
     }
   }
 };
@@ -359,8 +372,29 @@ ve.ui.CitationInspector.prototype.selectReference = function( reference ) {
   }
 };
 
+ve.ui.CitationInspector.prototype.acceptSelection = function() {
+  var referenceEls, refEl, labelEl, reference;
+
+  referenceEls = this.$referenceList[0].children;
+  refEl = referenceEls[this.cursorIdx];
+
+  if (this.currentTabName === "references") {
+    labelEl = refEl.querySelector('.label');
+    reference = this.refIndex[labelEl.textContent];
+    if (!reference) {
+      window.console.error('ohoohh, could not find reference model');
+    } else {
+      this.selectReference(reference);
+      this.close( { action: 'edit' } );
+    }
+  } else {
+    window.console.log("TODO: will insert a new bib entry and select the new reference.");
+  }
+
+};
+
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
-  if (this.activeTab === this.referencesTab) {
+  if (this.currentTabName === "references") {
     this.showLocalReferences();
   } else {
     this.lookupExternalReferences();
@@ -428,9 +462,9 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
   if (this.cursorIdx >= 0) OO.ui.Element.scrollIntoView(this.$referenceList[0].children[this.cursorIdx]);
 
   if (this.citationNode) {
-    this.$referenceList.addClass('selected');
+    this.$referenceList.addClass('has-citation');
   } else {
-    this.$referenceList.removeClass('selected');
+    this.$referenceList.removeClass('has-citation');
   }
 };
 
@@ -448,9 +482,11 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, 
 
 
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
-  var searchStr = this.searchField.$input.val();
-  for (var name in this.lookupServices) {
-    this._lookupExternalReferences(this.lookupServices[name], searchStr);
+  var searchStr = this.searchField.$input.val().trim();
+  if (searchStr.length > 0) {
+    for (var name in this.lookupServices) {
+      this._lookupExternalReferences(this.lookupServices[name], searchStr);
+    }
   }
 };
 
