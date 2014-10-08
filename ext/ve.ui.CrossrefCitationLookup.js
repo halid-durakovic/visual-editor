@@ -32,11 +32,12 @@ ve.ui.CrossrefCitationLookup.resolveDOI = function( doi ) {
 };
 
 ve.ui.CrossrefCitationLookup.prototype.find = function( searchStr, context ) {
-  var promisedResult = $.Deferred();
+  var promisedResult = $.Deferred(),
+    lastResult;
 
   // deliver a cached result if the search has not changed
   if (this.lastSearch === searchStr) {
-    var lastResult = this.lastResult;
+    lastResult = this.lastResult;
     window.setTimeout(function() {
       lastResult.forEach(function(data) {
         promisedResult.notifyWith(context, [ data ]);
@@ -47,8 +48,8 @@ ve.ui.CrossrefCitationLookup.prototype.find = function( searchStr, context ) {
   // otherwise start a new search;
   else {
     this.lastSearch = searchStr;
-    var lastResult = [];
-    this.lastResult = lastResult;
+    this.lastResult = [];
+    lastResult = this.lastResult;
 
     var searchTerms = searchStr.trim().toLowerCase().split(/\s+/);
     var doiQueryParams = searchTerms.join('+');
@@ -60,20 +61,22 @@ ve.ui.CrossrefCitationLookup.prototype.find = function( searchStr, context ) {
         sort: "score"
       },
       success: function(searchResult) {
-        searchResult.forEach(function(entry) {
-          var promisedData = ve.ui.CrossrefCitationLookup.resolveDOI(entry.doi);
-          promisedData.done(function(data) {
-            window.console.log("Progressing: ", data);
-            lastResult.push(data);
-            promisedResult.notifyWith(context, [ data ]);
-          });
-          promisedData.always(function() {
-            count++;
-            if (count === searchResult.length) {
-              promisedResult.resolveWith(context);
-            }
-          });
-        });
+        function step() {
+          if (count < searchResult.length) {
+            var entry = searchResult[count++];
+            var promisedData = ve.ui.CrossrefCitationLookup.resolveDOI(entry.doi);
+            promisedData.done(function(data) {
+              window.console.log("Progressing: ", data);
+              lastResult.push(data);
+              promisedResult.notifyWith(context, [ data ]);
+            });
+            promisedData.always(step);
+          } else {
+            promisedResult.resolveWith(context);
+          }
+        }
+        // start the chain
+        step();
       },
       error: function(req, status, err) {
         promisedResult.rejectWith(context, [err]);
