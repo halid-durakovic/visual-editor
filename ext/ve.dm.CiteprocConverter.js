@@ -43,7 +43,7 @@ ve.dm.CiteprocConverter.prototype.getDataFromJson = function(json) {
         data.attributes.authors = json.author.slice(0);
         break;
       case 'issued':
-        dataParts = json.issued['json-parts'];
+        dataParts = json.issued['date-parts'][0];
         if (dataParts[0]) {
           data.attributes['publication-year'] = dataParts[0];
           if (dataParts[1]) {
@@ -95,8 +95,8 @@ ve.dm.CiteprocConverter.prototype.getJsonFromData = function(data) {
     case 'publication-year':
     case 'publication-month':
     case 'publication-day':
-      json.issued = json.issued || { dateParts: [] };
-      json.issued.dateParts[this.getDatePartIndexForType(key)] = parseInt(val, 10);
+      json.issued = json.issued || { 'date-parts': [[]] };
+      json.issued['date-parts'][0][this.getDatePartIndexForType(key)] = parseInt(val, 10);
       break;
     case 'subtitles':
       json.subtitle = val.slice(0);
