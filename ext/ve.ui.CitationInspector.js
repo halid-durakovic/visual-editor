@@ -256,12 +256,12 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
     for (i = 0; i < references.length; i++) {
       reference = references[i];
       if (reference.type !== 'reference') continue;
-
+      var refId = reference.getAttribute('referenceId');
       $reference = $('<div>').addClass('reference');
       $label = $('<div>').addClass('label')
-        .text(reference.getAttribute('label'));
+        .html(this.bibliography.getLabelForReference(refId));
       $content = $('<div>').addClass('content')
-        .text(reference.getAttribute('content'));
+        .html(this.bibliography.getContentForReference(refId));
       $reference.append([$label, $content]);
       this.refIndex[reference.getAttribute('label')] = reference;
 
