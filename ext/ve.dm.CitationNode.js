@@ -19,24 +19,24 @@ ve.dm.CitationNode.static.name = 'citation';
 ve.dm.CitationNode.static.matchTagNames = [ 'span' ];
 
 ve.dm.CitationNode.static.matchFunction = function ( domElement ) {
-  return $(domElement).hasClass('citation');
+  return domElement.dataset.type === 'citation';
 };
 
 ve.dm.CitationNode.static.isContent = true;
 
-ve.dm.CitationNode.static.toDataElement = function ( domElements, converter ) {
+ve.dm.CitationNode.static.toDataElement = function ( domElements ) {
   return {
     type: 'citation',
     attributes: {
-      label: $(domElements[0]).text()
+      referenceId: domElements[0].dataset.refId
     }
   };
 };
 
-ve.dm.CitationNode.static.toDomElements = function ( dataElement, doc ) {
+ve.dm.CitationNode.static.toDomElements = function ( dataElement ) {
   var $el = $('<span>')
-    .addClass('citation')
-    .text( dataElement.getAttribute('label') );
+    .attr('data-type', 'citation')
+    .attr('data-ref-id', dataElement.getAttribute('referenceId'));
   return $el;
 };
 

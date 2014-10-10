@@ -3,17 +3,19 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
   // Parent constructor
   ve.ce.LeafNode.call( this, model, config );
 
+  var bibliography = ve.dm.BibliographyNode.getBibliography(model.getRoot().getDocument());
+  var label = bibliography.getLabelForReference(model.getAttribute('referenceId'));
+
   // DOM changes
   this.$element
     .addClass( 'citation ve-ce-citationNode' )
     // Add em space for selection highlighting
-    .text( model.getAttribute('label') );
+    .html( label );
 
   // Mixin constructors
   ve.ce.FocusableNode.call( this, this.$element, config );
 
   this.model.connect( this, { 'update': 'onUpdate' } );
-
 };
 
 /* Inheritance */

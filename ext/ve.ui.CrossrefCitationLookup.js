@@ -20,7 +20,7 @@ ve.ui.CrossrefCitationLookup.resolveDOI = function( doi ) {
       Accept: "application/citeproc+json"
     },
     success: function(data) {
-      window.console.log("Received citeproc-json:", data);
+      window.console.log("Received citeproc-json:", JSON.stringify(data, null, 2) );
       promise.resolve(data);
     },
     error: function(req, status, err) {

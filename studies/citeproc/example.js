@@ -47,7 +47,7 @@ var data = [
 ];
 
 var updateReferences = function($el){
-  var citeproc = new ve.ui.CiteprocRenderer(new ve.ui.CiteprocDefaultConfig());
+  var citeproc = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
 
   var ids = [];
   data.forEach(function(reference) {

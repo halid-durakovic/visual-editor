@@ -2,6 +2,15 @@
 ve.dm.BibliographyNode = function VeDmBibliographyNode() {
   // Parent constructor
   ve.dm.BranchNode.apply( this, arguments );
+
+  this.referenceIndex = {};
+
+  this.getAttribute('entries').forEach(function(ref) {
+    this.referenceIndex[ref.getAttribute('referenceId')] = ref;
+  }, this);
+
+  this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
+  this.compileReferences();
 };
 
 /* Inheritance */
@@ -15,7 +24,7 @@ ve.dm.BibliographyNode.static.name = 'bibliography';
 ve.dm.BibliographyNode.static.matchTagNames = [ 'div' ];
 
 ve.dm.BibliographyNode.static.matchFunction = function ( domElement ) {
-  return domElement.classList.contains('bibliography');
+  return domElement.dataset.type === 'bibliography';
 };
 
 ve.dm.BibliographyNode.static.childNodeTypes = [ 'reference' ];
@@ -24,9 +33,9 @@ ve.dm.BibliographyNode.static.handlesOwnChildren = true;
 
 ve.dm.BibliographyNode.static.toDataElement = function ( domElements, converter ) {
   var el = domElements[0],
-    titleEl = el.querySelector('div.title'),
+    titleEl = el.querySelector('div[data-type=title]'),
     title = titleEl ? titleEl.textContent : undefined,
-    entryEls = el.querySelectorAll('div.reference'),
+    entryEls = el.querySelectorAll('div[data-type=reference]'),
     entries = [], i,
     node, modelData;
   for (i = 0; i < entryEls.length; i++) {
@@ -69,6 +78,41 @@ ve.dm.BibliographyNode.static.toDomElements = function ( dataElement, doc ) {
 
   el.classList.add('bibliography');
   return [ el ];
+};
+
+ve.dm.BibliographyNode.getBibliography = function(documentModel) {
+  var bibliography = null;
+  var toplevelNodes = documentModel.selectNodes( documentModel.getDocumentNode().getRange(), 'branches');
+  for (var i = 0; i < toplevelNodes.length; i++) {
+    var toplevelNode = toplevelNodes[i].node;
+    if (toplevelNode.type === 'bibliography') {
+      bibliography = toplevelNode;
+      break;
+    }
+  }
+  return bibliography;
+};
+
+ve.dm.BibliographyNode.prototype.compileReferences = function() {
+  this.referenceCompiler.clear();
+  var citeprocConverter = new ve.dm.CiteprocConverter();
+  this.getAttribute('entries').forEach( function(refModel) {
+    var json = citeprocConverter.getJsonFromData(refModel.element);
+    json.id = refModel.getAttribute('referenceId');
+    this.referenceCompiler.addReference(json);
+  }, this);
+};
+
+ve.dm.BibliographyNode.prototype.getReferenceForId = function(id) {
+  return this.referenceIndex[id];
+};
+
+ve.dm.BibliographyNode.prototype.getLabelForReference = function(id) {
+  return this.referenceCompiler.getLabel(id);
+};
+
+ve.dm.BibliographyNode.prototype.getContentForReference = function(id) {
+  return this.referenceCompiler.getContent(id);
 };
 
 /* Registration */

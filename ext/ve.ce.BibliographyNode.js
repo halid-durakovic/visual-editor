@@ -4,10 +4,29 @@ ve.ce.BibliographyNode = function VeCeBibliographyNode( model, config ) {
   // Parent constructor
   ve.ce.LeafNode.call( this, model, config );
 
-  var els = ve.dm.BibliographyNode.static.toDomElements( model.element, window.document );
-  this.$element = $(els[0]);
+  var title = model.getAttribute('title');
+  var entries = model.getAttribute('entries');
 
-  this.$element.attr('contentEditable', 'false');
+  if (title) {
+    var $titleEl = $('<div>').addClass('title').text(title);
+    this.$element.append($titleEl);
+  }
+
+  var $references = $('<div>').addClass('references');
+
+  entries.forEach(function(ref) {
+    var $refEl = $('<div>').addClass('reference');
+    var refId = ref.getAttribute('referenceId');
+    var $labelEl = $('<div>').addClass('label').html(model.getLabelForReference(refId));
+    var $contentEl = $('<div>').addClass('content').html(model.getContentForReference(refId));
+    $refEl.append([$labelEl, $contentEl]);
+    $references.append($refEl);
+  }, this);
+
+  this.$element
+    .addClass('bibliography')
+    .attr('contentEditable', 'false')
+    .append($references);
 };
 
 /* Inheritance */

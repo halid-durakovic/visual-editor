@@ -5,7 +5,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   this.$frame.addClass('ve-ui-citationManager');
 
-  this.newRefRenderer = new ve.ui.CiteprocRenderer(new ve.ui.CiteprocDefaultConfig());
+  this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
   this.lookupServices = ve.ui.CitationLookupService.getServices();
 
   // created in initialize
@@ -186,16 +186,7 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       var fragment = this.getFragment();
       var documentModel = fragment.getDocument();
 
-      this.bibliography = null;
-      var toplevelNodes = documentModel.selectNodes( documentModel.getDocumentNode().getRange(), 'branches');
-      for (var i = 0; i < toplevelNodes.length; i++) {
-        var toplevelNode = toplevelNodes[i].node;
-        if (toplevelNode.type === 'bibliography') {
-          this.bibliography = toplevelNode;
-          break;
-        }
-      }
-
+      this.bibliography = ve.dm.BibliographyNode.getBibliography(documentModel);
     }, this );
 };
 
@@ -512,9 +503,9 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
   window.console.log('TODO: start a spinner somewhere to indicate that a query is running.');
   service.find(searchStr, this).progress(function(data) {
-    var id = this.newRefRenderer.addReference(data);
+    var id = this.referenceCompiler.addReference(data);
     var $reference = $('<div>').addClass('reference');
-    var $content = $('<div>').addClass('content').html(this.newRefRenderer.getContent(id));
+    var $content = $('<div>').addClass('content').html(this.referenceCompiler.getContent(id));
     $reference.append($content);
     this.$referenceList.append($reference);
   }).done(function() {

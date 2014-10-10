@@ -1,6 +1,6 @@
 /* global CSL: true */
 
-ve.ui.CiteprocRenderer = function VeUiCiteprocRenderer( config ) {
+ve.dm.CiteprocCompiler = function VeUiCiteprocRenderer( config ) {
   this.config = config;
   this.engine = new CSL.Engine(this, config.style);
   this.data = {};
@@ -9,55 +9,62 @@ ve.ui.CiteprocRenderer = function VeUiCiteprocRenderer( config ) {
   this.count = 0;
 };
 
-OO.initClass( ve.ui.CiteprocRenderer );
+OO.initClass( ve.dm.CiteprocCompiler );
 
-ve.ui.CiteprocRenderer.prototype.addReference = function( reference ) {
-  var id = "ITEM_"+this.count++;
-  reference.id = id;
-  this.data[id] = reference;
+ve.dm.CiteprocCompiler.prototype.clear = function() {
+  this.engine = new CSL.Engine(this, this.config.style);
+  this.data = {};
+  this.labels = {};
+  this.contents = {};
+  this.count = 0;
+};
+
+ve.dm.CiteprocCompiler.prototype.addReference = function( reference ) {
+  reference.id = reference.id || "ITEM_"+this.count++;
+  this.data[reference.id] = reference;
   var citation = {
-    "citationItems": [ { id: id } ],
+    "citationItems": [ { id: reference.id } ],
     "properties": {}
   };
   this.engine.appendCitationCluster(citation);
-  var result = this.renderReference(id);
-  this.labels[id] = result.labelHtml;
-  this.contents[id] = result.contentHtml;
-  return id;
+  var result = this.renderReference(reference.id);
+  this.labels[reference.id] = result.labelHtml;
+  this.contents[reference.id] = result.contentHtml;
+  return reference.id;
 };
 
-ve.ui.CiteprocRenderer.prototype.getLabel = function(id) {
+ve.dm.CiteprocCompiler.prototype.getLabel = function(id) {
   return this.labels[id];
 };
 
-ve.ui.CiteprocRenderer.prototype.getContent = function(id) {
+ve.dm.CiteprocCompiler.prototype.getContent = function(id) {
   return this.contents[id];
 };
 
-ve.ui.CiteprocRenderer.prototype.retrieveItem = function(id){
+ve.dm.CiteprocCompiler.prototype.retrieveItem = function(id){
   return this.data[id];
 };
 
-ve.ui.CiteprocRenderer.prototype.retrieveLocale = function(lang){
+ve.dm.CiteprocCompiler.prototype.retrieveLocale = function(lang){
   return this.config.locale[lang];
 };
 
-ve.ui.CiteprocRenderer.prototype.getAbbreviation = function(obj, vartype, key){
+ve.dm.CiteprocCompiler.prototype.getAbbreviation = function(obj, vartype, key){
   obj[vartype][key] = "";
 };
 
-ve.ui.CiteprocRenderer.prototype.setAbbreviations = function () {
+ve.dm.CiteprocCompiler.prototype.setAbbreviations = function () {
 };
 
-ve.ui.CiteprocRenderer.prototype.renderReference = function(id) {
-  var result = ve.ui.CiteprocRenderer.getBibliographyEntry.call(this.engine, id);
+ve.dm.CiteprocCompiler.prototype.renderReference = function(id) {
+  var result = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id);
   // HACK: see below about handling labelBlobciteproc... discarding the wrapping element here
   var $labelElementWithWrapper = $(result.labelHtml);
   result.labelHtml = $labelElementWithWrapper.html();
   return result;
 };
 
-ve.ui.CiteprocRenderer.getBibliographyEntry = function (id) {
+ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
   var item, topblobs, labelBlob, refBlob, labelHtml, contentHtml;
 
   this.tmp.area = "bibliography";
