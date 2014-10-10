@@ -11,6 +11,8 @@ ve.dm.BibliographyNode = function VeDmBibliographyNode() {
 
   this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
   this.compileReferences();
+
+  this.connect(this, { 'attach': 'onAttach', 'detach': 'onDetach' });
 };
 
 /* Inheritance */
@@ -113,6 +115,25 @@ ve.dm.BibliographyNode.prototype.getLabelForReference = function(id) {
 
 ve.dm.BibliographyNode.prototype.getContentForReference = function(id) {
   return this.referenceCompiler.getContent(id);
+};
+
+ve.dm.BibliographyNode.prototype.onAttach = function() {
+  console.log("BibliographyNode is now listening for csl-style-change events");
+  this.getRoot().getDocument().connect( this, {
+    'csl-style-change': 'onChangeCSLStyle'
+  });
+};
+
+ve.dm.BibliographyNode.prototype.onDetach = function() {
+  this.disconnect();
+};
+
+ve.dm.BibliographyNode.prototype.onChangeCSLStyle = function(cslXML) {
+  var config = new ve.dm.CiteprocDefaultConfig();
+  config.style = cslXML;
+  this.referenceCompiler = new ve.dm.CiteprocCompiler(config);
+  this.compileReferences();
+  this.emit('csl-style-changed');
 };
 
 /* Registration */
