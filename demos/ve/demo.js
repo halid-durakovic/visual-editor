@@ -17,6 +17,16 @@ $( function () {
 			return items;
 		}
 
+		function getCSLItems() {
+			var name, items = [];
+			for ( name in ve.cslStyles ) {
+				items.push(
+					new OO.ui.MenuItemWidget( ve.cslStyles[name],  { label: name } )
+				);
+			}
+			return items;
+		}
+
 		var currentTarget,
 			initialPage,
 
@@ -39,6 +49,16 @@ $( function () {
 			} ),
 			pageLabel = new OO.ui.LabelWidget(
 				{ label: 'Page', input: pageMenu }
+			),
+
+			// Menu widgets
+			cslMenu = new OO.ui.InlineMenuWidget( {
+				menu: {
+					items: getCSLItems()
+				}
+			} ),
+			cslLabel = new OO.ui.LabelWidget(
+				{ label: 'CSL', input: cslMenu }
 			),
 
 			modeSelect = new OO.ui.ButtonSelectWidget().addItems( [
@@ -66,6 +86,10 @@ $( function () {
 				window.history.replaceState( null, document.title, '#!/src/' + page );
 			}
 			switchPage( 've', page );
+		} );
+
+		cslMenu.getMenu().on( 'select', function ( item ) {
+			switchCSLStyle( item.getData() );
 		} );
 
 		languageInput.setLangAndDir( currentLang, currentDir );
@@ -175,6 +199,8 @@ $( function () {
 			$( '<div>' ).addClass( 've-demo-menu-commands' ).append(
 				pageLabel.$element,
 				pageMenu.$element,
+				cslLabel.$element,
+				cslMenu.$element,
 				$( '<span class="ve-demo-menu-divider">&nbsp;</span>' ),
 				modeSelect.$element,
 				$( '<span class="ve-demo-menu-divider">&nbsp;</span>' ),
@@ -183,6 +209,23 @@ $( function () {
 		);
 
 		$editor.append( $targetContainer, sourceTextInput.$element.hide(), $readView );
+
+		function switchCSLStyle( style ) {
+			console.log("switchCSLStyle", style);
+			$.ajax( {
+				url: style,
+				dataType: 'text'
+			} ).always( function ( result, status ) {
+				var cslXML;
+				if ( status === 'error' ) {
+					window.console.error("Error", result, status);
+				} else {
+					cslXML = result;
+					var documentModel = currentTarget.surface.getModel().getDocument();
+					documentModel.emit('csl-style-change', cslXML);
+				}
+			} );
+		}
 
 		/**
 		 * Load a page into the editor
