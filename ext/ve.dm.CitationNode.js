@@ -16,27 +16,35 @@ OO.mixinClass( ve.dm.CitationNode, ve.dm.FocusableNode );
 
 ve.dm.CitationNode.static.name = 'citation';
 
-ve.dm.CitationNode.static.matchTagNames = [ 'span' ];
+ve.dm.CitationNode.static.matchTagNames = [ 'cite' ];
 
 ve.dm.CitationNode.static.matchFunction = function ( domElement ) {
-  return domElement.dataset.type === 'citation';
+  return (domElement.dataset.type === 'bibliography');
 };
 
 ve.dm.CitationNode.static.isContent = true;
 
 ve.dm.CitationNode.static.toDataElement = function ( domElements ) {
+  var references = [];
+  var $citeEl = $(domElements[0]);
+  var $labels = $citeEl.find('label');
+  for (var i = 0; i < $labels.length; i++) {
+    references.push($($labels[i]).attr('for'));
+  }
   return {
     type: 'citation',
     attributes: {
-      referenceId: domElements[0].dataset.refId
+      references: references
     }
   };
 };
 
 ve.dm.CitationNode.static.toDomElements = function ( dataElement ) {
-  var $el = $('<span>')
-    .attr('data-type', 'citation')
-    .attr('data-ref-id', dataElement.getAttribute('referenceId'));
+  var $el = $('<cite>');
+  var references = dataElement.attributes.references || [];
+  for (var i = 0; i < references.length; i++) {
+    $el.append($('<label>').attr('for', references[i]));
+  }
   return $el;
 };
 

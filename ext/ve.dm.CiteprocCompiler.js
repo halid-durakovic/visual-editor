@@ -5,6 +5,7 @@ ve.dm.CiteprocCompiler = function VeUiCiteprocRenderer( config ) {
   this.engine = new CSL.Engine(this, config.style);
   this.data = {};
   this.labels = {};
+  this.index = {};
   this.contents = {};
   this.count = 0;
 };
@@ -19,18 +20,40 @@ ve.dm.CiteprocCompiler.prototype.clear = function() {
   this.count = 0;
 };
 
-ve.dm.CiteprocCompiler.prototype.addReference = function( reference ) {
-  reference.id = reference.id || "ITEM_"+this.count++;
-  this.data[reference.id] = reference;
+ve.dm.CiteprocCompiler.prototype._addReference = function( reference ) {
+  var id = reference.id || "ITEM_"+this.count++;
+  reference.id = id;
+  this.data[id] = reference;
   var citation = {
-    "citationItems": [ { id: reference.id } ],
+    "citationItems": [ { id: id } ],
     "properties": {}
   };
-  this.engine.appendCitationCluster(citation);
-  var result = this.renderReference(reference.id);
-  this.labels[reference.id] = result.labelHtml;
-  this.contents[reference.id] = result.contentHtml;
-  return reference.id;
+  //Note: this returns an array of tuples where each entry contains
+  //   0: the internally assigned index for the citation
+  //   1: the citation label as it should be inserted into the text
+  // In case of ambiguities, updates for disambiguation are given
+  var result = this.engine.appendCitationCluster(citation);
+  var refIndex = result[0][0];
+  var refLabel = result[0][1];
+
+  this.index[refIndex] = id;
+  this.labels[id] = refLabel;
+
+  for (var i = 1; i < result.length; i++) {
+    var updated = result[i];
+    var updatedId = this.index[updated[0]];
+    this.labels[updatedId] = updated[1];
+  }
+};
+
+ve.dm.CiteprocCompiler.prototype.addReference = function( reference ) {
+  var id = reference.id || "ITEM_"+this.count++;
+  reference.id = id;
+  this.data[id] = reference;
+};
+
+ve.dm.CiteprocCompiler.prototype.addCitation = function( citation ) {
+  console.error("FIXME");
 };
 
 ve.dm.CiteprocCompiler.prototype.getLabel = function(id) {
@@ -57,15 +80,11 @@ ve.dm.CiteprocCompiler.prototype.setAbbreviations = function () {
 };
 
 ve.dm.CiteprocCompiler.prototype.renderReference = function(id) {
-  var result = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id);
-  // HACK: see below about handling labelBlobciteproc... discarding the wrapping element here
-  var $labelElementWithWrapper = $(result.labelHtml);
-  result.labelHtml = $labelElementWithWrapper.html();
-  return result;
+  return ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id);
 };
 
 ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
-  var item, topblobs, labelBlob, refBlob, labelHtml, contentHtml;
+  var item, topblobs, refBlob, refHtml;
 
   this.tmp.area = "bibliography";
   this.tmp.last_rendered_name = false;
@@ -103,22 +122,14 @@ ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
   CSL.Output.Queue.purgeEmptyBlobs(this.output.queue);
   CSL.Output.Queue.adjustPunctuation(this, this.output.queue);
 
-  labelBlob = topblobs[0];
-  refBlob = topblobs[1];
-
-  // HACK: citeproc doesn't render the the label whe using labelBlob.blobs... FIXME
-  // Instead we will let citeproc wrap it with a div.csl-block which we will discard afterwards
-  labelBlob.decorations = [["@display", "block"]];
-  labelHtml = this.output.string(this, [labelBlob]);
-  contentHtml = this.output.string(this, refBlob.blobs);
-
-  if (!labelHtml || !contentHtml) {
+  // HACK: assuming that the reference is always the last top-blob
+  refBlob = topblobs[topblobs.length-1];
+  refHtml = this.output.string(this, refBlob.blobs);
+  if (!refHtml) {
     throw new Error("\n[CSL STYLE ERROR: reference with no printed form.]\n");
   }
+
   this.tmp.disambig_override = false;
 
-  return {
-    labelHtml: labelHtml.join(''),
-    contentHtml: contentHtml.join('')
-  };
+  return refHtml;
 };

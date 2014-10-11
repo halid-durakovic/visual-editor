@@ -11,7 +11,7 @@ var data = [
         "static-ordering": false
       }
     ],
-        "note":"The apostrophe in Bruce's name appears in proper typeset form.",
+    "note":"The apostrophe in Bruce's name appears in proper typeset form.",
     "publisher": "Routledge",
         "publisher-place": "New York",
     "issued": {
@@ -46,27 +46,87 @@ var data = [
   }
 ];
 
-var updateReferences = function($el){
-  var citeproc = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
+// var updateReferences = function($el){
+//   var citeproc = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
 
-  var ids = [];
-  data.forEach(function(reference) {
-    var id = citeproc.addReference(reference);
-    ids.push(id);
-  });
-  ids.forEach(function(id) {
-      var $reference = $('<div>').addClass('reference');
-      var $label = $('<div>').addClass('label').html(citeproc.getLabel(id));
-      var $content = $('<div>').addClass('content').html(citeproc.getContent(id));
-      $reference.append([$label, $content]);
-      $el.append($reference);
-    }
-  );
+//   var ids = [];
+//   data.forEach(function(reference) {
+//     var id = citeproc.addReference(reference);
+//     ids.push(id);
+//   });
+//   ids.forEach(function(id) {
+//       var $reference = $('<div>').addClass('reference');
+//       var $label = $('<div>').addClass('label').html(citeproc.getLabel(id));
+//       var $content = $('<div>').addClass('content').html(citeproc.getContent(id));
+//       $reference.append([$label, $content]);
+//       $el.append($reference);
+//     }
+//   );
+// };
+
+var cslStyles = {
+  "APA": "csl/apa.csl",
+  "Cell": "csl/cell.csl",
+  "Chicago": "csl/chicago-author-date.csl",
+  "Elsevier": "csl/elsevier-harvard.csl",
+  "IEEE": "csl/ieee.csl",
+  "ISO690": "csl/iso690-author-date-en.csl",
+  "Nature": "csl/nature.csl",
+  "PeerJ": "csl/peerj.csl",
+  "PLOS": "csl/plos.csl",
+  "PNAS": "csl/pnas.csl"
 };
 
+
+var updateReferences = function(){
+  var style = "Cell";
+  var url = "../../demos/ve/" + cslStyles[style];
+  $.ajax( {
+    url: url,
+    dataType: 'text'
+  } ).always( function ( result, status ) {
+    if ( status === 'error' ) {
+      window.console.error("Error", result, status);
+    } else {
+      var cslXML = result;
+      var config = new ve.dm.CiteprocDefaultConfig();
+      config.style = cslXML;
+      var citeproc = new ve.dm.CiteprocCompiler(config);
+      var ids = [];
+      data.forEach(function(reference) {
+        var id = citeproc.addReference(reference);
+        ids.push(id);
+      });
+
+      var $referenceList = $('.reference-list');
+      var $citeprocOut = $('.reference-list-citeproc');
+
+      var citeProcResult = citeproc.engine.makeBibliography();
+      $citeprocOut.html(citeProcResult[1].join('\n'));
+
+      ids.forEach(function(id) {
+          var $reference = $('<div>').addClass('reference');
+          var $label = $('<div>').addClass('label').html(citeproc.getLabel(id));
+          var $content = $('<div>').addClass('content').html(citeproc.getContent(id));
+          $reference.append([$label, $content]);
+          $referenceList.append($reference);
+        }
+      );
+
+      var engine = new CSL.Engine(citeproc, cslXML);
+      var citation = {
+        "citationItems": [ { id: 'ITEM-1' }, { id: 'ITEM-2' } ],
+        "properties": {}
+      };
+      var result = engine.appendCitationCluster(citation);
+      console.log("####", result);
+    }
+  } );
+};
+
+
 $( function() {
-  var $referenceList = $('.reference-list');
-  updateReferences($referenceList);
+  updateReferences();
 } );
 
 } )(window);

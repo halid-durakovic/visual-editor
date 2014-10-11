@@ -10,9 +10,13 @@ ve.dm.BibliographyNode = function VeDmBibliographyNode() {
   }, this);
 
   this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
-  this.compileReferences();
 
   this.connect(this, { 'attach': 'onAttach', 'detach': 'onDetach' });
+
+  this.registerReferences();
+
+  // Note: citation labels need to be generated depending on the order in the whole document
+  this.isCompiled = false;
 };
 
 /* Inheritance */
@@ -92,10 +96,31 @@ ve.dm.BibliographyNode.getBibliography = function(documentModel) {
       break;
     }
   }
+  // Note:
+  if (!bibliography.isCompiled) {
+    bibliography.compile();
+  }
   return bibliography;
 };
 
-ve.dm.BibliographyNode.prototype.compileReferences = function() {
+ve.dm.BibliographyNode.prototype.compile = function() {
+
+  var citations = [];
+  var documentModel = this.getRoot().getDocument();
+  var leafNodes = documentModel.selectNodes( documentModel.getDocumentNode().getRange(), 'leaves');
+  for (var i = 0; i < leafNodes.length; i++) {
+    if (leafNodes[i].node.type === 'citation') {
+      var citationNode = leafNodes[i].node;
+      citation.setAttribute('index', i);
+      var references = leafNodes[i].node.getAttribute('references');
+      this.referenceCompiler.addCitation(references);
+    }
+  }
+  // Note: this needs to be invalidated whenever a citation is changed
+  this.isCompiled = true;
+};
+
+ve.dm.BibliographyNode.prototype.registerReferences = function() {
   this.referenceCompiler.clear();
   var citeprocConverter = new ve.dm.CiteprocConverter();
   this.getAttribute('entries').forEach( function(refModel) {

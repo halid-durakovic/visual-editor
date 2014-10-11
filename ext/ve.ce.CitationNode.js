@@ -5,7 +5,9 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
 
   this.bibliography = ve.dm.BibliographyNode.getBibliography(model.getRoot().getDocument());
 
-  var label = this.bibliography.getLabelForReference(model.getAttribute('referenceId'));
+  // TODO: extract a unique id for the citation
+  // var label = this.bibliography.getLabelForReference(model.getAttribute('referenceId'));
+  var label = "BLA";
 
   // DOM changes
   this.$element
