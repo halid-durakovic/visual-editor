@@ -9,7 +9,7 @@ var references = [
   {"subtitle":[],"subject":["Biochemistry, Genetics and Molecular Biology(all)"],"issued":{"date-parts":[[1994,1]]},"score":1.0,"prefix":"http:\/\/id.crossref.org\/prefix\/10.1016","author":[{"family":"Weiss","given":"Arthur"},{"family":"Littman","given":"Dan R."}],"container-title":"Cell","reference-count":125,"page":"263-274","deposited":{"date-parts":[[2011,8,23]],"timestamp":1314057600000},"issue":"2","title":"Signal transduction by lymphocyte antigen receptors","type":"journal-article","DOI":"10.1016\/0092-8674(94)90334-4","ISSN":["0092-8674"],"URL":"http:\/\/dx.doi.org\/10.1016\/0092-8674(94)90334-4","source":"CrossRef","publisher":"Elsevier BV","indexed":{"date-parts":[[2014,9,4]],"timestamp":1409848222905},"volume":"76","member":"http:\/\/id.crossref.org\/member\/78"}
 ];
 
-var cslStyles = {
+var cslStyleURLs = {
   "APA": "csl/apa.csl",
   "IEEE": "csl/ieee.csl",
   "ISO690": "csl/iso690-author-date-en.csl",
@@ -19,8 +19,10 @@ var cslStyles = {
   "PNAS": "csl/pnas.csl"
 };
 
+var cslStyles = {};
+
 function withStyle(name, cb) {
-  var url = "../../demos/ve/" + cslStyles[name];
+  var url = "../../demos/ve/" + cslStyleURLs[name];
   $.ajax( {
     url: url,
     dataType: 'text'
@@ -46,7 +48,7 @@ function allCitedOnce(cslXML) {
 
   var citations = [];
   ids.forEach(function(id) {
-    citations.push(citeproc.addCitation(id));
+    citations.push(citeproc.addCitation([ id ]));
   });
 
   var $el = $('<div>');
@@ -101,29 +103,87 @@ function mixedWithUncited(cslXML) {
   $('body').append($el);
 }
 
+function renderExample(style) {
+  $('body').append($('<h1>').text('CSL Style "' + style +'"'));
+  allCitedOnce(cslStyles[style]);
+  mixedWithUncited(cslStyles[style]);
+}
 
-function renderExample(style, next) {
-  withStyle(style, function(cslXML) {
-    $('body').append($('<h1>').text('CSL Style "' + style +'"'));
-    allCitedOnce(cslXML);
-    mixedWithUncited(cslXML);
-    next();
+function updateCitationStudy(style) {
+  var $body = $('body');
+  $body.append($('<h1>').text('Update Citation (' + style + ')'));
+
+  var config = new ve.dm.CiteprocDefaultConfig();
+  config.style = cslStyles[style];
+  var citeproc = new ve.dm.CiteprocCompiler(config);
+
+  var ids = [];
+  references.forEach(function(reference) {
+    var id = citeproc.addReference(reference);
+    ids.push(id);
   });
+
+  var citations = [];
+  ids.forEach(function(id) {
+    citations.push(citeproc.addCitation([ id ]));
+  });
+
+  var $el = $('<div>');
+  $el.append( $('<h3>').text("Initial citations") );
+  var $p = $('<p>');
+  var text = [];
+  citations.forEach(function(citation) {
+    text.push('...');
+    text.push('<span>'+citation.label+'</span>');
+    text.push('...');
+  } );
+  $p.html(text);
+  $el.append($p);
+
+  debugger;
+  var updated = citeproc.updateCitation(citations[2].id, [references[2].id, references[3].id]);
+  citations[2] = updated;
+
+  $el.append( $('<h3>').text("After update") );
+  $p = $('<p>');
+  text = [];
+  citations.forEach(function(citation) {
+    text.push('...');
+    text.push('<span>'+citation.label+'</span>');
+    text.push('...');
+  } );
+  $p.html(text);
+  $el.append($p);
+
+  $('body').append($el);
+}
+
+function loadStyles(cb) {
+  var names = Object.keys(cslStyleURLs).sort();
+  var idx = 0;
+  var next = function() {
+    var name = names[idx];
+    withStyle(name, function(cslXML) {
+      cslStyles[name] = cslXML;
+      idx++;
+      if (idx < names.length) {
+        next();
+      } else {
+        cb();
+      }
+    });
+  };
+  next();
 }
 
 function run() {
   $('body').empty();
-  var styles = Object.keys(cslStyles).sort();
-  var idx = 0;
-
-  var next = function() {
-    idx++;
-    if (idx < styles.length) {
-      renderExample(styles[idx], next);
+  loadStyles(function() {
+    for (var name in cslStyles) {
+      renderExample(name);
     }
-  };
-
-  renderExample(styles[0], next);
+    updateCitationStudy('APA');
+  });
 }
 
 $( function() {
