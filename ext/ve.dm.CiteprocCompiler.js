@@ -50,10 +50,29 @@ ve.dm.CiteprocCompiler.prototype.addReference = function( reference ) {
   var id = reference.id || "ITEM_"+this.count++;
   reference.id = id;
   this.data[id] = reference;
+  return id;
 };
 
-ve.dm.CiteprocCompiler.prototype.addCitation = function( citation ) {
-  console.error("FIXME");
+ve.dm.CiteprocCompiler.prototype.addCitation = function() {
+  var referenceIds = arguments;
+  if (referenceIds.length === 0) {
+    window.console.error("No reference ids given");
+    return;
+  }
+  var citation = {
+    "citationItems": [],
+    "properties": {}
+  };
+  for (var i = 0; i < referenceIds.length; i++) {
+    citation.citationItems.push( { id: referenceIds[i] } );
+  }
+  var result = this.engine.appendCitationCluster(citation);
+  var citationId = result[0][0];
+  var citationLabel = result[0][1];
+  return {
+    id: citationId,
+    label: citationLabel
+  };
 };
 
 ve.dm.CiteprocCompiler.prototype.getLabel = function(id) {
