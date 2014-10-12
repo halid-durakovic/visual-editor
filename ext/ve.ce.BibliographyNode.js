@@ -32,16 +32,9 @@ ve.ce.BibliographyNode.static.name = 'bibliography';
 ve.ce.BibliographyNode.prototype.renderBibliography = function() {
   var model = this.model;
   var entries = model.getAttribute('entries');
-  var $references = this.$references;
-  $references.empty();
-  entries.forEach(function(ref) {
-    var $refEl = $('<div>').addClass('reference');
-    var refId = ref.getAttribute('referenceId');
-    var $labelEl = $('<div>').addClass('label').html(model.getLabelForReference(refId));
-    var $contentEl = $('<div>').addClass('content').html(model.getContentForReference(refId));
-    $refEl.append([$labelEl, $contentEl]);
-    $references.append($refEl);
-  });
+  this.$references.empty();
+  var result = model.referenceCompiler.engine.makeBibliography();
+  this.$references.html(result[1].join('\n'));
 };
 
 /* Registration */

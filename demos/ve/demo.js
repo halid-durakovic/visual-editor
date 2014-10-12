@@ -314,6 +314,10 @@ $( function () {
 		}
 		pageMenu.getMenu().selectItem( pageMenu.getMenu().getItemFromData( initialPage ) );
 
+		// HACK: selecting the same as in the default style, however at this time the change does not have
+		// an effect as the model is not connected yet
+		cslMenu.getMenu().selectItem( cslMenu.getMenu().getItemFromData( ve.cslStyles[ve.dm.CiteprocDefaultConfig.defaultStyleName] ) );
+
 		window.addEventListener( 'hashchange', function () {
 			if ( /^#!\/src\/.+$/.test( location.hash ) ) {
 				pageMenu.getMenu().selectItem( pageMenu.getMenu().getItemFromData( location.hash.slice( 7 ) ) );

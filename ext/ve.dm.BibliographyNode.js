@@ -9,6 +9,7 @@ ve.dm.BibliographyNode = function VeDmBibliographyNode() {
     this.referenceIndex[ref.getAttribute('referenceId')] = ref;
   }, this);
 
+  // TODO: it would be necessary to retrieve a configuration here
   this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
 
   this.connect(this, { 'attach': 'onAttach', 'detach': 'onDetach' });
@@ -104,6 +105,7 @@ ve.dm.BibliographyNode.getBibliography = function(documentModel) {
 };
 
 ve.dm.BibliographyNode.prototype.compile = function() {
+  if (this.isCompiled) return;
 
   var citations = [];
   var documentModel = this.getRoot().getDocument();
@@ -111,9 +113,12 @@ ve.dm.BibliographyNode.prototype.compile = function() {
   for (var i = 0; i < leafNodes.length; i++) {
     if (leafNodes[i].node.type === 'citation') {
       var citationNode = leafNodes[i].node;
-      citation.setAttribute('index', i);
       var references = leafNodes[i].node.getAttribute('references');
-      this.referenceCompiler.addCitation(references);
+      var citation = this.referenceCompiler.addCitation(references);
+      // HACK storing information into the node
+      citationNode.element.attributes.id = citation.id;
+      citationNode.element.attributes.label = citation.label;
+      citationNode.emit('label-changed');
     }
   }
   // Note: this needs to be invalidated whenever a citation is changed
@@ -122,11 +127,9 @@ ve.dm.BibliographyNode.prototype.compile = function() {
 
 ve.dm.BibliographyNode.prototype.registerReferences = function() {
   this.referenceCompiler.clear();
-  var citeprocConverter = new ve.dm.CiteprocConverter();
   this.getAttribute('entries').forEach( function(refModel) {
-    var json = citeprocConverter.getJsonFromData(refModel.element);
-    json.id = refModel.getAttribute('referenceId');
-    this.referenceCompiler.addReference(json);
+    var refData = refModel.element.attributes;
+    this.referenceCompiler.addReference(refData);
   }, this);
 };
 
@@ -154,10 +157,12 @@ ve.dm.BibliographyNode.prototype.onDetach = function() {
 };
 
 ve.dm.BibliographyNode.prototype.onChangeCSLStyle = function(cslXML) {
-  var config = new ve.dm.CiteprocDefaultConfig();
-  config.style = cslXML;
+  // TODO: use a global configuration and clone from that
+  var config = new ve.dm.CiteprocDefaultConfig({ style: cslXML });
   this.referenceCompiler = new ve.dm.CiteprocCompiler(config);
-  this.compileReferences();
+  this.isCompiled = false;
+  this.registerReferences();
+  this.compile();
   this.emit('csl-style-changed');
 };
 

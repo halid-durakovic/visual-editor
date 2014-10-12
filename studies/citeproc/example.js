@@ -36,8 +36,7 @@ function withStyle(name, cb) {
 }
 
 function allCitedOnce(cslXML) {
-  var config = new ve.dm.CiteprocDefaultConfig();
-  config.style = cslXML;
+  var config = new ve.dm.CiteprocDefaultConfig({ style: cslXML });
   var citeproc = new ve.dm.CiteprocCompiler(config);
 
   var ids = [];
@@ -72,8 +71,7 @@ function allCitedOnce(cslXML) {
 }
 
 function mixedWithUncited(cslXML) {
-  var config = new ve.dm.CiteprocDefaultConfig();
-  config.style = cslXML;
+  var config = new ve.dm.CiteprocDefaultConfig( { style: cslXML } );
   var citeproc = new ve.dm.CiteprocCompiler(config);
 
   var ids = [];
@@ -113,8 +111,7 @@ function updateCitationStudy(style) {
   var $body = $('body');
   $body.append($('<h1>').text('Update Citation (' + style + ')'));
 
-  var config = new ve.dm.CiteprocDefaultConfig();
-  config.style = cslStyles[style];
+  var config = new ve.dm.CiteprocDefaultConfig( { style: cslStyles[style] } );
   var citeproc = new ve.dm.CiteprocCompiler(config);
 
   var ids = [];
@@ -140,7 +137,6 @@ function updateCitationStudy(style) {
   $p.html(text);
   $el.append($p);
 
-  debugger;
   var updated = citeproc.updateCitation(citations[2].id, [references[2].id, references[3].id]);
   citations[2] = updated;
 
@@ -188,6 +184,22 @@ function run() {
 
 $( function() {
   run();
+
+  references.forEach(function(reference) {
+    var data = {
+      type: 'reference',
+      attributes: reference
+    };
+    reference.id = reference.DOI;
+    var els = ve.dm.ReferenceNode.static.toDomElements(data, window.document);
+    var dummy = document.createElement('div');
+    dummy.appendChild(els[0]);
+    console.log('-----------------------------------------');
+    console.log(dummy.innerHTML);
+    console.log('-----------------------------------------');
+  });
+
+
 } );
 
 } )(window);

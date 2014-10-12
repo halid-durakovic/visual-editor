@@ -17,6 +17,27 @@ span.citation {
   padding-top: 20px;
 }
 
+.bibliography .references div.csl-entry {
+  margin-left: 1em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.bibliography .references div.csl-block {
+  padding:0.4em 0px 0.4em 0em;
+}
+
+.bibliography .references div.csl-left-margin {
+  float:left;
+  padding:0.4em 0px 0.4em 0em;
+}
+
+.bibliography .references div.csl-right-inline {
+  margin-left: 1em;
+  padding:0.4em 0.4em 0.4em 1em;
+}
+
+/*
 .bibliography .references .reference {
   padding-top: 5px;
 }
@@ -30,6 +51,7 @@ span.citation {
   display: inline;
   padding-left: 10px;
 }
+*/
 
 .oo-ui-icon-citation {
   background-image: /* @embed */ url(citation.svg);

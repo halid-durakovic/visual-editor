@@ -6,9 +6,15 @@
     <script type="text/javascript" src="../../lib/oojs/oojs.jquery.js"></script>
     <script type="text/javascript" src="../../lib/citeproc/xmldom.js"></script>
     <script type="text/javascript" src="../../lib/citeproc/citeproc.js"></script>
-    <script type="text/javascript"> ve = { dm: {}, ui: {} }; </script>
+    <script type="text/javascript">
+      ve = { dm: {}, ui: {} };
+      ve.dm.LeafNode = function() {};
+      ve.dm.FocusableNode = function() {};
+      ve.dm.modelRegistry = { register: function() {} };
+    </script>
     <script type="text/javascript" src="../../ext/ve.dm.CiteprocDefaultConfig.js"></script>
     <script type="text/javascript" src="../../ext/ve.dm.CiteprocCompiler.js"></script>
+    <script type="text/javascript" src="../../ext/ve.dm.ReferenceNode.js"></script>
     <script type="text/javascript" src="./example.js"></script>
     <style type="text/css">
       .reference {

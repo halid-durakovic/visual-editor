@@ -5,9 +5,7 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
 
   this.bibliography = ve.dm.BibliographyNode.getBibliography(model.getRoot().getDocument());
 
-  // TODO: extract a unique id for the citation
-  // var label = this.bibliography.getLabelForReference(model.getAttribute('referenceId'));
-  var label = "BLA";
+  var label = model.getAttribute('label');
 
   // DOM changes
   this.$element
@@ -43,7 +41,7 @@ ve.ce.CitationNode.prototype.createHighlight = function () {
 };
 
 ve.ce.CitationNode.prototype.onUpdate = function () {
-  var label = this.bibliography.getLabelForReference(this.model.getAttribute('referenceId'));
+  var label = this.model.getAttribute('label');
   this.$element.html(label);
 };
 

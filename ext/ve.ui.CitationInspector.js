@@ -5,6 +5,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   this.$frame.addClass('ve-ui-citationManager');
 
+  // TODO: use a global configuration here
   this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
   this.lookupServices = ve.ui.CitationLookupService.getServices();
 
