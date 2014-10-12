@@ -11,9 +11,6 @@ var references = [
 
 var cslStyles = {
   "APA": "csl/apa.csl",
-  "Cell": "csl/cell.csl",
-  "Chicago": "csl/chicago-author-date.csl",
-  "Elsevier": "csl/elsevier-harvard.csl",
   "IEEE": "csl/ieee.csl",
   "ISO690": "csl/iso690-author-date-en.csl",
   "Nature": "csl/nature.csl",
@@ -36,7 +33,7 @@ function withStyle(name, cb) {
   } );
 }
 
-function displayBiblioGraphyWithCiteproc(cslXML) {
+function allCitedOnce(cslXML) {
   var config = new ve.dm.CiteprocDefaultConfig();
   config.style = cslXML;
   var citeproc = new ve.dm.CiteprocCompiler(config);
@@ -53,7 +50,7 @@ function displayBiblioGraphyWithCiteproc(cslXML) {
   });
 
   var $el = $('<div>');
-  $el.append( $('<h2>').text("Displaying a Bibliography with Citeproc (every reference cited once)") );
+  $el.append( $('<h2>').text("Every reference cited once") );
   $el.append( $('<h3>').text("Citations") );
   var $p = $('<p>');
   var text = ["In the text this would look like"];
@@ -72,18 +69,61 @@ function displayBiblioGraphyWithCiteproc(cslXML) {
   $('body').append($el);
 }
 
-function renderExample(style) {
+function mixedWithUncited(cslXML) {
+  var config = new ve.dm.CiteprocDefaultConfig();
+  config.style = cslXML;
+  var citeproc = new ve.dm.CiteprocCompiler(config);
+
+  var ids = [];
+  references.forEach(function(reference) {
+    var id = citeproc.addReference(reference);
+    ids.push(id);
+  });
+
+
+  var citations = [];
+  var uncited = [];
+  for (var i = 0; i < ids.length; i++) {
+    if (i % 2 === 0) {
+      uncited.push(ids[i]);
+    } else {
+      citations.push(citeproc.addCitation(ids[i]));
+    }
+  }
+
+  citeproc.engine.updateUncitedItems(uncited);
+
+  var $el = $('<div>');
+  $el.append( $('<h2>').text("Mixed with Uncited items") );
+  var citeProcResult = citeproc.engine.makeBibliography();
+  $el.append($('<div>').html(citeProcResult[1].join('\n')));
+
+  $('body').append($el);
+}
+
+
+function renderExample(style, next) {
   withStyle(style, function(cslXML) {
     $('body').append($('<h1>').text('CSL Style "' + style +'"'));
-    displayBiblioGraphyWithCiteproc(cslXML);
+    allCitedOnce(cslXML);
+    mixedWithUncited(cslXML);
+    next();
   });
 }
 
 function run() {
-  var $body = $('body').empty();
-  for (var style in cslStyles) {
-    renderExample(style);
-  }
+  $('body').empty();
+  var styles = Object.keys(cslStyles).sort();
+  var idx = 0;
+
+  var next = function() {
+    idx++;
+    if (idx < styles.length) {
+      renderExample(styles[idx], next);
+    }
+  };
+
+  renderExample(styles[0], next);
 }
 
 $( function() {

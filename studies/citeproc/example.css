@@ -1,0 +1,19 @@
+div.csl-entry {
+  margin-left: 1em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+div.csl-block {
+  padding:0.4em 0px 0.4em 0em;
+}
+
+div.csl-left-margin {
+  float:left;
+  padding:0.4em 0px 0.4em 0em;
+}
+
+div.csl-right-inline {
+  margin-left: 1em;
+  padding:0.4em 0.4em 0.4em 1em;
+}
