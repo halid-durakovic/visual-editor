@@ -154,6 +154,39 @@ function updateCitationStudy(style) {
   $('body').append($el);
 }
 
+function uncitedStudy(style) {
+  var $body = $('body');
+  $body.append($('<h1>').text('Study for Uncited References (' + style + ')'));
+
+  var config = new ve.dm.CiteprocDefaultConfig( { style: cslStyles[style] } );
+  var citeproc = new ve.dm.CiteprocCompiler(config);
+
+  var ids = [];
+  references.forEach(function(reference) {
+    var id = citeproc.addReference(reference);
+    ids.push(id);
+  });
+
+  var citations = [];
+  for (var i = 0; i < ids.length; i++) {
+    var id = ids[i];
+    if (i%2 === 1) {
+      citations.push(citeproc.addCitation([ id ]));
+    }
+  }
+
+  var bib = citeproc.makeBibliography();
+  var bibList = bib.asList();
+  for (var i = 0; i < bibList.length; i++) {
+    var entry = bibList[i];
+    var $ref = $('<div>').addClass('reference');
+    $ref.append( $('<div>').addClass('label').text( entry.label || '') );
+    $ref.append( $('<div>').addClass('content').html( entry.content ) );
+    $ref.append( $('<div>').addClass('count').text( 'cited ' + entry.citeCount + ' times' ) );
+    $body.append($ref);
+  }
+}
+
 function loadStyles(cb) {
   var names = Object.keys(cslStyleURLs).sort();
   var idx = 0;
@@ -175,16 +208,15 @@ function loadStyles(cb) {
 function run() {
   $('body').empty();
   loadStyles(function() {
-    for (var name in cslStyles) {
-      renderExample(name);
-    }
-    updateCitationStudy('APA');
+    // for (var name in cslStyles) {
+    //   renderExample(name);
+    // }
+    // updateCitationStudy('APA');
+    uncitedStudy('PLOS');
   });
 }
 
-$( function() {
-  run();
-
+function renderReferencesAsHTML() {
   references.forEach(function(reference) {
     var data = {
       type: 'reference',
@@ -198,8 +230,10 @@ $( function() {
     console.log(dummy.innerHTML);
     console.log('-----------------------------------------');
   });
+}
 
-
+$( function() {
+  run();
 } );
 
 } )(window);

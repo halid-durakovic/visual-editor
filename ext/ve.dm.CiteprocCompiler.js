@@ -11,8 +11,6 @@ ve.dm.CiteprocCompiler.prototype.clear = function() {
   this.engine = new CSL.Engine(this, this.config.style);
   this.data = {};
   this.citationLabels = {};
-  this.labels = {};
-  this.contents = {};
   this.count = 0;
 };
 
@@ -103,31 +101,96 @@ ve.dm.CiteprocCompiler.prototype.getLabelForCitation = function(citationId) {
 };
 
 
-ve.dm.CiteprocCompiler.prototype.getContent = function(id) {
-  return this.contents[id];
+ve.dm.CiteprocCompiler.prototype.isCited = function(referenceId) {
+  return this.engine.registry.myhash[referenceId];
 };
 
-ve.dm.CiteprocCompiler.prototype.retrieveItem = function(id){
-  return this.data[id];
+ve.dm.CiteprocCompiler.prototype.getCitationCount = function(referenceId) {
+  var citations = this.engine.registry.citationreg.citationsByItemId[referenceId];
+  if (citations) {
+    return citations.length;
+  } else {
+    return 0;
+  }
 };
 
-ve.dm.CiteprocCompiler.prototype.retrieveLocale = function(lang){
-  return this.config.locale[lang];
+/**
+ * Compiles bibliography data used to render a bibliography.
+ * In contrast to the original citeproc implementation, all references are
+ * considered, and marked as uncited if no citations exist.
+ * For each reference, its rank, the number of citations, a label as it occurs in the text, and
+ * the rendered reference as HTML is provided
+ */
+ve.dm.CiteprocCompiler.prototype.makeBibliography = function() {
+  var bib = {}, bibList = [],
+    citationByIndex = this.engine.registry.citationreg.citationByIndex,
+    citationsPre = [],
+    sortedIds, i, rank, citation, label, content, id;
+
+  // prepare a citationsPre list as it is used with processCitationCluster
+  for (i = 0; i < citationByIndex.length; i += 1) {
+    citation = citationByIndex[i];
+    citationsPre.push(["" + citation.citationID, citation.properties.noteIndex]);
+  }
+
+  // process cited references first
+  sortedIds = this.engine.registry.getSortedIds();
+  for (rank = 0; rank < sortedIds.length; rank++) {
+    id = sortedIds[rank];
+    label = this.engine.previewCitationCluster({
+      citationItems: [ { id: id } ],
+      properties: {}
+    }, citationsPre, [], 'html');
+    content = this.renderReference(id);
+    bib[id] = {
+      id: id,
+      rank: rank,
+      citeCount: this.getCitationCount(id),
+      label: label,
+      content: content
+    };
+    bibList.push(bib[id]);
+  }
+
+  for(id in this.data) {
+    // skip cited references
+    if (bib[id]) continue;
+    rank += 1;
+    content = this.renderReference(id);
+    bib[id] = {
+      id: id,
+      rank: rank,
+      citeCount: 0,
+      label: null,
+      content: content
+    };
+    bibList.push(bib[id]);
+  }
+  bib.asList = function() {
+    return bibList;
+  };
+  return bib;
 };
 
-ve.dm.CiteprocCompiler.prototype.getAbbreviation = function(obj, vartype, key){
-  obj[vartype][key] = "";
-};
-
-ve.dm.CiteprocCompiler.prototype.setAbbreviations = function () {
-};
 
 ve.dm.CiteprocCompiler.prototype.renderReference = function(id) {
-  return ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id);
+  var refHtml = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id);
+  // Note: we only want the rendered reference, without the surrounding layout stuff
+  //   AFAIK there are only two cases, with label or without. In case that the style
+  //   renderes labels in the bibliography there is an element .csl-right-line containing
+  //   the content we are interested in.
+  if (refHtml.search('csl-right-inline') >= 0) {
+    var $el = $(refHtml);
+    var rightInline = el.querySelector('.');
+    return rightInline.innerHTML;
+  } else {
+    return refHtml;
+  }
 };
 
+// Note: this has been derived from CSL.
 ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
-  var item, topblobs, refBlob, refHtml;
+  var item, topblobs, refHtml;
 
   this.tmp.area = "bibliography";
   this.tmp.last_rendered_name = false;
@@ -152,6 +215,8 @@ ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
   }
 
   this.tmp.term_predecessor = false;
+  this.tmp.just_looking = true;
+
   CSL.getCite.call(this, item);
 
   topblobs = [];
@@ -165,14 +230,32 @@ ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
   CSL.Output.Queue.purgeEmptyBlobs(this.output.queue);
   CSL.Output.Queue.adjustPunctuation(this, this.output.queue);
 
-  // HACK: assuming that the reference is always the last top-blob
-  refBlob = topblobs[topblobs.length-1];
-  refHtml = this.output.string(this, refBlob.blobs);
+  var refHtml = this.output.string(this, this.output.queue)[0];
+
   if (!refHtml) {
-    throw new Error("\n[CSL STYLE ERROR: reference with no printed form.]\n");
+    refHtml = "\n[CSL STYLE ERROR: reference with no printed form.]\n";
   }
 
   this.tmp.disambig_override = false;
+  this.tmp.just_looking = false;
 
   return refHtml;
 };
+
+/* CSL.Sys interface */
+
+ve.dm.CiteprocCompiler.prototype.retrieveItem = function(id){
+  return this.data[id];
+};
+
+ve.dm.CiteprocCompiler.prototype.retrieveLocale = function(lang){
+  return this.config.locale[lang];
+};
+
+ve.dm.CiteprocCompiler.prototype.getAbbreviation = function(obj, vartype, key){
+  obj[vartype][key] = "";
+};
+
+ve.dm.CiteprocCompiler.prototype.setAbbreviations = function () {
+};
+
