@@ -15,7 +15,10 @@ ve.ce.BibliographyNode = function VeCeBibliographyNode( model, config ) {
     .attr('contentEditable', 'false')
     .append(this.$references);
 
-  this.model.connect(this, { 'csl-style-changed': 'renderBibliography'} );
+  this.model.connect(this, {
+    'citation-changed': 'renderBibliography',
+    'csl-style-changed': 'renderBibliography'
+  } );
 
   this.renderBibliography();
 };

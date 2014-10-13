@@ -19,7 +19,7 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
   this.model.connect( this, { 'update': 'onUpdate' } );
   this.bibliography.connect(this, {
     'csl-style-changed': 'onUpdate',
-    'label-changed': 'onUpdate'
+    'citation-changed': 'onUpdate'
   });
 };
 

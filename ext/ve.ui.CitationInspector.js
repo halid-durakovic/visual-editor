@@ -160,7 +160,7 @@ ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
     }, this );
   } else if ( action.action === 'select' ) {
     return new OO.ui.Process( function () {
-      this.toggleReference(action.reference);
+      this.acceptSelection(action.refId);
     }, this );
   } else if ( action.action === 'tab' ) {
     return new OO.ui.Process( function () {
@@ -276,33 +276,7 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
     }
 
     entries.forEach(function(entry) {
-      var reference, $reference, $label, $content;
-      reference = this.bibliography.getReferenceForId(entry.id);
-      $reference = $('<div>').addClass('reference');
-      if (entry.label) {
-        $label = $('<div>').addClass('label')
-          .html(entry.label);
-        $reference.append($label);
-      }
-      $content = $('<div>').addClass('content')
-        .html(entry.content);
-      $reference.append($content);
-
-      var $buttons = $('<div>').addClass('buttons');
-      var selectButton = new OO.ui.ActionWidget({
-        action: 'select',
-        // label: 'Select',
-        icon: 'citation',
-        classes: ['select-button']
-      });
-      selectButton.connect(this, { click: [ 'executeAction', { action: 'select', reference: reference } ] });
-      $buttons.append([ selectButton.$element ]);
-      $reference.append($buttons);
-
-      if ( selectedRefs[entry.id] ) {
-        $reference.addClass('selected');
-      }
-
+      var $reference = this.renderReference(entry);
       this.referenceElements.push($reference[0]);
     }, this);
 
@@ -407,13 +381,46 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
   }
 };
 
-ve.ui.CitationInspector.prototype.toggleReference = function( reference ) {
-  var tx, fragment, surface, data, refId;
+ve.ui.CitationInspector.prototype.acceptSelection = function(refId) {
+  var referenceEls, refEl, state, isNew;
+  state = this.getTabState();
+  if (!refId) {
+    referenceEls = this.$referenceList[0].children;
+    refEl = referenceEls[state.cursorIdx];
+    refId = refEl.dataset.refId;
+  }
+  isNew = !this.bibliography.getReferenceForId(refId);
+
+  if (isNew) {
+    // HACK: this needs to be rethought.
+    // It would be nicer if we could get closer to the common VE data model. I.e., appending a child to the bib-node and let all other
+    // things happen automatically.
+    // For the purpose of prototyping, this is hacked together, i.e., a node is created manually, and inserted into the 'entries' attribute.
+    var fragment = this.getFragment();
+    var surface = fragment.getSurface();
+    var entries = this.bibliography.getAttribute('entries');
+    var data = {
+      type: 'reference',
+      attributes: this.newReferencesCompiler.data[refId]
+    };
+    var node = ve.dm.nodeFactory.create('reference', data);
+    node.setDocument( this.bibliography.getDocument() );
+    entries.push(node);
+    var tx = ve.dm.Transaction.newFromAttributeChanges(surface.documentModel, this.bibliography.getOuterRange().start, {
+      entries: entries
+    });
+    surface.change(tx);
+    this.bibliography.compile();
+  }
+
+  this.toggleReference(refId);
+};
+
+ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
+  var tx, fragment, surface, data;
 
   fragment = this.getFragment();
   surface = fragment.getSurface();
-
-  refId = reference.getAttribute('id');
 
   if (this.citationNode) {
     var newRefIds = [];
@@ -449,27 +456,6 @@ ve.ui.CitationInspector.prototype.toggleReference = function( reference ) {
 
   // HACK: need a better way to rerender references
   this.openTab(this.currentTabName);
-};
-
-ve.ui.CitationInspector.prototype.acceptSelection = function() {
-  var referenceEls, refEl, labelEl, reference, state;
-
-  state = this.getTabState();
-  referenceEls = this.$referenceList[0].children;
-  refEl = referenceEls[state.cursorIdx];
-
-  if (this.currentTabName === "references") {
-    labelEl = refEl.querySelector('.label');
-    reference = this.refIndex[labelEl.textContent];
-    if (!reference) {
-      window.console.error('ohoohh, could not find reference model');
-    } else {
-      this.toggleReference(reference);
-    }
-  } else {
-    window.console.log("TODO: will insert a new bib entry and select the new reference.");
-  }
-
 };
 
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
@@ -552,24 +538,77 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
   }
 };
 
+ve.ui.CitationInspector.prototype.renderReference = function(entry) {
+  var $reference, $label, $content, $buttons, selectButton;
+
+  $reference = $('<div>').addClass('reference').attr('data-ref-id', entry.id);
+  if (entry.label) {
+    $label = $('<div>').addClass('label')
+      .html(entry.label);
+    $reference.append($label);
+  }
+  $content = $('<div>').addClass('content')
+    .html(entry.content);
+  $reference.append($content);
+
+  $buttons = $('<div>').addClass('buttons');
+  selectButton = new OO.ui.ActionWidget({
+    action: 'select',
+    // label: 'Select',
+    icon: 'citation',
+    classes: ['select-button']
+  });
+
+  selectButton.connect(this, { click: [ 'executeAction', { action: 'select', refId: entry.id } ] });
+
+  $buttons.append([ selectButton.$element ]);
+  $reference.append($buttons);
+
+  if ( this.citationNode && this.citationNode.getAttribute('references').indexOf(entry.id) >= 0 ) {
+    $reference.addClass('selected');
+  }
+
+  return $reference;
+};
+
+// ve.ui.CitationInspector.prototype.updateReferences = function() {
+//   var referenceEls = this.$referenceList[0].children;
+//   referenceEls.forEach(function(el) {
+//     var refId = el.dataset.refId;
+//   }, this);
+// }
+
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
-  window.console.log('TODO: start a spinner somewhere to indicate that a query is running.');
   // TODO: as soon we have multiple look-up services we need to use a $.Promise to toggle the 'searching' state
   // after all searches are completed.
   this.$searchBar.addClass('searching');
-  this.searchButton.setActive(false);
   var referenceCompiler = this.newReferencesCompiler;
   this.$referenceList.empty();
+
+  // HACK: need to have a better design for the state... e.g., when is the rendered bibliography available, when gets updated etc...
+  var bib = this.bibliography.referenceCompiler.makeBibliography();
+
+
   service.find(searchStr, this).progress(function(data) {
-    var id = referenceCompiler.addReference(data);
-    var $reference = $('<div>').addClass('reference');
-    var $content = $('<div>').addClass('content').html(referenceCompiler.renderReference(id));
-    $reference.append($content);
+    var id = data.DOI || data.ISSN[0];
+    data.id = id;
+
+    var existingEntry = bib[id];
+    var $reference;
+    if (existingEntry) {
+      $reference = this.renderReference(existingEntry);
+    } else {
+      id = referenceCompiler.addReference(data);
+      $reference = this.renderReference({
+        id: id,
+        label: '',
+        content: referenceCompiler.renderReference(id)
+      });
+    }
+
     this.$referenceList.append($reference);
   }).done(function() {
-    window.console.log('TODO: stop query spinner.');
     this.$searchBar.removeClass('searching');
-    this.searchButton.setActive(true);
   });
 };
 

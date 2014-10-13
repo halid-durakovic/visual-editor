@@ -20,7 +20,7 @@ ve.ui.CrossrefCitationLookup.resolveDOI = function( doi ) {
       Accept: "application/citeproc+json"
     },
     success: function(data) {
-      window.console.log("Received citeproc-json:", JSON.stringify(data, null, 2) );
+      // window.console.log("Received citeproc-json:", JSON.stringify(data, null, 2) );
       promise.resolve(data);
     },
     error: function(req, status, err) {
@@ -66,7 +66,7 @@ ve.ui.CrossrefCitationLookup.prototype.find = function( searchStr, context ) {
             var entry = searchResult[count++];
             var promisedData = ve.ui.CrossrefCitationLookup.resolveDOI(entry.doi);
             promisedData.done(function(data) {
-              window.console.log("Progressing: ", data);
+              // window.console.log("Progressing: ", data);
               lastResult.push(data);
               promisedResult.notifyWith(context, [ data ]);
             });

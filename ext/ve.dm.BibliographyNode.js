@@ -122,7 +122,7 @@ ve.dm.BibliographyNode.prototype.compile = function() {
   }
   // Note: this needs to be invalidated whenever a citation is changed
   this.isCompiled = true;
-  this.emit('label-changed');
+  this.emit('citation-changed');
 };
 
 ve.dm.BibliographyNode.prototype.addCitation = function(citationNode, silent) {
@@ -131,13 +131,13 @@ ve.dm.BibliographyNode.prototype.addCitation = function(citationNode, silent) {
   // HACK storing information into the node directly
   citationNode.element.attributes.id = citation.id;
   citationNode.element.attributes.label = citation.label;
-  if (!silent) this.emit('label-changed');
+  if (!silent) this.emit('citation-changed');
 };
 
 ve.dm.BibliographyNode.prototype.updateCitation = function(citationNode) {
   var result = this.referenceCompiler.updateCitation(citationNode.getAttribute('id'), citationNode.getAttribute('references'));
   citationNode.element.attributes.label = result.label;
-  this.emit('label-changed');
+  this.emit('citation-changed');
 };
 
 ve.dm.BibliographyNode.prototype.registerReferences = function() {
@@ -151,14 +151,6 @@ ve.dm.BibliographyNode.prototype.registerReferences = function() {
 
 ve.dm.BibliographyNode.prototype.getReferenceForId = function(id) {
   return this.referenceIndex[id];
-};
-
-ve.dm.BibliographyNode.prototype.getLabelForReference = function(id) {
-  return this.referenceCompiler.getLabel(id);
-};
-
-ve.dm.BibliographyNode.prototype.getContentForReference = function(id) {
-  return this.referenceCompiler.getContent(id);
 };
 
 ve.dm.BibliographyNode.prototype.makeBibliography = function() {
