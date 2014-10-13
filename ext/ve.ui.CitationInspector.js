@@ -243,8 +243,6 @@ ve.ui.CitationInspector.prototype.openTab = function(name) {
 };
 
 ve.ui.CitationInspector.prototype.openExistingReferences = function () {
-  var references, reference, $reference, $label, $content, i;
-
   this.referenceElements = [];
   this.refIndex = {};
   var $selectedRef;
@@ -253,18 +251,22 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   this.searchField.$input.val(state.searchStr);
 
   if (this.bibliography) {
-    references = this.bibliography.getAttribute( 'entries' );
-    for (i = 0; i < references.length; i++) {
-      reference = references[i];
-      if (reference.type !== 'reference') continue;
-      var refId = reference.getAttribute('referenceId');
+    var bib = this.bibliography.referenceCompiler.makeBibliography();
+    var entries = bib.asList();
+
+    entries.forEach(function(entry) {
+      var reference, $reference, $label, $content;
+
+      reference = this.bibliography.getReferenceForId(entry.id);
       $reference = $('<div>').addClass('reference');
-      $label = $('<div>').addClass('label')
-        .html(this.bibliography.getLabelForReference(refId));
+      if (entry.label) {
+        $label = $('<div>').addClass('label')
+          .html(entry.label);
+        $reference.append($label);
+      }
       $content = $('<div>').addClass('content')
-        .html(this.bibliography.getContentForReference(refId));
-      $reference.append([$label, $content]);
-      this.refIndex[reference.getAttribute('label')] = reference;
+        .html(entry.content);
+      $reference.append($content);
 
       var $buttons = $('<div>').addClass('buttons');
       var selectButton = new OO.ui.ActionWidget({
@@ -275,14 +277,14 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
       $buttons.append([ selectButton.$element ]);
       $reference.append($buttons);
 
-      if (this.citationNode && reference.getAttribute('label') === this.citationNode.getAttribute('label') ) {
+      if (this.citationNode && entry.label === this.citationNode.getAttribute('label') ) {
         $reference.addClass('selected')
           .append(this.$selectedFlag);
         $selectedRef = $reference;
       }
 
       this.referenceElements.push($reference[0]);
-    }
+    }, this);
 
     this.showLocalReferences();
 

@@ -115,7 +115,7 @@ ve.dm.BibliographyNode.prototype.compile = function() {
       var citationNode = leafNodes[i].node;
       var references = leafNodes[i].node.getAttribute('references');
       var citation = this.referenceCompiler.addCitation(references);
-      // HACK storing information into the node
+      // HACK storing information into the node directly
       citationNode.element.attributes.id = citation.id;
       citationNode.element.attributes.label = citation.label;
       citationNode.emit('label-changed');
