@@ -219,7 +219,7 @@ $( function () {
 				var cslXML;
 				if ( status === 'error' ) {
 					window.console.error("Error", result, status);
-				} else {
+				} else if (currentTarget) {
 					cslXML = result;
 					var documentModel = currentTarget.surface.getModel().getDocument();
 					documentModel.emit('csl-style-change', cslXML);
