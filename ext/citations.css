@@ -117,6 +117,126 @@ span.citation {
   font-size: 14px;
 }
 
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .search-button {
+  display: none;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body.new .searchbar .search-button {
+  display: inline-block;
+}
+
+/* Spinner */
+
+/* Note: this has been taken from http://codepen.io/mikepro4/pen/yHjAz being a quick first shot */
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .spinner {
+  display: none;
+  vertical-align: middle;
+  padding-left: 20px;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar.searching .spinner {
+  display: inline-block;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .spinner .throbber {
+  width: 20px;
+  height: 20px;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  -moz-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  -moz-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar.searching .spinner .throbber:after {
+  display: block;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  -webkit-animation: rotateSpinner 0.6s linear infinite;
+  -moz-animation: rotateSpinner 0.6s linear infinite;
+  -ms-animation: rotateSpinner 0.6s linear infinite;
+  -o-animation: rotateSpinner 0.6s linear infinite;
+  animation: rotateSpinner 0.6s linear infinite;
+  -webkit-border-radius: 100%;
+  -moz-border-radius: 100%;
+  border-radius: 100%;
+  border-top: 1px solid #545a6a;
+  border-bottom: 1px solid #d4d4db;
+  border-left: 1px solid #545a6a;
+  border-right: 1px solid #d4d4db;
+  content: '';
+  opacity: .5;
+}
+
+@keyframes rotateSpinner {
+  0% {
+    transform: rotateZ(-360deg);
+    -webkit-transform: rotateZ(-360deg);
+    -moz-transform: rotateZ(-360deg);
+    -o-transform: rotateZ(-360deg);
+  }
+  100% {
+    transform: rotateZ(0deg);
+    -webkit-transform: rotateZ(0deg);
+    -moz-transform: rotateZ(0deg);
+    -o-transform: rotateZ(0deg);
+  }
+}
+@-webkit-keyframes rotateSpinner {
+  0% {
+    transform: rotateZ(-360deg);
+    -webkit-transform: rotateZ(-360deg);
+    -moz-transform: rotateZ(-360deg);
+    -o-transform: rotateZ(-360deg);
+  }
+  100% {
+    transform: rotateZ(0deg);
+    -webkit-transform: rotateZ(0deg);
+    -moz-transform: rotateZ(0deg);
+    -o-transform: rotateZ(0deg);
+  }
+}
+@-moz-keyframes rotateSpinner {
+  0% {
+    transform: rotateZ(-360deg);
+    -webkit-transform: rotateZ(-360deg);
+    -moz-transform: rotateZ(-360deg);
+    -o-transform: rotateZ(-360deg);
+  }
+  100% {
+    transform: rotateZ(0deg);
+    -webkit-transform: rotateZ(0deg);
+    -moz-transform: rotateZ(0deg);
+    -o-transform: rotateZ(0deg);
+  }
+}
+@-o-keyframes rotateSpinner {
+  0% {
+    transform: rotateZ(-360deg);
+    -webkit-transform: rotateZ(-360deg);
+    -moz-transform: rotateZ(-360deg);
+    -o-transform: rotateZ(-360deg);
+  }
+  100% {
+    transform: rotateZ(0deg);
+    -webkit-transform: rotateZ(0deg);
+    -moz-transform: rotateZ(0deg);
+    -o-transform: rotateZ(0deg);
+  }
+}
+
+
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs {
   overflow: hidden;
   position: absolute;
@@ -206,8 +326,9 @@ span.citation {
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor .buttons .oo-ui-buttonElement {
   opacity: 1.0;
   background-color: #333;
-  border: none;
   color: white;
+  /* add a transparent border to avoid jumping */
+  border: solid 1px rgba(0,0,0,0);
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement:hover .oo-ui-icon-citation,
@@ -223,40 +344,32 @@ span.citation {
   font-weight: bold;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected {
-  background: #4A90E2;
-  color: #fff;
-}
-
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .label {
-  background-color: rgba(0,0,0,0.3);
-}
-
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .buttons {
-  visibility: hidden;
-}
-
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .selected-flag {
-  position: absolute;
-  top: 25px;
-  right: 20px;
-  padding: 1px 10px 1px 10px;
-  border: solid 1px #4A90E2;
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .label,
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .buttons .select-button {
   background-color: #4A90E2;
-  color: white;
-  font-weight: bold;
+  opacity: 1.0;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .buttons .oo-ui-buttonElement .oo-ui-icon-citation {
+  background-image: /* @embed */ url(citation-white.svg);
+  opacity: 1.0;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor {
   background: #f1f1f1;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor.selected {
-  background: #3F7DC6;
-}
-
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor .label {
   background-color: rgba(0,0,0,0.7);
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor.selected .label {
+  background-color: #99CCFF;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor.selected .oo-ui-buttonElement,
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .oo-ui-buttonElement:hover {
+  background-color: #99CCFF;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-foot {
@@ -270,3 +383,4 @@ span.citation {
   color: #888888;
   /* TODO: make this centered vertically */
 }
+

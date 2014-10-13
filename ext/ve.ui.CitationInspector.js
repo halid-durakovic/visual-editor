@@ -22,23 +22,33 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
     label: OO.ui.deferMsg( 'visualeditor-inspector-close-tooltip' ),
     modes: 'edit'
   });
+
+  this.$searchBar = $('<div>').addClass('searchbar');
+  var $searchFieldLabel = $('<span>').addClass('label').text('Find Reference');
   this.searchField = new OO.ui.TextInputWidget( {
     $: this.$,
     autosize: true,
     classes: ['citation-search-field']
   } );
+  this.searchButton = new OO.ui.ActionWidget( {
+    action: 'search',
+    label: 'Search',
+    modes: 'edit',
+    classes: ['search-button']
+  } );
+  this.searchSpinner = $('<div>').addClass('spinner').append( $('<div>').addClass('throbber') );
   this.referencesTab = new OO.ui.ActionWidget({
     action: 'references',
     label: 'References',
     classes: ['tab', 'referencesTab']
   });
+  this.$searchBar.append([ $searchFieldLabel, this.searchField.$element, this.searchButton.$element, this.searchSpinner ] );
+
   this.newReferencesTab = new OO.ui.ActionWidget({
     action: 'newReferences',
     label: 'New References',
     classes: ['tab', 'newReferencesTab']
   });
-
-  this.$selectedFlag = $('<div>').addClass('selected-flag').text('Selected');
 
   // set when opening a tab
   this.currentTabName = "";
@@ -52,6 +62,8 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
       searchStr: ""
     }
   };
+
+  this.$info =  $('<div>').addClass('description');
 
   // either "search" or "select", set when typing into search field or when navigating cursor
   this.inputMethod = "";
@@ -71,6 +83,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   this.removeButton.connect(this, { click: ['executeAction', 'remove' ] });
   this.closeButton.connect(this, { click: ['executeAction', 'done' ] });
+  this.searchButton.connect(this, { click: ['executeAction', 'search' ] });
   this.referencesTab.connect(this, { click: ['executeAction', { action: 'tab', name: 'references' } ] });
   this.newReferencesTab.connect(this, { click: ['executeAction', { action: 'tab', name: 'newReferences' } ] });
 
@@ -114,24 +127,16 @@ ve.ui.CitationInspector.prototype.initialize = function () {
 
   var $toolbar = $('<div>').addClass('toolbar');
 
-  var $searchbar = $('<div>').addClass('searchbar');
-  var $searchFieldLabel = $('<span>').addClass('label').text('Find Reference');
-  $searchbar.append([ $searchFieldLabel, this.searchField.$element ] );
-
-  // Add placeholder
-  this.searchField.$input.attr("placeholder", "Type to search...");
-
   var $tabs = $('<div>').addClass('tabs')
     // HACK: strange - we need to add the elements in reverse order
     .append([ this.newReferencesTab.$element, this.referencesTab.$element ]);
 
-  $toolbar.append([ $searchbar, $tabs ]);
+  $toolbar.append([ this.$searchBar, $tabs ]);
 
   this.$body.append($toolbar);
   this.$body.append(this.$referenceList);
 
-  var $description = $('<div>').addClass('description').text('Enter a search text to filter available references. Press ‘Enter’ or click on a reference to add a citation to your article.');
-  this.$foot.append($description);
+  this.$foot.append(this.$info);
 };
 
 /**
@@ -159,6 +164,10 @@ ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
       } else if (action.name === 'newReferences') {
         this.openNewReferences();
       }
+    }, this );
+  } else if ( action === 'search' ) {
+    return new OO.ui.Process( function () {
+      this.lookupExternalReferences();
     }, this );
   }
   return ve.ui.CitationInspector.super.prototype.getActionProcess.call( this, action );
@@ -245,7 +254,6 @@ ve.ui.CitationInspector.prototype.openTab = function(name) {
 ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   this.referenceElements = [];
   this.refIndex = {};
-  var $selectedRef;
 
   var state = this.tabStates.references;
   this.searchField.$input.val(state.searchStr);
@@ -253,6 +261,14 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   if (this.bibliography) {
     var bib = this.bibliography.referenceCompiler.makeBibliography();
     var entries = bib.asList();
+
+    var selectedRefs = {};
+    if (this.citationNode) {
+      var refs = this.citationNode.getAttribute('references');
+      for (var i = 0; i < refs.length; i++) {
+        selectedRefs[refs[i]] = true;
+      }
+    }
 
     entries.forEach(function(entry) {
       var reference, $reference, $label, $content;
@@ -272,16 +288,15 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
       var selectButton = new OO.ui.ActionWidget({
         action: 'select',
         // label: 'Select',
-        icon: 'citation'
+        icon: 'citation',
+        classes: ['select-button']
       });
       selectButton.connect(this, { click: [ 'executeAction', { action: 'select', reference: reference } ] });
       $buttons.append([ selectButton.$element ]);
       $reference.append($buttons);
 
-      if (this.citationNode && entry.label === this.citationNode.getAttribute('label') ) {
-        $reference.addClass('selected')
-          .append(this.$selectedFlag);
-        $selectedRef = $reference;
+      if ( selectedRefs[entry.id] ) {
+        $reference.addClass('selected');
       }
 
       this.referenceElements.push($reference[0]);
@@ -296,6 +311,9 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   this.newReferencesTab.$element.removeClass('active');
   this.referencesTab.$element.addClass('active');
   this.currentTabName = "references";
+  this.$body.removeClass('new').addClass('references');
+  this.searchField.$input.attr("placeholder", "Type to search...");
+  this.$info.text('Enter a search text to filter available references. Use the link buttons or press ‘Enter’ to add a citation to your article.');
 };
 
 ve.ui.CitationInspector.prototype.openNewReferences = function () {
@@ -309,6 +327,9 @@ ve.ui.CitationInspector.prototype.openNewReferences = function () {
   this.referencesTab.$element.removeClass('active');
   this.newReferencesTab.$element.addClass('active');
   this.currentTabName = "new";
+  this.$body.addClass('new').removeClass('references');
+  this.searchField.$input.attr("placeholder", "Enter a DOI or a full-text query...");
+  this.$info.text('Start a search to find new references. Use the link buttons or press ‘Enter’ to add a citation to your article.');
 };
 
 ve.ui.CitationInspector.prototype.setInputMethod = function( method ) {
@@ -506,7 +527,12 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
 
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
   window.console.log('TODO: start a spinner somewhere to indicate that a query is running.');
+  // TODO: as soon we have multiple look-up services we need to use a $.Promise to toggle the 'searching' state
+  // after all searches are completed.
+  this.$searchBar.addClass('searching');
+  this.searchButton.setActive(false);
   var referenceCompiler = this.newReferencesCompiler;
+  this.$referenceList.empty();
   service.find(searchStr, this).progress(function(data) {
     var id = referenceCompiler.addReference(data);
     var $reference = $('<div>').addClass('reference');
@@ -515,6 +541,8 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, 
     this.$referenceList.append($reference);
   }).done(function() {
     window.console.log('TODO: stop query spinner.');
+    this.$searchBar.removeClass('searching');
+    this.searchButton.setActive(true);
   });
 };
 
