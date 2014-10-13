@@ -33,7 +33,7 @@ ve.ce.BibliographyNode.prototype.renderBibliography = function() {
   var model = this.model;
   var entries = model.getAttribute('entries');
   this.$references.empty();
-  var result = model.referenceCompiler.engine.makeBibliography();
+  var result = model.makeBibliography();
   this.$references.html(result[1].join('\n'));
 };
 

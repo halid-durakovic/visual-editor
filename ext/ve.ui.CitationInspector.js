@@ -143,7 +143,15 @@ ve.ui.CitationInspector.prototype.initialize = function () {
  * @inheritdoc
  */
 ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
-  if ( action === 'remove' ) {
+  if ( action === 'done' ) {
+    if (this.citationNode) {
+      var refIds = this.citationNode.getAttribute('references');
+      if (refIds.length === 0) {
+        this.getFragment().removeContent();
+      }
+    }
+    this.close( { action: 'done' });
+  } else if ( action === 'remove' ) {
     return new OO.ui.Process( function () {
       if (this.citationNode) {
         this.getFragment().removeContent();
@@ -152,10 +160,7 @@ ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
     }, this );
   } else if ( action.action === 'select' ) {
     return new OO.ui.Process( function () {
-      this.selectReference(action.reference);
-      if (this.citationNode) {
-        this.close( { action: 'edit' } );
-      }
+      this.toggleReference(action.reference);
     }, this );
   } else if ( action.action === 'tab' ) {
     return new OO.ui.Process( function () {
@@ -167,7 +172,7 @@ ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
     }, this );
   } else if ( action === 'search' ) {
     return new OO.ui.Process( function () {
-      this.lookupExternalReferences();
+      this.acceptSearch();
     }, this );
   }
   return ve.ui.CitationInspector.super.prototype.getActionProcess.call( this, action );
@@ -272,7 +277,6 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
 
     entries.forEach(function(entry) {
       var reference, $reference, $label, $content;
-
       reference = this.bibliography.getReferenceForId(entry.id);
       $reference = $('<div>').addClass('reference');
       if (entry.label) {
@@ -403,24 +407,48 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
   }
 };
 
-ve.ui.CitationInspector.prototype.selectReference = function( reference ) {
-  var tx, fragment, surface, data;
+ve.ui.CitationInspector.prototype.toggleReference = function( reference ) {
+  var tx, fragment, surface, data, refId;
 
   fragment = this.getFragment();
   surface = fragment.getSurface();
 
+  refId = reference.getAttribute('id');
+
   if (this.citationNode) {
-    tx = ve.dm.Transaction.newFromAttributeChanges( surface.documentModel, this.citationNode.getOuterRange().start, { label: reference.getAttribute('label') } );
+    var newRefIds = [];
+    var refIds = this.citationNode.getAttribute('references');
+    var removed = false;
+    for (var i = 0; i < refIds.length; i++) {
+      if (refIds[i] !== refId) {
+        newRefIds.push(refIds[i]);
+      } else {
+        removed = true;
+      }
+    }
+    if (!removed) {
+      newRefIds.push(refId);
+    }
+    tx = ve.dm.Transaction.newFromAttributeChanges( surface.documentModel, this.citationNode.getOuterRange().start, {
+     references: newRefIds
+    } );
     surface.change( tx );
+    this.bibliography.updateCitation(this.citationNode);
   } else {
     data = [ {
       type: 'citation',
       attributes: {
-        label: reference.getAttribute('label')
+        references: [refId]
       }
     } ];
-    fragment.insertContent(data, false).collapseRangeToEnd().select();
+    fragment.insertContent(data);
+    // fragment.insertContent(data, false).collapseRangeToEnd().select();
+    // would be better if we could do that incrementally
+    this.bibliography.compile();
   }
+
+  // HACK: need a better way to rerender references
+  this.openTab(this.currentTabName);
 };
 
 ve.ui.CitationInspector.prototype.acceptSelection = function() {
@@ -436,8 +464,7 @@ ve.ui.CitationInspector.prototype.acceptSelection = function() {
     if (!reference) {
       window.console.error('ohoohh, could not find reference model');
     } else {
-      this.selectReference(reference);
-      this.close( { action: 'edit' } );
+      this.toggleReference(reference);
     }
   } else {
     window.console.log("TODO: will insert a new bib entry and select the new reference.");

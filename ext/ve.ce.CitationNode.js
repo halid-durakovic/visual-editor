@@ -17,7 +17,10 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
   ve.ce.FocusableNode.call( this, this.$element, config );
 
   this.model.connect( this, { 'update': 'onUpdate' } );
-  this.bibliography.connect(this, { 'csl-style-changed': 'onUpdate' });
+  this.bibliography.connect(this, {
+    'csl-style-changed': 'onUpdate',
+    'label-changed': 'onUpdate'
+  });
 };
 
 /* Inheritance */
@@ -43,6 +46,7 @@ ve.ce.CitationNode.prototype.createHighlight = function () {
 ve.ce.CitationNode.prototype.onUpdate = function () {
   var label = this.model.getAttribute('label');
   this.$element.html(label);
+  this.redrawHighlights();
 };
 
 /* Registration */
