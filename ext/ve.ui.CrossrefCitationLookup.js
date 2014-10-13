@@ -17,7 +17,8 @@ ve.ui.CrossrefCitationLookup.resolveDOI = function( doi ) {
   }
   $.ajax(doi, {
     headers: {
-      Accept: "application/citeproc+json"
+      Accept: "application/citeproc+json",
+      'Access-Control-Allow-Origin': '*'
     },
     success: function(data) {
       // window.console.log("Received citeproc-json:", JSON.stringify(data, null, 2) );
