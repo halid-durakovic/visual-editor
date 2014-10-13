@@ -6,7 +6,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   this.$frame.addClass('ve-ui-citationManager');
 
   // TODO: use a global configuration here
-  this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
+  this.newReferencesCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
   this.lookupServices = ve.ui.CitationLookupService.getServices();
 
   // created in initialize
@@ -271,7 +271,8 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
       var $buttons = $('<div>').addClass('buttons');
       var selectButton = new OO.ui.ActionWidget({
         action: 'select',
-        label: 'Select'
+        // label: 'Select',
+        icon: 'citation'
       });
       selectButton.connect(this, { click: [ 'executeAction', { action: 'select', reference: reference } ] });
       $buttons.append([ selectButton.$element ]);
@@ -505,10 +506,11 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
 
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
   window.console.log('TODO: start a spinner somewhere to indicate that a query is running.');
+  var referenceCompiler = this.newReferencesCompiler;
   service.find(searchStr, this).progress(function(data) {
-    var id = this.referenceCompiler.addReference(data);
+    var id = referenceCompiler.addReference(data);
     var $reference = $('<div>').addClass('reference');
-    var $content = $('<div>').addClass('content').html(this.referenceCompiler.getContent(id));
+    var $content = $('<div>').addClass('content').html(referenceCompiler.renderReference(id));
     $reference.append($content);
     this.$referenceList.append($reference);
   }).done(function() {

@@ -181,8 +181,7 @@ ve.dm.CiteprocCompiler.prototype.renderReference = function(id) {
   //   the content we are interested in.
   if (refHtml.search('csl-right-inline') >= 0) {
     var $el = $(refHtml);
-    var rightInline = el.querySelector('.');
-    return rightInline.innerHTML;
+    return $el.html();
   } else {
     return refHtml;
   }
@@ -230,7 +229,7 @@ ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
   CSL.Output.Queue.purgeEmptyBlobs(this.output.queue);
   CSL.Output.Queue.adjustPunctuation(this, this.output.queue);
 
-  var refHtml = this.output.string(this, this.output.queue)[0];
+  refHtml = this.output.string(this, this.output.queue)[0];
 
   if (!refHtml) {
     refHtml = "\n[CSL STYLE ERROR: reference with no printed form.]\n";
