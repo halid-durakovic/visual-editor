@@ -16,9 +16,10 @@ ve.ui.CrossrefCitationLookup.resolveDOI = function( doi ) {
     doi = "http://dx.doi.org/"+doi;
   }
   $.ajax(doi, {
+    type: 'GET',
+    crossDomain: true,
     headers: {
-      Accept: "application/citeproc+json",
-      'Access-Control-Allow-Origin': '*'
+      Accept: "application/citeproc+json"
     },
     success: function(data) {
       // window.console.log("Received citeproc-json:", JSON.stringify(data, null, 2) );
