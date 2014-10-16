@@ -201,7 +201,7 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       var fragment = this.getFragment();
       var documentModel = fragment.getDocument();
 
-      this.bibliography = ve.dm.BibliographyNode.getBibliography(documentModel);
+      this.bibliography = ve.dm.Bibliography.getBibliography(documentModel);
     }, this );
 };
 
@@ -264,7 +264,7 @@ ve.ui.CitationInspector.prototype.openExistingReferences = function () {
   this.searchField.$input.val(state.searchStr);
 
   if (this.bibliography) {
-    var bib = this.bibliography.referenceCompiler.makeBibliography();
+    var bib = this.bibliography.getCompiler().makeBibliography();
     var entries = bib.asList();
 
     var selectedRefs = {};
@@ -392,25 +392,25 @@ ve.ui.CitationInspector.prototype.acceptSelection = function(refId) {
   isNew = !this.bibliography.getReferenceForId(refId);
 
   if (isNew) {
-    // HACK: this needs to be rethought.
-    // It would be nicer if we could get closer to the common VE data model. I.e., appending a child to the bib-node and let all other
-    // things happen automatically.
-    // For the purpose of prototyping, this is hacked together, i.e., a node is created manually, and inserted into the 'entries' attribute.
-    var fragment = this.getFragment();
-    var surface = fragment.getSurface();
-    var entries = this.bibliography.getAttribute('entries');
-    var data = {
-      type: 'reference',
-      attributes: this.newReferencesCompiler.data[refId]
-    };
-    var node = ve.dm.nodeFactory.create('reference', data);
-    node.setDocument( this.bibliography.getDocument() );
-    entries.push(node);
-    var tx = ve.dm.Transaction.newFromAttributeChanges(surface.documentModel, this.bibliography.getOuterRange().start, {
-      entries: entries
-    });
-    surface.change(tx);
-    this.bibliography.compile();
+    // // HACK: this needs to be rethought.
+    // // It would be nicer if we could get closer to the common VE data model. I.e., appending a child to the bib-node and let all other
+    // // things happen automatically.
+    // // For the purpose of prototyping, this is hacked together, i.e., a node is created manually, and inserted into the 'entries' attribute.
+    // var fragment = this.getFragment();
+    // var surface = fragment.getSurface();
+    // var references = this.bibliography.getChildren();
+    // var data = {
+    //   type: 'reference',
+    //   attributes: this.newReferencesCompiler.data[refId]
+    // };
+    // var node = ve.dm.nodeFactory.create('reference', data);
+    // node.setDocument( this.bibliography.getDocument() );
+    // entries.push(node);
+    // var tx = ve.dm.Transaction.newFromAttributeChanges(surface.documentModel, this.bibliography.getOuterRange().start, {
+    //   entries: entries
+    // });
+    // surface.change(tx);
+    // this.bibliography.compile();
   }
 
   this.toggleReference(refId);
@@ -586,7 +586,7 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, 
   this.$referenceList.empty();
 
   // HACK: need to have a better design for the state... e.g., when is the rendered bibliography available, when gets updated etc...
-  var bib = this.bibliography.referenceCompiler.makeBibliography();
+  var bib = this.bibliography.getCompiler().makeBibliography();
 
 
   service.find(searchStr, this).progress(function(data) {

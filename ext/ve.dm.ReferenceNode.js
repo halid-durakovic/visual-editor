@@ -21,7 +21,11 @@ ve.dm.ReferenceNode.static.matchFunction = function ( domElement ) {
   return ( domElement.dataset.type === 'reference' );
 };
 
-ve.dm.ReferenceNode.static.isContent = true;
+ve.dm.ReferenceNode.static.parentNodeTypes = [ 'bibliography' ];
+
+ve.dm.ReferenceNode.static.childNodeTypes = [ ];
+
+ve.dm.InternalItemNode.static.isInternal = true;
 
 ve.dm.ReferenceNode.static.NAME_VARIABLES = [
   "author", "editor", "translator", "contributor", "collection-editor", "composer", "container-author", "editorial-director", "interviewer", "original-author", "recipient"

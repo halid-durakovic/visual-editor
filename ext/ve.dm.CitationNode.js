@@ -22,6 +22,7 @@ ve.dm.CitationNode.static.matchFunction = function ( domElement ) {
   return (domElement.dataset.type === 'bibliography');
 };
 
+// CitationNodes are always inline in the text
 ve.dm.CitationNode.static.isContent = true;
 
 ve.dm.CitationNode.static.toDataElement = function ( domElements ) {
@@ -47,6 +48,10 @@ ve.dm.CitationNode.static.toDomElements = function ( dataElement ) {
   }
   return $el;
 };
+
+// Do not descend further when importing HTML
+// This node has only label elements as children, which are not modelled as extra nodes but collected into an array of reference ids.
+// ve.dm.CitationNode.static.handlesOwnChildren = true;
 
 /* Registration */
 

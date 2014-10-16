@@ -2,13 +2,14 @@
 
 ve.dm.CiteprocCompiler = function VeUiCiteprocRenderer( config ) {
   this.config = config;
+  this.style = config.style;
   this.clear();
 };
 
 OO.initClass( ve.dm.CiteprocCompiler );
 
 ve.dm.CiteprocCompiler.prototype.clear = function() {
-  this.engine = new CSL.Engine(this, this.config.style);
+  this.engine = new CSL.Engine(this, this.style);
   this.data = {};
   this.citationLabels = {};
   this.count = 0;

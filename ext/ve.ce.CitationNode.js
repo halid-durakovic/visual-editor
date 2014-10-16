@@ -3,7 +3,7 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
   // Parent constructor
   ve.ce.LeafNode.call( this, model, config );
 
-  this.bibliography = ve.dm.BibliographyNode.getBibliography(model.getRoot().getDocument());
+  this.bibliography = ve.dm.Bibliography.getBibliography(model.getRoot().getDocument());
 
   var label = model.getAttribute('label');
 
