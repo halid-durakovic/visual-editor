@@ -32,15 +32,14 @@ ve.ce.Bibliography.static.tagName = 'div';
 
 ve.ce.Bibliography.prototype.renderBibliography = function() {
   var model = this.model;
-
   var children = model.getChildren();
-  if (children.length === 0) {
+  this.$bibliography.empty();
+  var $title = $('<div>').addClass('title').text('References');
+  var $references = $('<div>').addClass('references');
+  var result = model.makeBibliography();
+  if (result[1].length === 0) {
     this.$bibliographyContainer.hide();
   } else {
-    this.$bibliography.empty();
-    var $title = $('<div>').addClass('title').text('References');
-    var $references = $('<div>').addClass('references');
-    var result = model.makeBibliography();
     $references.html(result[1].join('\n'));
     this.$bibliography.append($title, $references);
     this.$bibliographyContainer.show();

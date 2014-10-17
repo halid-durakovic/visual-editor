@@ -12,6 +12,10 @@ ve.dm.Bibliography = function VeDmBibliography() {
     'attach': 'onAttach',
     'detach': 'onDetach'
   } );
+
+
+  // debounce the compile step as it may be triggered repeatedly when changeing multiple citations at once
+  this.compile = ve.debounce( function() { this._compile() }.bind(this), 200);
 };
 
 /* Inheritance */
@@ -55,8 +59,9 @@ ve.dm.Bibliography.getBibliography = function(doc) {
   if (!bibliography) {
     // The bibliography can be found at the following path: ['document', 'bibliography']
     var toplevelNodes = doc.getDocumentNode().getChildren();
+    var toplevelNode;
     for (i = toplevelNodes.length - 1; i >= 0; i--) {
-      var toplevelNode = toplevelNodes[i];
+      toplevelNode = toplevelNodes[i];
       if (toplevelNode.type === 'bibliography') {
         bibliography = toplevelNode;
         break;
@@ -67,7 +72,7 @@ ve.dm.Bibliography.getBibliography = function(doc) {
     if (!bibliography) {
       var internalList;
       for (i = toplevelNodes.length - 1; i >= 0; i--) {
-        var toplevelNode = toplevelNodes[i];
+        toplevelNode = toplevelNodes[i];
         if (toplevelNode.type === 'internalList') {
           internalList = toplevelNode;
           break;
@@ -117,7 +122,8 @@ ve.dm.Bibliography.prototype.onChangeCSLStyle = function(cslXML) {
   this.emit('csl-style-changed');
 };
 
-ve.dm.Bibliography.prototype.compile = function() {
+ve.dm.Bibliography.prototype._compile = function() {
+  console.log('ve.dm.Bibliography.prototype.compile');
   var documentModel = this.getDocument();
   this.getCompiler().clear();
   this.registerReferences();
