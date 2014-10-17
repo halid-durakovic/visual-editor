@@ -440,7 +440,6 @@ ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
      references: newRefIds
     } );
     surface.change( tx );
-    this.bibliography.updateCitation(this.citationNode);
   } else {
     data = [ {
       type: 'citation',
@@ -449,10 +448,8 @@ ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
       }
     } ];
     fragment.insertContent(data);
-    // fragment.insertContent(data, false).collapseRangeToEnd().select();
-    // would be better if we could do that incrementally
-    this.bibliography.compile();
   }
+  this.bibliography.compile();
 
   // HACK: need a better way to rerender references
   this.openTab(this.currentTabName);

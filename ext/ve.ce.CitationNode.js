@@ -3,7 +3,7 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
   // Parent constructor
   ve.ce.LeafNode.call( this, model, config );
 
-  this.bibliography = ve.dm.Bibliography.getBibliography(model.getRoot().getDocument());
+  this.bibliography = ve.dm.Bibliography.getBibliography(model.getDocument());
 
   var label = model.getAttribute('label');
 
@@ -15,12 +15,6 @@ ve.ce.CitationNode = function VeCeCitationNode( model, config ) {
 
   // Mixin constructors
   ve.ce.FocusableNode.call( this, this.$element, config );
-
-  this.model.connect( this, { 'update': 'onUpdate' } );
-  this.bibliography.connect(this, {
-    'csl-style-changed': 'onUpdate',
-    'citation-changed': 'onUpdate'
-  });
 };
 
 /* Inheritance */
@@ -46,8 +40,26 @@ ve.ce.CitationNode.prototype.createHighlight = function () {
 ve.ce.CitationNode.prototype.onUpdate = function () {
   var label = this.model.getAttribute('label');
   this.$element.html(label);
-  this.redrawHighlights();
+  if (this.surface) this.redrawHighlights();
 };
+
+ve.ce.CitationNode.prototype.onTeardown = function () {
+  ve.ce.View.prototype.onTeardown.call(this);
+  this.model.disconnect(this);
+  this.bibliography.disconnect(this);
+  this.bibliography.compile();
+};
+
+ve.ce.CitationNode.prototype.onSetup = function () {
+  ve.ce.View.prototype.onSetup.call(this);
+  this.model.connect( this, { 'update': 'onUpdate' } );
+  this.bibliography.connect(this, {
+    'csl-style-changed': 'onUpdate',
+    'citation-changed': 'onUpdate'
+  });
+  this.bibliography.compile();
+};
+
 
 /* Registration */
 

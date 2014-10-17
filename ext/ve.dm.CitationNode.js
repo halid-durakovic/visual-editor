@@ -49,10 +49,6 @@ ve.dm.CitationNode.static.toDomElements = function ( dataElement ) {
   return $el;
 };
 
-// Do not descend further when importing HTML
-// This node has only label elements as children, which are not modelled as extra nodes but collected into an array of reference ids.
-// ve.dm.CitationNode.static.handlesOwnChildren = true;
-
 /* Registration */
 
 ve.dm.modelRegistry.register( ve.dm.CitationNode );

@@ -4,8 +4,8 @@ span.citation {
 }
 
 .bibliography {
-  cursor: pointer;
-  margin-top: 20px;
+  cursor: not-allowed;
+  /*margin-top: 20px;*/
 }
 
 .bibliography .title {
