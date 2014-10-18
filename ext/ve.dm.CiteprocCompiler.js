@@ -178,6 +178,23 @@ ve.dm.CiteprocCompiler.prototype.makeBibliography = function() {
   return bib;
 };
 
+ve.dm.CiteprocCompiler.prototype.getSortedIds = function() {
+  var result, done, i, id;
+  result = this.engine.registry.getSortedIds();
+  done = {};
+  for (i = 0; i < result.length; i++) {
+    done[result[i]] = true;
+  }
+  for(id in this.data) {
+    if (!done[id]) {
+      result.push(id);
+      done[id] = true;
+    }
+  }
+  return result;
+};
+
+
 ve.dm.CiteprocCompiler.prototype.renderReference = function(id) {
   var refHtml = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id);
   // Note: we only want the rendered reference, without the surrounding layout stuff

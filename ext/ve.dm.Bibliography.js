@@ -3,19 +3,17 @@ ve.dm.Bibliography = function VeDmBibliography() {
   // Parent constructor
   ve.dm.BranchNode.apply( this, arguments );
 
-  this._data = {};
-  this._data.isCompiled = false;
-  this._data.referenceIndex = {};
-  this._data.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig({ style: ve.dm.CiteprocDefaultConfig.defaultStyle }));
+  // a map to retrieve ve.dm.ReferenceNode instances by reference id.
+  this.referenceIndex = {};
+  this.referenceCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig({ style: ve.dm.CiteprocDefaultConfig.defaultStyle }));
 
   this.connect(this, {
     'attach': 'onAttach',
     'detach': 'onDetach'
   } );
 
-
   // debounce the compile step as it may be triggered repeatedly when changeing multiple citations at once
-  this.compile = ve.debounce( function() { this._compile() }.bind(this), 200);
+  this.compile = ve.debounce( function() { this._compile(); }.bind(this), 10);
 };
 
 /* Inheritance */
@@ -100,7 +98,7 @@ ve.dm.Bibliography.prototype.onAttach = function() {
   });
   // register this bibliography in the document's store (document-wide singleton)
   doc.getStore().index(this, "bibliography");
-  this.compile();
+  this._compile();
 };
 
 /**
@@ -116,14 +114,13 @@ ve.dm.Bibliography.prototype.onDetach = function(documentNode) {
  * Updates the CSL style and recompiles the bibliography.
  */
 ve.dm.Bibliography.prototype.onChangeCSLStyle = function(cslXML) {
-  this._data.referenceCompiler.setStyle(cslXML);
+  this.referenceCompiler.setStyle(cslXML);
   // recompile to regenerate labels and bibliography
   this.compile();
   this.emit('csl-style-changed');
 };
 
 ve.dm.Bibliography.prototype._compile = function() {
-  console.log('ve.dm.Bibliography.prototype.compile');
   var documentModel = this.getDocument();
   this.getCompiler().clear();
   this.registerReferences();
@@ -138,9 +135,17 @@ ve.dm.Bibliography.prototype._compile = function() {
       citationNode.element.attributes.label = citation.label;
     }
   }
-  // Note: this needs to be invalidated whenever a citation is changed
-  this._data.isCompiled = true;
   this.emit('citation-changed');
+};
+
+ve.dm.Bibliography.prototype.addNewReference = function(refData) {
+  var doc, tx;
+  doc = this.getDocument();
+  tx = ve.dm.Transaction.newFromInsertion( doc, this.getRange().end , [
+    { type: "reference", attributes: refData },
+    { type: "/reference" },
+  ]);
+  doc.commit(tx);
 };
 
 ve.dm.Bibliography.prototype.registerReferences = function() {
@@ -149,25 +154,29 @@ ve.dm.Bibliography.prototype.registerReferences = function() {
   this.getChildren().forEach( function(refModel) {
     var refData = refModel.element.attributes;
     var refId = referenceCompiler.addReference(refData);
-    this._data.referenceIndex[refId] = refModel;
+    this.referenceIndex[refId] = refModel;
   }, this);
 };
 
 ve.dm.Bibliography.prototype.getReferenceForId = function(id) {
-  return this._data.referenceIndex[id];
+  return this.referenceIndex[id];
 };
 
 ve.dm.Bibliography.prototype.makeBibliography = function() {
-  if (!this._data.isCompiled) {
-    // TODO: remove that compile guard if possible
-    console.error("It seems that we need that compile guard.");
-    this.compile();
-  }
   return this.getCompiler().engine.makeBibliography();
 };
 
 ve.dm.Bibliography.prototype.getCompiler = function() {
-  return this._data.referenceCompiler;
+  return this.referenceCompiler;
+};
+
+ve.dm.Bibliography.prototype.getSortedReferences = function() {
+  var result = [];
+  var ids = this.getCompiler().getSortedIds();
+  for (var i = 0; i < ids.length; i++) {
+    result.push(this.getReferenceForId(ids[i]));
+  }
+  return result;
 };
 
 /* Registration */
