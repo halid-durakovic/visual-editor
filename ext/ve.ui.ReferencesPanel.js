@@ -10,6 +10,7 @@ ve.ui.ReferencesPanel = function VeUiReferencesPanel( bibliographyNode ) {
 
   this.references = [];
   this.cursorIdx = -1;
+  this.selectedReferences = [];
 
   this.bibliographyNode.connect(this, {
     'csl-style-changed': 'updateBibData',
@@ -54,15 +55,7 @@ ve.ui.ReferencesPanel.prototype.createReferenceElement = function(refData) {
 };
 
 ve.ui.ReferencesPanel.prototype.setSelectedReferences = function(refIds) {
-  var $refEls, $refEl, i;
-  this.$element.find('.selected').removeClass('selected');
-  var $refEls = $(this.element.children)
-  for (i = 0; i < this.references.length; i++) {
-    refEl = $refEls[i];
-    if (refIds.indexOf(this.references[i].id) >= 0) {
-      $(refEl).addClass('selected');
-    }
-  }
+  this.selectedReferences = refIds;
 };
 
 ve.ui.ReferencesPanel.prototype.scrollToFirstSelected = function() {
@@ -85,16 +78,22 @@ ve.ui.ReferencesPanel.prototype.update = function() {
     var $label = $el.find('.label');
     var $content = $el.find('.content');
     var id = el.dataset.refId;
+    if (this.selectedReferences.indexOf(id) >= 0) {
+      $el.addClass('selected');
+    } else {
+      $el.removeClass('selected');
+    }
     var existingEntry = this.bibData[id];
     if (existingEntry) {
-      $label.html(existingEntry.label || '');
+      $label.html(existingEntry.label || '').show();
       $content.html(existingEntry.content || '');
     } else {
       var tmpId = '__tmp__';
-      referenceCompiler.data[tmpId] = ref;
-      $label.html('');
-      $content.html(referenceCompiler.renderContent(tmpId));
-      delete referenceCompiler.data[tmpId];
+      var compiler = this.bibliographyNode.getCompiler();
+      compiler.data[tmpId] = ref;
+      $label.html('').hide();
+      $content.html(compiler.renderReference(tmpId, false));
+      delete compiler.data[tmpId];
     }
   }
 };

@@ -90,7 +90,7 @@ ve.dm.CiteprocCompiler.prototype.makeBibliography = function() {
       citationItems: [ { id: id } ],
       properties: {}
     }, citationsPre, [], 'html');
-    content = this.renderReference(id);
+    content = this.renderReference(id, true);
     bib[id] = {
       id: id,
       rank: rank,
@@ -105,7 +105,7 @@ ve.dm.CiteprocCompiler.prototype.makeBibliography = function() {
     // skip cited references
     if (bib[id]) continue;
     rank += 1;
-    content = this.renderReference(id);
+    content = this.renderReference(id, false);
     bib[id] = {
       id: id,
       rank: rank,
@@ -138,62 +138,75 @@ ve.dm.CiteprocCompiler.prototype.getSortedIds = function() {
 };
 
 
-ve.dm.CiteprocCompiler.prototype.renderReference = function(id) {
-  var refHtml = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id);
+ve.dm.CiteprocCompiler.prototype.renderReference = function(id, is_registered) {
+  var refHtml = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id, is_registered);
   // Note: we only want the rendered reference, without the surrounding layout stuff
   //   AFAIK there are only two cases, with label or without. In case that the style
   //   renderes labels in the bibliography there is an element .csl-right-line containing
   //   the content we are interested in.
   if (refHtml.search('csl-right-inline') >= 0) {
-    var $el = $(refHtml);
+    var $el = $('<div>').append($(refHtml)).find('.csl-right-inline');
     return $el.html();
   } else {
     return refHtml;
   }
 };
 
-ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
-  var item, topblobs, refHtml;
+ve.dm.CiteprocCompiler.getBibliographyEntry = function (id, is_registered) {
+  var item, topblobs, refHtml, collapse_parallel, j, jlen, chr;
+
   this.tmp.area = "bibliography";
   this.tmp.last_rendered_name = false;
   this.tmp.bibliography_errors = [];
   this.tmp.bibliography_pos = 0;
   this.tmp.disambig_override = true;
+  this.tmp.just_looking = !is_registered;
   item = this.retrieveItem(id);
 
-  function addPrefixAndSuffix(topblobs) {
-    var len = topblobs.length - 1;
-    for (var pos = len; pos > -1; pos += -1) {
-      if (topblobs[pos].blobs && topblobs[pos].blobs.length !== 0) {
-        var chr = this.bibliography.opt.layout_suffix.slice(0, 1);
-        if (chr && topblobs[pos].strings.suffix.slice(-1) === chr) {
-          topblobs[pos].strings.suffix = topblobs[pos].strings.suffix.slice(0, -1);
+  // this.output.startTag("bib_entry", bib_entry);
+  this.parallel.StartCitation([[{id: "" + item.id}, item]]);
+  this.tmp.term_predecessor = false;
+  CSL.getCite.call(this, item);
+  // this.output.endTag("bib_entry");
+
+  // adds prefix and suffix
+  if (this.output.queue[0].blobs.length && this.output.queue[0].blobs[0].blobs.length) {
+    if (collapse_parallel || !this.output.queue[0].blobs[0].blobs[0].strings) {
+      topblobs = this.output.queue[0].blobs;
+      collapse_parallel = false;
+    } else {
+      topblobs = this.output.queue[0].blobs[0].blobs;
+    }
+    for (j  = topblobs.length - 1; j > -1; j += -1) {
+      if (topblobs[j].blobs && topblobs[j].blobs.length !== 0) {
+        var last_locale = this.tmp.cite_locales[this.tmp.cite_locales.length - 1];
+        var suffix;
+        if (this.tmp.cite_affixes[this.tmp.area][last_locale]) {
+          suffix = this.tmp.cite_affixes[this.tmp.area][last_locale].suffix;
+        } else {
+          suffix = this.bibliography.opt.layout_suffix;
         }
-        topblobs[pos].strings.suffix += this.bibliography.opt.layout_suffix;
+        chr = suffix.slice(0, 1);
+        if (chr && topblobs[j].strings.suffix.slice(-1) === chr) {
+          topblobs[j].strings.suffix = topblobs[j].strings.suffix.slice(0, -1);
+        }
+        topblobs[j].strings.suffix += suffix;
         break;
       }
     }
     topblobs[0].strings.prefix = this.bibliography.opt.layout_prefix + topblobs[0].strings.prefix;
   }
-
-  this.tmp.term_predecessor = false;
-  this.tmp.just_looking = true;
-
-  CSL.getCite.call(this, item);
-
-  topblobs = [];
-  if (this.output.queue[0].blobs.length) {
-    topblobs = this.output.queue[0].blobs;
+  for (j=0,jlen=this.output.queue.length;j<jlen;j+=1) {
+    CSL.Output.Queue.purgeEmptyBlobs(this.output.queue[j]);
+  }
+  for (j=0,jlen=this.output.queue.length;j<jlen;j+=1) {
+    this.output.adjust.upward(this.output.queue[j]);
+    this.output.adjust.leftward(this.output.queue[j]);
+    this.output.adjust.downward(this.output.queue[j],true);
+    this.output.adjust.fix(this.output.queue[j]);
   }
 
-  // adds prefix and suffix
-  addPrefixAndSuffix.call(this, topblobs);
-
-  CSL.Output.Queue.purgeEmptyBlobs(this.output.queue);
-  CSL.Output.Queue.adjustPunctuation(this, this.output.queue);
-
   refHtml = this.output.string(this, this.output.queue)[0];
-
   if (!refHtml) {
     refHtml = "\n[CSL STYLE ERROR: reference with no printed form.]\n";
   }
@@ -214,10 +227,10 @@ ve.dm.CiteprocCompiler.prototype.retrieveLocale = function(lang){
   return this.config.locale[lang];
 };
 
-ve.dm.CiteprocCompiler.prototype.getAbbreviation = function(obj, vartype, key){
-  obj[vartype][key] = "";
-};
+// ve.dm.CiteprocCompiler.prototype.getAbbreviation = function(obj, vartype, key){
+//   obj[vartype][key] = "";
+// };
 
-ve.dm.CiteprocCompiler.prototype.setAbbreviations = function () {
-};
+// ve.dm.CiteprocCompiler.prototype.setAbbreviations = function () {
+// };
 

@@ -48,11 +48,11 @@ ve.dm.Bibliography.getBibliography = function(doc) {
   var bibliography = null, store, index, i;
 
   // Look in the document store first
-  store = doc.getStore();
-  index = store.indexOfHash('bibliography');
-  if (index !== null) {
-    bibliography = store.value(index);
-  }
+  // store = doc.getStore();
+  // index = store.indexOfHash('bibliography');
+  // if (index !== null) {
+  //   bibliography = store.value(index);
+  // }
 
   if (!bibliography) {
     // The bibliography can be found at the following path: ['document', 'bibliography']
@@ -97,7 +97,7 @@ ve.dm.Bibliography.prototype.onAttach = function() {
     'csl-style-change': 'onChangeCSLStyle'
   });
   // register this bibliography in the document's store (document-wide singleton)
-  doc.getStore().index(this, "bibliography");
+  // doc.getStore().index(this, "bibliography");
   this._compile();
 };
 
@@ -107,7 +107,7 @@ ve.dm.Bibliography.prototype.onAttach = function() {
 ve.dm.Bibliography.prototype.onDetach = function(documentNode) {
   var doc = documentNode.getDocument();
   doc.disconnect(this);
-  doc.getStore().index(null, "bibliography");
+  // doc.getStore().index(null, "bibliography");
 };
 
 /**

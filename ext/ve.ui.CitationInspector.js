@@ -143,18 +143,10 @@ ve.ui.CitationInspector.prototype.initialize = function () {
  */
 ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
   if ( action === 'done' ) {
-    if (this.citationNode) {
-      var refIds = this.citationNode.getAttribute('references');
-      if (refIds.length === 0) {
-        this.getFragment().removeContent();
-      }
-    }
     this.close( { action: 'done' });
   } else if ( action === 'remove' ) {
     return new OO.ui.Process( function () {
-      if (this.citationNode) {
-        this.getFragment().removeContent();
-      }
+      this.getFragment().removeContent();
       this.close( { action: action } );
     }, this );
   } else if ( action.action === 'select' ) {
@@ -181,9 +173,13 @@ ve.ui.CitationInspector.prototype.getActionProcess = function ( action ) {
  */
 ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
   return ve.ui.CitationInspector.super.prototype.getSetupProcess.call( this, data )
+    .first( function() {
+      this.$element.parents('.oo-ui-popupWidget-popup').css({ visibility: 'hidden' });
+    }, this )
     .next( function () {
-      // Disable surface until animation is complete; will be reenabled in ready()
-      this.getFragment().getSurface().disable();
+      var surface = this.getFragment().getSurface();
+      surface.breakpoint();
+      surface.enable();
 
       // only once
       // TODO: is there a better place? This gets called whenever the inspector gets opened.
@@ -209,12 +205,26 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       }
 
       this.citationNode = this.getSelectedNode();
-      // TODO: just disable the delete button instead of toggling (=show/hide)
-      if ( this.citationNode ) {
-        this.removeButton.toggle(true);
+
+      if (!this.citationNode) {
+        var data = [ {
+          type: 'citation',
+          attributes: {
+            references: []
+          }
+        } ];
+        var range = this.getFragment().getRange( true );
+        if (range.getLength()) {
+          surface.change( ve.dm.Transaction.newFromRemoval( surface.documentModel, range ) );
+        }
+        surface.change( ve.dm.Transaction.newFromInsertion( surface.documentModel, range.start, data ));
+        this.citationNode = this.getSelectedNode();
+        this.isNewCitation = true;
       } else {
-        this.removeButton.toggle(false);
+        this.isNewCitation = false;
       }
+
+      this.removeButton.toggle(true);
     }, this );
 };
 
@@ -225,8 +235,6 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
   return ve.ui.CitationInspector.super.prototype.getReadyProcess.call( this, data )
     .next( function () {
       var surface = this.getFragment().getSurface();
-      surface.breakpoint();
-      surface.enable();
       surface.stopHistoryTracking();
       $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
       this.searchField.$input.focus(ve.bind( function() {
@@ -236,21 +244,14 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       this.searchField.$input.focus();
       var tabName = 'local';
       // when adding a new citation we open the tab which was opened last time.
-      if (!this.citationNode) {
+      if (this.isNewCitation) {
         tabName = this.currentTabName || tabName;
       }
-      // always reset the filter for local references when opening th dialog
-      this.tabStates.local.searchStr = '';
-      // always recreate the 'references' panel when opening the inspector
-      // This way, we can present
-      var refs = this.bibliography.getSortedReferences();
-      var localRefs = this.panels.local;
-      localRefs.clear();
-      refs.forEach(function(ref) {
-        localRefs.addReference(ref.element.attributes);
-      }, this);
       this.openTab(tabName);
-    }, this );
+    }, this )
+    .next( function() {
+      this.$element.parents('.oo-ui-popupWidget-popup').css({ visibility: '' });
+    }, this )
 };
 
 /**
@@ -260,16 +261,14 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
   data = data || {};
   return ve.ui.CitationInspector.super.prototype.getTeardownProcess.call( this, data )
     .first( function () {
-      console.log("Tearing doen CitationInspector");
+      window.console.log("Tearing down CitationInspector");
       var surface = this.getFragment().getSurface();
       // unregister the keyboard handler
       $(this.$iframe[0].contentDocument).off('keydown', this.keyDownHandler);
-      if (this.citationNode) {
-        var refs = this.citationNode.getAttribute('references');
-        if (refs.length === 0) {
-          var tx = ve.dm.Transaction.newFromRemoval( surface.documentModel, this.citationNode.getOuterRange() );
-          surface.change(tx);
-        }
+      var refs = this.citationNode.getAttribute('references');
+      if (refs.length === 0) {
+        var tx = ve.dm.Transaction.newFromRemoval( surface.documentModel, this.citationNode.getOuterRange() );
+        surface.change(tx);
       }
       surface.breakpoint();
       surface.startHistoryTracking();
@@ -317,54 +316,47 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
   this.searchField.$input.attr("placeholder", placeholders[newTab]);
   this.$info.text(infos[newTab]);
 
-  if (this.citationNode) {
-    this.currentPanel.setSelectedReferences(this.citationNode.getAttribute('references'));
-    this.currentPanel.scrollToFirstSelected();
+  if (newTab === 'local') {
+    // always reset the filter for local references when opening th dialog
+    this.tabStates.local.searchStr = '';
+    // always recreate the local reference list when opening this tab
+    var refs = this.bibliography.getSortedReferences();
+    var localRefs = this.panels.local;
+    localRefs.clear();
+    refs.forEach(function(ref) {
+      localRefs.addReference(ref.element.attributes);
+    }, this);
   }
+
+  this.currentPanel.setSelectedReferences( this.citationNode.getAttribute('references') )
+  this.currentPanel.update();
+  this.currentPanel.scrollToFirstSelected();
 };
 
 ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
-  var tx, fragment, surface, data;
+  var tx, fragment, surface;
   fragment = this.getFragment();
   surface = fragment.getSurface();
-  if (this.citationNode) {
-    var newRefIds = [];
-    var refIds = this.citationNode.getAttribute('references');
-    var removed = false;
-    for (var i = 0; i < refIds.length; i++) {
-      if (refIds[i] !== refId) {
-        newRefIds.push(refIds[i]);
-      } else {
-        removed = true;
-      }
+  var newRefIds = [];
+  var refIds = this.citationNode.getAttribute('references');
+  var removed = false;
+  for (var i = 0; i < refIds.length; i++) {
+    if (refIds[i] !== refId) {
+      newRefIds.push(refIds[i]);
+    } else {
+      removed = true;
     }
-    if (!removed) {
-      newRefIds.push(refId);
-    }
-    tx = ve.dm.Transaction.newFromAttributeChanges( surface.documentModel, this.citationNode.getOuterRange().start, {
-     references: newRefIds
-    } );
-    surface.change( tx );
-  } else {
-    data = [ {
-      type: 'citation',
-      attributes: {
-        references: [refId]
-      }
-    } ];
-    var range = fragment.getRange( true );
-    if (range.getLength()) {
-      surface.change( ve.dm.Transaction.newFromRemoval( surface.documentModel, range ) );
-    }
-    debugger;
-    surface.change( ve.dm.Transaction.newFromInsertion( surface.documentModel, range.start, data ), new ve.Range(range.start) );
-    this.citationNode = fragment.getSelectedNode();
   }
+  if (!removed) {
+    newRefIds.push(refId);
+  }
+  tx = ve.dm.Transaction.newFromAttributeChanges( surface.documentModel, this.citationNode.getOuterRange().start, {
+   references: newRefIds
+  } );
+  surface.change( tx );
   this.bibliography._compile();
+  this.currentPanel.setSelectedReferences(this.citationNode.getAttribute('references'));
   this.currentPanel.update();
-  if (this.citationNode) {
-    this.currentPanel.setSelectedReferences(this.citationNode.getAttribute('references'));
-  }
 };
 
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
@@ -383,39 +375,19 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
     window.console.error("FIXME: search field is not in sync with tab state.", state, searchStr);
   }
   this.currentPanel.applyFilter(searchStr);
-  // if (this.citationNode) {
-  //   this.$referenceList.addClass('has-citation');
-  // } else {
-  //   this.$referenceList.removeClass('has-citation');
-  // }
 };
 
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
   // TODO: as soon we have multiple look-up services we need to use a $.Promise to toggle the 'searching' state
   // after all searches are completed.
   this.$searchBar.addClass('searching');
-  var referenceCompiler = this.newReferencesCompiler;
-
-  // HACK: need to have a better design for the state... e.g., when is the rendered bibliography available, when gets updated etc...
-  var bib = this.bibliography.getCompiler().makeBibliography();
+  var panel = this.panels['new'];
+  panel.clear();
 
   service.find(searchStr, this).progress(function(data) {
     var id = data.DOI || data.ISSN[0];
     data.id = id;
-
-    var existingEntry = bib[id];
-    var $reference;
-    if (existingEntry) {
-      $reference = this.renderReference(existingEntry);
-    } else {
-      id = referenceCompiler.addReference(data);
-      $reference = this.renderReference({
-        id: id,
-        label: '',
-        content: referenceCompiler.renderReference(id)
-      });
-    }
-
+    panel.addReference(data);
   }).done(function() {
     this.$searchBar.removeClass('searching');
   });
