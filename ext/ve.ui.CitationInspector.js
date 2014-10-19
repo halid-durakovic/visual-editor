@@ -8,6 +8,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   // TODO: use a global configuration here
   this.newReferencesCompiler = new ve.dm.CiteprocCompiler(new ve.dm.CiteprocDefaultConfig());
   this.lookupServices = ve.ui.CitationLookupService.getServices();
+  this._runningLookups = {};
 
   // created in initialize
   this.removeButton = new OO.ui.ActionWidget({
@@ -251,7 +252,7 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
     }, this )
     .next( function() {
       this.$element.parents('.oo-ui-popupWidget-popup').css({ visibility: '' });
-    }, this )
+    }, this );
 };
 
 /**
@@ -328,7 +329,7 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
     }, this);
   }
 
-  this.currentPanel.setSelectedReferences( this.citationNode.getAttribute('references') )
+  this.currentPanel.setSelectedReferences( this.citationNode.getAttribute('references') );
   this.currentPanel.update();
   this.currentPanel.scrollToFirstSelected();
 };
@@ -377,27 +378,39 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
   this.currentPanel.applyFilter(searchStr);
 };
 
-ve.ui.CitationInspector.prototype._lookupExternalReferences = function(service, searchStr) {
+ve.ui.CitationInspector.prototype._lookupExternalReferences = function(name, searchStr, panel) {
   // TODO: as soon we have multiple look-up services we need to use a $.Promise to toggle the 'searching' state
   // after all searches are completed.
   this.$searchBar.addClass('searching');
-  var panel = this.panels['new'];
-  panel.clear();
 
-  service.find(searchStr, this).progress(function(data) {
+  var promise = this.lookupServices[name].find(searchStr, this);
+  this._runningLookups[name] = promise;
+
+  var self = this;
+  promise.progress(function(data) {
     var id = data.DOI || data.ISSN[0];
     data.id = id;
     panel.addReference(data);
   }).done(function() {
     this.$searchBar.removeClass('searching');
+    delete this._runningLookups[name];
   });
 };
 
 ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
+  var panel, serviceName;
+  // stop running lookups
+  for (serviceName in this._runningLookups) {
+    this._runningLookups[serviceName].reject();
+  }
+  // clear the new references panel
+  panel = this.panels['new'];
+  panel.clear();
+  // start search on all available lookup services
   var searchStr = this.searchField.$input.val().trim();
   if (searchStr.length > 0) {
-    for (var name in this.lookupServices) {
-      this._lookupExternalReferences(this.lookupServices[name], searchStr);
+    for (serviceName in this.lookupServices) {
+      this._lookupExternalReferences(serviceName, searchStr, panel);
     }
   }
 };

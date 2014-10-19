@@ -34,14 +34,15 @@ ve.ui.CrossrefCitationLookup.resolveDOI = function( doi ) {
 };
 
 ve.ui.CrossrefCitationLookup.prototype.find = function( searchStr, context ) {
-  var promisedResult = $.Deferred(),
-    lastResult;
+  var searchTerms, doiQueryParams, count, result,
+   promisedResult = $.Deferred(),
+   self = this;
 
   // deliver a cached result if the search has not changed
   if (this.lastSearch === searchStr) {
-    lastResult = this.lastResult;
+    result = this.lastResult;
     window.setTimeout(function() {
-      lastResult.forEach(function(data) {
+      result.forEach(function(data) {
         promisedResult.notifyWith(context, [ data ]);
       });
       promisedResult.resolveWith(context);
@@ -49,14 +50,12 @@ ve.ui.CrossrefCitationLookup.prototype.find = function( searchStr, context ) {
   }
   // otherwise start a new search;
   else {
-    this.lastSearch = searchStr;
-    this.lastResult = [];
-    lastResult = this.lastResult;
-
-    var searchTerms = searchStr.trim().toLowerCase().split(/\s+/);
-    var doiQueryParams = searchTerms.join('+');
-    var count = 0;
-
+    this.lastSearch = "";
+    this.lastSearch = [];
+    result = [];
+    searchTerms = searchStr.trim().toLowerCase().split(/\s+/);
+    doiQueryParams = searchTerms.join('+');
+    count = 0;
     $.ajax('http://search.crossref.org/dois', {
       data: {
         q: doiQueryParams,
@@ -68,12 +67,18 @@ ve.ui.CrossrefCitationLookup.prototype.find = function( searchStr, context ) {
             var entry = searchResult[count++];
             var promisedData = ve.ui.CrossrefCitationLookup.resolveDOI(entry.doi);
             promisedData.done(function(data) {
-              // window.console.log("Progressing: ", data);
-              lastResult.push(data);
-              promisedResult.notifyWith(context, [ data ]);
+              if (promisedResult.state() === "pending") {
+                result.push(data);
+                promisedResult.notifyWith(context, [ data ]);
+              }
+            }).always(function() {
+              if (promisedResult.state() === "pending") {
+                step();
+              }
             });
-            promisedData.always(step);
           } else {
+            self.lastSearch = searchStr;
+            self.lastResult = result;
             promisedResult.resolveWith(context);
           }
         }
