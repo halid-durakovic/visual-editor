@@ -23,6 +23,7 @@ ve.dm.CiteprocCompiler.prototype.clear = function() {
 ve.dm.CiteprocCompiler.prototype.addReference = function( reference ) {
   var id = reference.id || "ITEM_"+this.count++;
   reference.id = id;
+  this.sanitizeReference(reference);
   this.data[id] = reference;
   return id;
 };
@@ -90,7 +91,7 @@ ve.dm.CiteprocCompiler.prototype.makeBibliography = function() {
       citationItems: [ { id: id } ],
       properties: {}
     }, citationsPre, [], 'html');
-    content = this.renderReference(id, true);
+    content = this.renderReference(this.data[id]);
     bib[id] = {
       id: id,
       rank: rank,
@@ -105,7 +106,7 @@ ve.dm.CiteprocCompiler.prototype.makeBibliography = function() {
     // skip cited references
     if (bib[id]) continue;
     rank += 1;
-    content = this.renderReference(id, false);
+    content = this.renderReference(this.data[id]);
     bib[id] = {
       id: id,
       rank: rank,
@@ -138,21 +139,59 @@ ve.dm.CiteprocCompiler.prototype.getSortedIds = function() {
 };
 
 
-ve.dm.CiteprocCompiler.prototype.renderReference = function(id, is_registered) {
-  var refHtml = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, id, is_registered);
-  // Note: we only want the rendered reference, without the surrounding layout stuff
-  //   AFAIK there are only two cases, with label or without. In case that the style
-  //   renderes labels in the bibliography there is an element .csl-right-line containing
-  //   the content we are interested in.
-  if (refHtml.search('csl-right-inline') >= 0) {
-    var $el = $('<div>').append($(refHtml)).find('.csl-right-inline');
-    return $el.html();
-  } else {
-    return refHtml;
+ve.dm.CiteprocCompiler.prototype.renderReference = function(reference) {
+  var refHtml;
+
+  function extractContent() {
+    // Note: we only want the rendered reference, without the surrounding layout stuff
+    //   AFAIK there are only two cases, with label or without. In case that the style
+    //   renderes labels in the bibliography there is an element .csl-right-line containing
+    //   the content we are interested in.
+    if (refHtml.search('csl-right-inline') >= 0) {
+      var $el = $('<div>').append($(refHtml)).find('.csl-right-inline');
+      return $el.html();
+    } else {
+      return refHtml;
+    }
   }
+
+  var self = this;
+  function renderFallback() {
+    console.log("Using fallback for rendering reference ", reference.id);
+    // HACK: ve.dm.CiteprocCompiler.getBibliographyEntry is much faster than this implementation.
+    // However, in certain cases citeproc crashed, so that we use this slower implementation as
+    // fallback.
+    var engine = new CSL.Engine({
+        retrieveItem: function() {
+          return reference;
+        },
+        retrieveLocale: function(lang) {
+          return self.config.locale[lang];
+        }
+      }, self.style );
+    // In the case that our custom incremental implementation fails just use citeproc
+    var citation = {
+      "citationItems": [ { id: reference.id } ],
+      "properties": {}
+    };
+    engine.appendCitationCluster(citation);
+    return engine.makeBibliography()[1][0];
+  }
+
+  if (this.data[reference.id]) {
+    // Note: this method only works for registered references and sometimes failed even then
+    try {
+      refHtml = ve.dm.CiteprocCompiler.getBibliographyEntry.call(this.engine, reference.id);
+    } catch (err) {
+      refHtml = renderFallback();
+    }
+  } else {
+    refHtml = renderFallback();
+  }
+  return extractContent(refHtml);
 };
 
-ve.dm.CiteprocCompiler.getBibliographyEntry = function (id, is_registered) {
+ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
   var item, topblobs, refHtml, collapse_parallel, j, jlen, chr;
 
   this.tmp.area = "bibliography";
@@ -160,7 +199,7 @@ ve.dm.CiteprocCompiler.getBibliographyEntry = function (id, is_registered) {
   this.tmp.bibliography_errors = [];
   this.tmp.bibliography_pos = 0;
   this.tmp.disambig_override = true;
-  this.tmp.just_looking = !is_registered;
+  this.tmp.just_looking = true;
   item = this.retrieveItem(id);
 
   // this.output.startTag("bib_entry", bib_entry);
@@ -227,10 +266,7 @@ ve.dm.CiteprocCompiler.prototype.retrieveLocale = function(lang){
   return this.config.locale[lang];
 };
 
-// ve.dm.CiteprocCompiler.prototype.getAbbreviation = function(obj, vartype, key){
-//   obj[vartype][key] = "";
-// };
-
-// ve.dm.CiteprocCompiler.prototype.setAbbreviations = function () {
-// };
-
+ve.dm.CiteprocCompiler.prototype.sanitizeReference = function(reference) {
+  // TODO: add more of such
+  reference['container-title'] = reference['container-title'] || '';
+};

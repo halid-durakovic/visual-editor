@@ -158,6 +158,10 @@ ve.dm.Bibliography.prototype.registerReferences = function() {
   }, this);
 };
 
+ve.dm.Bibliography.prototype.hasReference = function(id) {
+  return !!this.referenceIndex[id];
+};
+
 ve.dm.Bibliography.prototype.getReferenceForId = function(id) {
   return this.referenceIndex[id];
 };

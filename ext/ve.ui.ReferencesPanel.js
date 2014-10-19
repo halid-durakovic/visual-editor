@@ -1,5 +1,5 @@
 
-ve.ui.ReferencesPanel = function VeUiReferencesPanel( bibliographyNode ) {
+ve.ui.ReferencesPanel = function VeUiReferencesPanel( bibliographyNode, config ) {
   OO.EventEmitter.call(this);
 
   this.$element = $('<div>').addClass('reference-list');
@@ -69,7 +69,6 @@ ve.ui.ReferencesPanel.prototype.onSelect = function(refData) {
 };
 
 ve.ui.ReferencesPanel.prototype.update = function() {
-  var referenceCompiler = this.bibliographyNode.getCompiler();
   var refEls = this.element.children;
   for (var i = 0; i < this.references.length; i++) {
     var ref = this.references[i];
@@ -88,12 +87,9 @@ ve.ui.ReferencesPanel.prototype.update = function() {
       $label.html(existingEntry.label || '').show();
       $content.html(existingEntry.content || '');
     } else {
-      var tmpId = '__tmp__';
       var compiler = this.bibliographyNode.getCompiler();
-      compiler.data[tmpId] = ref;
       $label.html('').hide();
-      $content.html(compiler.renderReference(tmpId, false));
-      delete compiler.data[tmpId];
+      if (!$content[0].innerHTML) $content.html(compiler.renderReference(ref));
     }
   }
 };
@@ -105,17 +101,13 @@ ve.ui.ReferencesPanel.prototype.addReference = function(refData) {
   this.update();
 };
 
-ve.ui.ReferencesPanel.prototype.removeReference = function(refData) {
-  var idx = -1;
+ve.ui.ReferencesPanel.prototype.removeSelectedReferences = function() {
   for (var i = 0; i < this.references.length; i++) {
-    if (this.references[i].id === refData.id) {
-      idx = i;
-      break;
+    if (this.selectedReferences.indexOf(this.references[i].id) >= 0) {
+      this.element.removeChild(this.element.children[i]);
+      this.references.splice(i, 1);
+      i--;
     }
-  }
-  if (idx >= 0) {
-    this.element.removeChild(this.element.children[idx]);
-    this.references.splice(idx, 1);
   }
 };
 

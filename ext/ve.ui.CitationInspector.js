@@ -181,7 +181,6 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       var surface = this.getFragment().getSurface();
       surface.breakpoint();
       surface.enable();
-
       // only once
       // TODO: is there a better place? This gets called whenever the inspector gets opened.
       // In initialize() however the fragment is not yet set, so no access to the document.
@@ -189,7 +188,9 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
         this.bibliography = ve.dm.Bibliography.getBibliography(this.getFragment().getDocument());
         this.panels = {
           'local': new ve.ui.ReferencesPanel(this.bibliography),
-          'new': new ve.ui.ReferencesPanel(this.bibliography)
+          'new': new ve.ui.ReferencesPanel(this.bibliography, {
+            removeSelectedReferences: true
+          })
         };
         this.tabs = {
           'local': this.referencesTab,
@@ -244,10 +245,6 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       }, this ));
       this.searchField.$input.focus();
       var tabName = 'local';
-      // when adding a new citation we open the tab which was opened last time.
-      if (this.isNewCitation) {
-        tabName = this.currentTabName || tabName;
-      }
       this.openTab(tabName);
     }, this )
     .next( function() {
@@ -382,15 +379,14 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(name, sea
   // TODO: as soon we have multiple look-up services we need to use a $.Promise to toggle the 'searching' state
   // after all searches are completed.
   this.$searchBar.addClass('searching');
-
   var promise = this.lookupServices[name].find(searchStr, this);
   this._runningLookups[name] = promise;
-
-  var self = this;
   promise.progress(function(data) {
     var id = data.DOI || data.ISSN[0];
-    data.id = id;
-    panel.addReference(data);
+    if (!this.bibliography.hasReference(id)) {
+      data.id = id;
+      panel.addReference(data);
+    }
   }).done(function() {
     this.$searchBar.removeClass('searching');
     delete this._runningLookups[name];
@@ -490,7 +486,6 @@ ve.ui.CitationInspector.prototype.acceptSelection = function() {
     window.console.error('No reference selected.');
   }
 };
-
 
 /* Registration */
 
