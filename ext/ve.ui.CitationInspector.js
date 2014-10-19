@@ -303,16 +303,7 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
     this.tabs[oldTab].$element.removeClass('active');
     this.$body.removeClass(oldTab);
   }
-  // enabel new tab
-  this.currentTabName = newTab;
-  this.currentPanel = this.panels[newTab];
-  state = this.getTabState();
-  this.searchField.$input.val(state.searchStr);
-  this.panels[newTab].show();
-  this.tabs[newTab].$element.addClass('active');
-  this.$body.addClass(newTab);
-  this.searchField.$input.attr("placeholder", placeholders[newTab]);
-  this.$info.text(infos[newTab]);
+
 
   if (newTab === 'local') {
     // always reset the filter for local references when opening th dialog
@@ -325,6 +316,17 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
       localRefs.addReference(ref.element.attributes);
     }, this);
   }
+
+  // enabel new tab
+  this.currentTabName = newTab;
+  this.currentPanel = this.panels[newTab];
+  state = this.getTabState();
+  this.searchField.$input.val(state.searchStr);
+  this.panels[newTab].show();
+  this.tabs[newTab].$element.addClass('active');
+  this.$body.addClass(newTab);
+  this.searchField.$input.attr("placeholder", placeholders[newTab]);
+  this.$info.text(infos[newTab]);
 
   this.currentPanel.setSelectedReferences( this.citationNode.getAttribute('references') );
   this.currentPanel.update();
