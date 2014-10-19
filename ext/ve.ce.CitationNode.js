@@ -38,6 +38,11 @@ ve.ce.CitationNode.prototype.createHighlight = function () {
 };
 
 ve.ce.CitationNode.prototype.onUpdate = function () {
+  // console.log("CitationNode.onUpdate");
+  this.bibliography.compile();
+};
+
+ve.ce.CitationNode.prototype.updateLabel = function() {
   var label = this.model.getAttribute('label');
   this.$element.html(label);
   if (this.surface) this.redrawHighlights();
@@ -54,8 +59,8 @@ ve.ce.CitationNode.prototype.onSetup = function () {
   ve.ce.View.prototype.onSetup.call(this);
   this.model.connect( this, { 'update': 'onUpdate' } );
   this.bibliography.connect(this, {
-    'csl-style-changed': 'onUpdate',
-    'citation-changed': 'onUpdate'
+    'csl-style-changed': 'updateLabel',
+    'citation-changed': 'updateLabel'
   });
   this.bibliography.compile();
 };

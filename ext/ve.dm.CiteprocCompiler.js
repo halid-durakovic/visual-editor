@@ -29,10 +29,6 @@ ve.dm.CiteprocCompiler.prototype.addReference = function( reference ) {
 
 ve.dm.CiteprocCompiler.prototype.addCitation = function( referenceIds ) {
   if (!$.isArray(referenceIds)) referenceIds = [ referenceIds ];
-  if (referenceIds.length === 0) {
-    window.console.error("No reference ids given");
-    return;
-  }
   var citation = {
     "citationItems": [],
     "properties": {}
@@ -57,59 +53,6 @@ ve.dm.CiteprocCompiler.prototype.addCitation = function( referenceIds ) {
     label: citationLabel
   };
 };
-
-// ve.dm.CiteprocCompiler.prototype.updateCitation = function( citationId, referenceIds ) {
-//   var citationsPre = [], citationsPost = [], idx, len, pre = true, citation, c, item, info, result;
-//   len = this.engine.registry.citationreg.citationByIndex.length;
-//   for (idx = 0; idx < len; idx++) {
-//     c = this.engine.registry.citationreg.citationByIndex[idx];
-//     if (c.citationID === citationId) {
-//       citation = c;
-//       pre = false;
-//     } else {
-//       item = ["" + c.citationID, c.properties.noteIndex];
-//       if (pre) {
-//         citationsPre.push(item);
-//       } else {
-//         citationsPost.push(item);
-//       }
-//     }
-//   }
-//   if (!citation) throw new Error("Could not find citation with id " + citationId);
-
-//   // update reference ids
-//   citation.citationItems = [];
-//   for (idx = 0; idx < referenceIds.length; idx++) {
-//     citation.citationItems.push( { id: referenceIds[idx] } );
-//   }
-
-//   result = this.engine.processCitationCluster(citation, citationsPre, citationsPost);
-//   info = result[0];
-//   result = result[1];
-
-//   var citationLabel = result[0][1];
-//   this.citationLabels[citationId] = citationLabel;
-
-//   // Update citation labels which may happen due to disambiguation
-//   for (idx = 0; idx < result.length; idx++) {
-//     var updatedCitation = this.engine.registry.citationreg.citationByIndex[result[idx][0]];
-//     this.citationLabels[updatedCitation.citationID] = result[idx][1];
-//   }
-
-//   return {
-//     id: citationId,
-//     label: this.citationLabels[citationId]
-//   };
-// };
-
-// ve.dm.CiteprocCompiler.prototype.getLabelForCitation = function(citationId) {
-//   return this.citationLabels[citationId];
-// };
-
-
-// ve.dm.CiteprocCompiler.prototype.isCited = function(referenceId) {
-//   return this.engine.registry.myhash[referenceId];
-// };
 
 ve.dm.CiteprocCompiler.prototype.getCitationCount = function(referenceId) {
   var citations = this.engine.registry.citationreg.citationsByItemId[referenceId];
@@ -211,7 +154,6 @@ ve.dm.CiteprocCompiler.prototype.renderReference = function(id) {
 
 ve.dm.CiteprocCompiler.getBibliographyEntry = function (id) {
   var item, topblobs, refHtml;
-
   this.tmp.area = "bibliography";
   this.tmp.last_rendered_name = false;
   this.tmp.bibliography_errors = [];

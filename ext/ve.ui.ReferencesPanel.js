@@ -26,6 +26,12 @@ ve.ui.ReferencesPanel.prototype.dispose = function() {
   this.bibliographyNode.disconnect(this);
 };
 
+ve.ui.ReferencesPanel.prototype.clear = function() {
+  this.references = [];
+  this.cursorIdx = -1;
+  this.$element.empty();
+};
+
 ve.ui.ReferencesPanel.prototype.createReferenceElement = function(refData) {
   var $reference, $label, $content, $buttons, selectButton;
   $reference = $('<div>').addClass('reference').attr('data-ref-id', refData.id);
@@ -50,13 +56,19 @@ ve.ui.ReferencesPanel.prototype.createReferenceElement = function(refData) {
 ve.ui.ReferencesPanel.prototype.setSelectedReferences = function(refIds) {
   var $refEls, $refEl, i;
   this.$element.find('.selected').removeClass('selected');
-  // var $refEls = $(this.$element.children)
-  // for (i = 0; i < this.references.length; i++) {
-  //   $refEl = $refEls[i];
-  //   if (refIds.indexOf(this.references[i].id) >= 0) {
-  //     $refEl.addClass('selected');
-  //   }
-  // }
+  var $refEls = $(this.element.children)
+  for (i = 0; i < this.references.length; i++) {
+    refEl = $refEls[i];
+    if (refIds.indexOf(this.references[i].id) >= 0) {
+      $(refEl).addClass('selected');
+    }
+  }
+};
+
+ve.ui.ReferencesPanel.prototype.scrollToFirstSelected = function() {
+  var $selected = this.$element.find('.selected');
+  if ($selected.length > 0)
+  OO.ui.Element.scrollIntoView($selected[0]);
 };
 
 ve.ui.ReferencesPanel.prototype.onSelect = function(refData) {
@@ -64,8 +76,6 @@ ve.ui.ReferencesPanel.prototype.onSelect = function(refData) {
 };
 
 ve.ui.ReferencesPanel.prototype.update = function() {
-  // rerender all references
-  // TODO: we should recreate the bibliography only when there are changes
   var referenceCompiler = this.bibliographyNode.getCompiler();
   var refEls = this.element.children;
   for (var i = 0; i < this.references.length; i++) {
@@ -77,17 +87,16 @@ ve.ui.ReferencesPanel.prototype.update = function() {
     var id = el.dataset.refId;
     var existingEntry = this.bibData[id];
     if (existingEntry) {
-      $label.text(existingEntry.label);
-      $content.html(existingEntry.content);
+      $label.html(existingEntry.label || '');
+      $content.html(existingEntry.content || '');
     } else {
       var tmpId = '__tmp__';
       referenceCompiler.data[tmpId] = ref;
-      $label.text('');
+      $label.html('');
       $content.html(referenceCompiler.renderContent(tmpId));
       delete referenceCompiler.data[tmpId];
     }
   }
-
 };
 
 ve.ui.ReferencesPanel.prototype.addReference = function(refData) {
@@ -127,9 +136,9 @@ ve.ui.ReferencesPanel.prototype.applyFilter = function(searchStr) {
       }
     }
     if (!pass) {
-      child.hide();
+      $(child).hide();
     } else {
-      child.show();
+      $(child).show();
     }
   }
 };

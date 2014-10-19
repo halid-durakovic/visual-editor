@@ -80,13 +80,13 @@ ve.dm.ReferenceNode.htmlDateToDateElement = function(el) {
 
   function _extractDate(el) {
     var date = [], year, month, day;
-    year = el.querySelector('span[data-type=year');
+    year = el.querySelector('span[data-type=year]');
     if (year) {
       date.push(parseInt(year.textContent, 10));
-      month = el.querySelector('span[data-type=month');
+      month = el.querySelector('span[data-type=month]');
       if (month) {
         date.push(parseInt(month.textContent, 10));
-        day = el.querySelector('span[data-type=day');
+        day = el.querySelector('span[data-type=day]');
         if (day) {
           date.push(parseInt(day.textContent, 10));
         }

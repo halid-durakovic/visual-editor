@@ -224,7 +224,10 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
 ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
   return ve.ui.CitationInspector.super.prototype.getReadyProcess.call( this, data )
     .next( function () {
-      this.getFragment().getSurface().enable();
+      var surface = this.getFragment().getSurface();
+      surface.breakpoint();
+      surface.enable();
+      surface.stopHistoryTracking();
       $(this.$iframe[0].contentDocument).on('keydown', this.keyDownHandler);
       this.searchField.$input.focus(ve.bind( function() {
         this.inputMethod ="search";
@@ -236,14 +239,16 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
       if (!this.citationNode) {
         tabName = this.currentTabName || tabName;
       }
+      // always reset the filter for local references when opening th dialog
+      this.tabStates.local.searchStr = '';
       // always recreate the 'references' panel when opening the inspector
       // This way, we can present
       var refs = this.bibliography.getSortedReferences();
       var localRefs = this.panels.local;
+      localRefs.clear();
       refs.forEach(function(ref) {
         localRefs.addReference(ref.element.attributes);
       }, this);
-
       this.openTab(tabName);
     }, this );
 };
@@ -255,8 +260,19 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
   data = data || {};
   return ve.ui.CitationInspector.super.prototype.getTeardownProcess.call( this, data )
     .first( function () {
+      console.log("Tearing doen CitationInspector");
+      var surface = this.getFragment().getSurface();
       // unregister the keyboard handler
       $(this.$iframe[0].contentDocument).off('keydown', this.keyDownHandler);
+      if (this.citationNode) {
+        var refs = this.citationNode.getAttribute('references');
+        if (refs.length === 0) {
+          var tx = ve.dm.Transaction.newFromRemoval( surface.documentModel, this.citationNode.getOuterRange() );
+          surface.change(tx);
+        }
+      }
+      surface.breakpoint();
+      surface.startHistoryTracking();
     }, this );
 };
 
@@ -303,6 +319,7 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
 
   if (this.citationNode) {
     this.currentPanel.setSelectedReferences(this.citationNode.getAttribute('references'));
+    this.currentPanel.scrollToFirstSelected();
   }
 };
 
@@ -335,10 +352,19 @@ ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
         references: [refId]
       }
     } ];
-    fragment.insertContent(data);
+    var range = fragment.getRange( true );
+    if (range.getLength()) {
+      surface.change( ve.dm.Transaction.newFromRemoval( surface.documentModel, range ) );
+    }
+    debugger;
+    surface.change( ve.dm.Transaction.newFromInsertion( surface.documentModel, range.start, data ), new ve.Range(range.start) );
+    this.citationNode = fragment.getSelectedNode();
   }
-  this.bibliography.compile();
-  this.currentPanel.rerender();
+  this.bibliography._compile();
+  this.currentPanel.update();
+  if (this.citationNode) {
+    this.currentPanel.setSelectedReferences(this.citationNode.getAttribute('references'));
+  }
 };
 
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
@@ -420,7 +446,7 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
         searchStr = this.searchField.$input.val().trim();
         if (state.searchStr !== searchStr) {
           state.searchStr = searchStr;
-          this.showLocalReferences();
+          this.currentPanel.applyFilter(searchStr);
         }
       }, this), 0);
     }
