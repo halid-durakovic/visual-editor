@@ -381,7 +381,7 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement:hover,
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor .buttons .oo-ui-buttonElement {
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-panel.select .reference-list .reference.cursor .buttons .oo-ui-buttonElement {
   opacity: 1.0;
   background-color: #333;
   color: white;
@@ -390,7 +390,7 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement:hover .oo-ui-icon-citation,
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor .buttons .oo-ui-buttonElement .oo-ui-icon-citation {
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-panel.select .reference-list .reference.cursor .buttons .oo-ui-buttonElement .oo-ui-icon-citation {
   background-image: /* @embed */ url(citation-white.svg);
   opacity: 1.0;
 }
@@ -413,19 +413,19 @@ span.citation {
   opacity: 1.0;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor {
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-panel.select .reference-list .reference.cursor {
   background: #f1f1f1;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor .label {
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-panel.select .reference-list .reference.cursor .label {
   background-color: rgba(0,0,0,0.7);
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor.selected .label {
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-panel.select .reference-list .reference.cursor.selected .label {
   background-color: #99CCFF;
 }
 
-.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list.select .reference.cursor.selected .oo-ui-buttonElement,
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-panel.select .reference-list .reference.cursor.selected .oo-ui-buttonElement,
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference.selected .oo-ui-buttonElement:hover {
   background-color: #99CCFF;
 }
