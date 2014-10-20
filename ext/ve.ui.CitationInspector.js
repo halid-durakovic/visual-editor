@@ -316,6 +316,7 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
     refs.forEach(function(ref) {
       localRefs.addReference(ref.element.attributes);
     }, this);
+    localRefs.setFilter('');
   }
 
   // enabel new tab
@@ -376,6 +377,7 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
   if (state.searchStr !== searchStr) {
     window.console.error("FIXME: search field is not in sync with tab state.", state, searchStr);
   }
+  this.currentPanel.setFilter(searchStr);
   this.currentPanel.applyFilter(searchStr);
 };
 
@@ -431,6 +433,7 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
         searchStr = this.searchField.$input.val().trim();
         if (state.searchStr !== searchStr) {
           state.searchStr = searchStr;
+          this.currentPanel.setFilter(searchStr);
           this.currentPanel.applyFilter(searchStr);
         }
       }, this), 0);

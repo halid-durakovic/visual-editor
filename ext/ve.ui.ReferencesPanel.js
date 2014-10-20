@@ -25,6 +25,8 @@ ve.ui.ReferencesPanel = function VeUiReferencesPanel( bibliographyNode, config )
   this.references = [];
   this.cursorIdx = -1;
   this.selectedReferences = [];
+  this.visibleElements = [];
+  this.filter = "";
 
   this.bibliographyNode.connect(this, {
     'csl-style-changed': 'updateBibData',
@@ -117,6 +119,7 @@ ve.ui.ReferencesPanel.prototype.update = function() {
     el = refEls[i];
     this.updateReferenceElement(ref, el);
   }
+  this.applyFilter(this.filter);
 };
 
 ve.ui.ReferencesPanel.prototype.addReference = function(refData) {
@@ -142,30 +145,39 @@ ve.ui.ReferencesPanel.prototype.removeSelectedReferences = function() {
   }
 };
 
+ve.ui.ReferencesPanel.prototype.setFilter = function(searchStr) {
+  this.filter = searchStr;
+};
+
 // a simple AND over all terms in the given searchStr
 ve.ui.ReferencesPanel.prototype.applyFilter = function(searchStr) {
-  var patterns, child, i, pass, content, pattern, re, visibleCount;
-  patterns = searchStr.toLowerCase().split(/\s+/);
-  visibleCount = 0;
-  for (child = this.$references[0].firstElementChild; child; child = child.nextElementSibling) {
-    content = child.textContent.toLowerCase();
-    pass = true;
-    for (i = 0; i < patterns.length; i++) {
-      pattern = patterns[i];
-      re = new RegExp(pattern, 'g');
-      if (!re.test(content)) {
-        pass = false;
-        break;
+  var patterns, child, i, pass, content, pattern, re;
+  if (searchStr.trim().length === 0) {
+    this.visibleElements = this.$references[0].children;
+    $(this.visibleElements).show();
+  } else {
+    patterns = searchStr.toLowerCase().split(/\s+/);
+    this.visibleElements = [];
+    for (child = this.$references[0].firstElementChild; child; child = child.nextElementSibling) {
+      content = child.textContent.toLowerCase();
+      pass = true;
+      for (i = 0; i < patterns.length; i++) {
+        pattern = patterns[i];
+        re = new RegExp(pattern, 'g');
+        if (!re.test(content)) {
+          pass = false;
+          break;
+        }
+      }
+      if (!pass) {
+        $(child).hide();
+      } else {
+        $(child).show();
+        this.visibleElements.push(child);
       }
     }
-    if (!pass) {
-      $(child).hide();
-    } else {
-      $(child).show();
-      visibleCount++;
-    }
   }
-  if (visibleCount === 0) {
+  if (this.visibleElements.length === 0) {
     this.$placeholder.show();
   } else {
     this.$placeholder.hide();
@@ -173,7 +185,7 @@ ve.ui.ReferencesPanel.prototype.applyFilter = function(searchStr) {
 };
 
 ve.ui.ReferencesPanel.prototype.moveCursorDown = function() {
-  if (this.cursorIdx < this.references.length-1) {
+  if (this.cursorIdx < this.visibleElements.length-1) {
     this.updateCursor(this.cursorIdx, this.cursorIdx+1);
     this.cursorIdx++;
   }
@@ -187,10 +199,9 @@ ve.ui.ReferencesPanel.prototype.moveCursorUp = function() {
 };
 
 ve.ui.ReferencesPanel.prototype.updateCursor = function(oldIdx, newIdx) {
-  var oldRef, newRef, refEls;
-  refEls = this.$references[0].children;
-  oldRef = refEls[oldIdx];
-  newRef = refEls[newIdx];
+  var oldRef, newRef;
+  oldRef = this.visibleElements[oldIdx];
+  newRef = this.visibleElements[newIdx];
   if (oldRef) {
     $(oldRef).removeClass('cursor');
   }
@@ -212,7 +223,15 @@ ve.ui.ReferencesPanel.prototype.deactivateCursor = function() {
 };
 
 ve.ui.ReferencesPanel.prototype.getSelectedReference = function() {
-  return this.references[this.cursorIdx];
+  var el = this.visibleElements[this.cursorIdx];
+  var id = el.dataset.refId;
+  for (var i = 0; i < this.references.length; i++) {
+    var ref = this.references[i];
+    if (ref.id === id) {
+      return ref;
+    }
+  }
+  return null;
 };
 
 ve.ui.ReferencesPanel.prototype.show = function() {
