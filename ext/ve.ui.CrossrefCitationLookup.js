@@ -18,6 +18,7 @@ ve.ui.CrossrefCitationLookup.resolveDOI = function( doi ) {
   $.ajax(doi, {
     type: 'GET',
     crossDomain: true,
+    cache: false,
     headers: {
       Accept: "application/citeproc+json"
     },
