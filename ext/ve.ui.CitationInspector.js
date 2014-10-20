@@ -290,7 +290,7 @@ ve.ui.CitationInspector.prototype.getTabState = function() {
  * Opens the tab with given name;
  */
 ve.ui.CitationInspector.prototype.openTab = function(newTab) {
-  var state, oldTab, placeholders, infos;
+  var state, oldTab, infos;
   if (!this.tabs[newTab]) throw new Error('Unknown tab ' + newTab);
   state = this.getTabState();
   oldTab = this.currentTabName;

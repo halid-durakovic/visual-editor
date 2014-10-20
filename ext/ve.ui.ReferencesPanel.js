@@ -82,34 +82,40 @@ ve.ui.ReferencesPanel.prototype.onSelect = function(refData) {
   this.emit('onSelectReference', refData);
 };
 
+ve.ui.ReferencesPanel.prototype.updateReferenceElement = function(ref, el) {
+  var $el, $label, $content, id, existingEntry, compiler;
+  $el = $(el);
+  $label = $el.find('.label');
+  $content = $el.find('.content');
+  id = el.dataset.refId;
+  if (this.selectedReferences.indexOf(id) >= 0) {
+    $el.addClass('selected');
+  } else {
+    $el.removeClass('selected');
+  }
+  existingEntry = this.bibData[id];
+  if (existingEntry) {
+    if (existingEntry.label) {
+      $label.html(existingEntry.label).show();
+    } else {
+      $label.hide();
+    }
+    $content.html(existingEntry.content || '');
+  } else {
+    compiler = this.bibliographyNode.getCompiler();
+    $label.html('').hide();
+    if (!$content[0].innerHTML) $content.html(compiler.renderReference(ref));
+  }
+};
+
+
 ve.ui.ReferencesPanel.prototype.update = function() {
-  var refEls, ref, el, $el, $label, $content, id, i, existingEntry, compiler;
+  var refEls, ref, el, i;
   refEls = this.$references[0].children;
   for (i = 0; i < this.references.length; i++) {
     ref = this.references[i];
     el = refEls[i];
-    $el = $(el);
-    $label = $el.find('.label');
-    $content = $el.find('.content');
-    id = el.dataset.refId;
-    if (this.selectedReferences.indexOf(id) >= 0) {
-      $el.addClass('selected');
-    } else {
-      $el.removeClass('selected');
-    }
-    existingEntry = this.bibData[id];
-    if (existingEntry) {
-      if (existingEntry.label) {
-        $label.html(existingEntry.label).show();
-      } else {
-        $label.hide();
-      }
-      $content.html(existingEntry.content || '');
-    } else {
-      compiler = this.bibliographyNode.getCompiler();
-      $label.html('').hide();
-      if (!$content[0].innerHTML) $content.html(compiler.renderReference(ref));
-    }
+    this.updateReferenceElement(ref, el);
   }
 };
 
@@ -118,7 +124,7 @@ ve.ui.ReferencesPanel.prototype.addReference = function(refData) {
   var $reference = this.createReferenceElement(refData);
   this.$references.append($reference);
   this.$placeholder.hide();
-  this.update();
+  this.updateReferenceElement(refData, $reference[0]);
 };
 
 ve.ui.ReferencesPanel.prototype.removeSelectedReferences = function() {
@@ -129,8 +135,10 @@ ve.ui.ReferencesPanel.prototype.removeSelectedReferences = function() {
       i--;
     }
   }
-  if (!this.$references[0].children) {
+  if (this.$references[0].children.length === 0) {
     this.$placeholder.show();
+  } else {
+    this.$placeholder.hide();
   }
 };
 
@@ -139,7 +147,7 @@ ve.ui.ReferencesPanel.prototype.applyFilter = function(searchStr) {
   var patterns, child, i, pass, content, pattern, re, visibleCount;
   patterns = searchStr.toLowerCase().split(/\s+/);
   visibleCount = 0;
-  for (child = this.$references.firstElementChild; child; child = child.nextElementSibling) {
+  for (child = this.$references[0].firstElementChild; child; child = child.nextElementSibling) {
     content = child.textContent.toLowerCase();
     pass = true;
     for (i = 0; i < patterns.length; i++) {
@@ -159,6 +167,8 @@ ve.ui.ReferencesPanel.prototype.applyFilter = function(searchStr) {
   }
   if (visibleCount === 0) {
     this.$placeholder.show();
+  } else {
+    this.$placeholder.hide();
   }
 };
 
