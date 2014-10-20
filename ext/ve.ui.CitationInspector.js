@@ -25,11 +25,12 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   });
 
   this.$searchBar = $('<div>').addClass('searchbar');
+  var $searchBarContainer = $('<div>').addClass('container');
   var $searchFieldLabel = $('<span>').addClass('label').text('Find Reference');
   this.searchField = new OO.ui.TextInputWidget( {
     $: this.$,
     autosize: true,
-    classes: ['citation-search-field']
+    classes: ['search-field']
   } );
   this.searchButton = new OO.ui.ActionWidget( {
     action: 'search',
@@ -43,7 +44,8 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
     label: 'References',
     classes: ['tab', 'referencesTab']
   });
-  this.$searchBar.append([ $searchFieldLabel, this.searchField.$element, this.searchButton.$element, this.searchSpinner ] );
+  $searchBarContainer.append([ $searchFieldLabel, this.searchField.$element, this.searchSpinner, this.searchButton.$element ] );
+  this.$searchBar.append( $searchBarContainer );
 
   this.newReferencesTab = new OO.ui.ActionWidget({
     action: 'newReferences',
@@ -128,10 +130,9 @@ ve.ui.CitationInspector.prototype.initialize = function () {
   var $toolbar = $('<div>').addClass('toolbar');
 
   var $tabs = $('<div>').addClass('tabs')
-    // HACK: strange - we need to add the elements in reverse order
-    .append([ this.newReferencesTab.$element, this.referencesTab.$element ]);
+    .append([ this.referencesTab.$element, this.newReferencesTab.$element ]);
 
-  $toolbar.append([ this.$searchBar, $tabs ]);
+  $toolbar.append([ $tabs, this.$searchBar ]);
 
   this.$body.append($toolbar);
   this.$body.append(this.$panels);
@@ -187,9 +188,14 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
       if (!this.panels) {
         this.bibliography = ve.dm.Bibliography.getBibliography(this.getFragment().getDocument());
         this.panels = {
-          'local': new ve.ui.ReferencesPanel(this.bibliography),
+          'local': new ve.ui.ReferencesPanel(this.bibliography, {
+            classes: 'local',
+            placeholder: 'No references available in this article. Start a search and add new references.'
+          }),
           'new': new ve.ui.ReferencesPanel(this.bibliography, {
-            removeSelectedReferences: true
+            removeSelectedReferences: true,
+            classes: 'new',
+            placeholder: 'Start a search and find new references.'
           })
         };
         this.tabs = {
@@ -289,13 +295,9 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
   state = this.getTabState();
   oldTab = this.currentTabName;
   // TODO: these should come from i18n
-  placeholders = {
-    'local': "Type to search...",
-    'new': 'Enter a DOI or a full-text query...'
-  };
   infos = {
-    'local': 'Enter a search text to filter available references. Use the link buttons or press ‘Enter’ to add a citation to your article.',
-    'new': 'Start a search to find new references. Use the link buttons or press ‘Enter’ to add a citation to your article.'
+    'local': 'These References are available in this Article. Enter text to filter or start a search to find new references.',
+    'new': 'References can be added to the Article by adding a citation. Start a search to find new references.'
   };
   // disable old tab
   if (oldTab) {
@@ -303,7 +305,6 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
     this.tabs[oldTab].$element.removeClass('active');
     this.$body.removeClass(oldTab);
   }
-
 
   if (newTab === 'local') {
     // always reset the filter for local references when opening th dialog
@@ -325,7 +326,7 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
   this.panels[newTab].show();
   this.tabs[newTab].$element.addClass('active');
   this.$body.addClass(newTab);
-  this.searchField.$input.attr("placeholder", placeholders[newTab]);
+  this.searchField.$input.attr("placeholder", "Type to search...");
   this.$info.text(infos[newTab]);
 
   this.currentPanel.setSelectedReferences( this.citationNode.getAttribute('references') );
@@ -360,11 +361,12 @@ ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
 };
 
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
-  if (this.currentTabName === "local") {
-    this.showLocalReferences();
-  } else {
-    this.lookupExternalReferences();
+  var searchStr = this.searchField.$input.val().trim();
+  if (this.currentTabName === "local" && searchStr.length > 0) {
+    this.tabStates['new'].searchStr = searchStr;
+    this.openTab('new');
   }
+  this.lookupExternalReferences();
 };
 
 ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
@@ -380,7 +382,7 @@ ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(name, searchStr, panel) {
   // TODO: as soon we have multiple look-up services we need to use a $.Promise to toggle the 'searching' state
   // after all searches are completed.
-  this.$searchBar.addClass('searching');
+  this.$body.addClass('searching');
   var promise = this.lookupServices[name].find(searchStr, this);
   this._runningLookups[name] = promise;
   promise.progress(function(data) {
@@ -390,7 +392,7 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(name, sea
       panel.addReference(data);
     }
   }).done(function() {
-    this.$searchBar.removeClass('searching');
+    this.$body.removeClass('searching');
     delete this._runningLookups[name];
   });
 };
@@ -439,11 +441,7 @@ ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
     state = this.getTabState();
     if (e.keyCode === OO.ui.Keys.ENTER) {
       if (this.inputMethod === "search") {
-        searchStr = this.searchField.$input.val().trim();
-        if (state.searchStr !== searchStr) {
-          state.searchStr = searchStr;
-          this.acceptSearch();
-        }
+        this.acceptSearch();
       } else {
         this.acceptSelection();
       }

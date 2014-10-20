@@ -142,7 +142,7 @@ ve.dm.CiteprocCompiler.prototype.getSortedIds = function() {
 ve.dm.CiteprocCompiler.prototype.renderReference = function(reference) {
   var refHtml;
 
-  function extractContent() {
+  function extractContent(refHtml) {
     // Note: we only want the rendered reference, without the surrounding layout stuff
     //   AFAIK there are only two cases, with label or without. In case that the style
     //   renderes labels in the bibliography there is an element .csl-right-line containing
@@ -157,7 +157,8 @@ ve.dm.CiteprocCompiler.prototype.renderReference = function(reference) {
 
   var self = this;
   function renderFallback() {
-    console.log("Using fallback for rendering reference ", reference.id);
+    self.sanitizeReference(reference);
+
     // HACK: ve.dm.CiteprocCompiler.getBibliographyEntry is much faster than this implementation.
     // However, in certain cases citeproc crashed, so that we use this slower implementation as
     // fallback.
@@ -175,7 +176,12 @@ ve.dm.CiteprocCompiler.prototype.renderReference = function(reference) {
       "properties": {}
     };
     engine.appendCitationCluster(citation);
-    return engine.makeBibliography()[1][0];
+    try {
+      return engine.makeBibliography()[1][0];
+    } catch (err) {
+      console.error(err);
+      return "Error: invalid citation data.";
+    }
   }
 
   if (this.data[reference.id]) {
@@ -269,4 +275,5 @@ ve.dm.CiteprocCompiler.prototype.retrieveLocale = function(lang){
 ve.dm.CiteprocCompiler.prototype.sanitizeReference = function(reference) {
   // TODO: add more of such
   reference['container-title'] = reference['container-title'] || '';
+  reference['title'] = reference['title'] || '';
 };

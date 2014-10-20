@@ -2,7 +2,21 @@
 ve.ui.ReferencesPanel = function VeUiReferencesPanel( bibliographyNode, config ) {
   OO.EventEmitter.call(this);
 
-  this.$element = $('<div>').addClass('reference-list');
+  config = config || { placeholder: 'No references available.'};
+
+  this.$references = $('<div>').addClass('reference-list');
+  this.$placeholder = $('<div>').addClass('placeholder');
+
+  this.$placeholder.append( [
+    $('<div>').addClass('empty').text(config.placeholder),
+    $('<div>').addClass('searching').text('Searching...').append(
+        $('<div>').addClass('spinner large').append( $('<div>').addClass('throbber') )
+      ),
+    ] ).hide();
+
+  this.$element = $('<div>').addClass('reference-panel');
+  if (config.classes) this.$element.addClass(config.classes);
+  this.$element.append(this.$references, this.$placeholder);
   this.element = this.$element[0];
 
   this.bibliographyNode = bibliographyNode;
@@ -30,7 +44,8 @@ ve.ui.ReferencesPanel.prototype.dispose = function() {
 ve.ui.ReferencesPanel.prototype.clear = function() {
   this.references = [];
   this.cursorIdx = -1;
-  this.$element.empty();
+  this.$references.empty();
+  this.$placeholder.show();
 };
 
 ve.ui.ReferencesPanel.prototype.createReferenceElement = function(refData) {
@@ -50,7 +65,6 @@ ve.ui.ReferencesPanel.prototype.createReferenceElement = function(refData) {
   selectButton.connect(this, { click: [ 'onSelect', refData ] });
   $buttons.append([ selectButton.$element ]);
   $reference.append($buttons);
-
   return $reference;
 };
 
@@ -59,7 +73,7 @@ ve.ui.ReferencesPanel.prototype.setSelectedReferences = function(refIds) {
 };
 
 ve.ui.ReferencesPanel.prototype.scrollToFirstSelected = function() {
-  var $selected = this.$element.find('.selected');
+  var $selected = this.$references.find('.selected');
   if ($selected.length > 0)
   OO.ui.Element.scrollIntoView($selected[0]);
 };
@@ -69,25 +83,30 @@ ve.ui.ReferencesPanel.prototype.onSelect = function(refData) {
 };
 
 ve.ui.ReferencesPanel.prototype.update = function() {
-  var refEls = this.element.children;
-  for (var i = 0; i < this.references.length; i++) {
-    var ref = this.references[i];
-    var el = refEls[i];
-    var $el = $(el);
-    var $label = $el.find('.label');
-    var $content = $el.find('.content');
-    var id = el.dataset.refId;
+  var refEls, ref, el, $el, $label, $content, id, i, existingEntry, compiler;
+  refEls = this.$references[0].children;
+  for (i = 0; i < this.references.length; i++) {
+    ref = this.references[i];
+    el = refEls[i];
+    $el = $(el);
+    $label = $el.find('.label');
+    $content = $el.find('.content');
+    id = el.dataset.refId;
     if (this.selectedReferences.indexOf(id) >= 0) {
       $el.addClass('selected');
     } else {
       $el.removeClass('selected');
     }
-    var existingEntry = this.bibData[id];
+    existingEntry = this.bibData[id];
     if (existingEntry) {
-      $label.html(existingEntry.label || '').show();
+      if (existingEntry.label) {
+        $label.html(existingEntry.label).show();
+      } else {
+        $label.hide();
+      }
       $content.html(existingEntry.content || '');
     } else {
-      var compiler = this.bibliographyNode.getCompiler();
+      compiler = this.bibliographyNode.getCompiler();
       $label.html('').hide();
       if (!$content[0].innerHTML) $content.html(compiler.renderReference(ref));
     }
@@ -97,25 +116,30 @@ ve.ui.ReferencesPanel.prototype.update = function() {
 ve.ui.ReferencesPanel.prototype.addReference = function(refData) {
   this.references.push(refData);
   var $reference = this.createReferenceElement(refData);
-  this.$element.append($reference);
+  this.$references.append($reference);
+  this.$placeholder.hide();
   this.update();
 };
 
 ve.ui.ReferencesPanel.prototype.removeSelectedReferences = function() {
   for (var i = 0; i < this.references.length; i++) {
     if (this.selectedReferences.indexOf(this.references[i].id) >= 0) {
-      this.element.removeChild(this.element.children[i]);
+      this.$references[0].removeChild(this.$references[0].children[i]);
       this.references.splice(i, 1);
       i--;
     }
+  }
+  if (!this.$references[0].children) {
+    this.$placeholder.show();
   }
 };
 
 // a simple AND over all terms in the given searchStr
 ve.ui.ReferencesPanel.prototype.applyFilter = function(searchStr) {
-  var patterns, child, i, pass, content, pattern, re;
+  var patterns, child, i, pass, content, pattern, re, visibleCount;
   patterns = searchStr.toLowerCase().split(/\s+/);
-  for (child = this.element.firstElementChild; child; child = child.nextElementSibling) {
+  visibleCount = 0;
+  for (child = this.$references.firstElementChild; child; child = child.nextElementSibling) {
     content = child.textContent.toLowerCase();
     pass = true;
     for (i = 0; i < patterns.length; i++) {
@@ -130,7 +154,11 @@ ve.ui.ReferencesPanel.prototype.applyFilter = function(searchStr) {
       $(child).hide();
     } else {
       $(child).show();
+      visibleCount++;
     }
+  }
+  if (visibleCount === 0) {
+    this.$placeholder.show();
   }
 };
 
@@ -150,7 +178,7 @@ ve.ui.ReferencesPanel.prototype.moveCursorUp = function() {
 
 ve.ui.ReferencesPanel.prototype.updateCursor = function(oldIdx, newIdx) {
   var oldRef, newRef, refEls;
-  refEls = this.element.children;
+  refEls = this.$references[0].children;
   oldRef = refEls[oldIdx];
   newRef = refEls[newIdx];
   if (oldRef) {
