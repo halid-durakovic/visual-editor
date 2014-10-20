@@ -327,7 +327,7 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
   this.panels[newTab].show();
   this.tabs[newTab].$element.addClass('active');
   this.$body.addClass(newTab);
-  this.searchField.$input.attr("placeholder", "Type to search...");
+  this.searchField.$input.attr("placeholder", "Enter search term...");
   this.$info.text(infos[newTab]);
 
   this.currentPanel.setSelectedReferences( this.citationNode.getAttribute('references') );
