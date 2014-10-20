@@ -78,7 +78,7 @@ span.citation {
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body {
   min-height: 200px;
-  background-color: #F5F5F5;
+  background-color: #444;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .toolbar {
@@ -90,7 +90,7 @@ span.citation {
   display: table-cell;
   overflow: hidden;
   height: 40px;
-  padding-top: 10px;
+  padding-top: 11px;
   padding-left: 40px;
   padding-right: 10px;
 }
@@ -110,11 +110,20 @@ span.citation {
   background: #fff;
 }
 
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab.active .oo-ui-labelElement-label {
+  color: #000;
+}
+
+.ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab:not(.active) {
+  background: rgba(255,255,255,0.1);
+}
+
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab:not(.active):hover {
-  background: #eee;
+  background: rgba(255,255,255,0.2);
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab .oo-ui-labelElement-label {
+  color: #fff;
   /* TODO: center this div within the tab div? */
 }
 
@@ -131,7 +140,7 @@ span.citation {
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .container {
   display: table-row;
   overflow: hidden;
-  background-color: #f8f8f8;
+  /*background-color: #f8f8f8;*/
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .label {
@@ -154,20 +163,25 @@ span.citation {
   background: transparent;
   font-size: 14px;
   margin: 0px;
+  color: #fff;
 }
+
+
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .search-button {
   display: table-cell;
-  background-color: #eee;
+  background-color: #666;
+  /*color: white;*/
   padding: 0px 10px 0 10px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .search-button:hover {
-  background-color: #aaa;
-  color: black;
+  background-color: #000;
+  /*color: white;*/
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .search-button .oo-ui-labelElement-label {
+  color: white;
   margin-left: 0px;
 }
 
@@ -370,9 +384,9 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement {
-  background-color: #fff;
+  background-color: #ccc;
   color: white;
-  border: solid 1px #aaa;
+  /*border: solid 1px #aaa;*/
   opacity: 0.5;
 }
 
@@ -386,7 +400,7 @@ span.citation {
   background-color: #333;
   color: white;
   /* add a transparent border to avoid jumping */
-  border: solid 1px rgba(0,0,0,0);
+  /*border: solid 1px rgba(0,0,0,0);*/
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .reference-list .reference .buttons .oo-ui-buttonElement:hover .oo-ui-icon-citation,
