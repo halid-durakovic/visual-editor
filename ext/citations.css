@@ -124,6 +124,9 @@ span.citation {
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab .oo-ui-labelElement-label {
   /* TODO: center this div within the tab div? */
+  font-weight: bold;
+  font-size: 10px;
+  text-transform: uppercase;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar {
