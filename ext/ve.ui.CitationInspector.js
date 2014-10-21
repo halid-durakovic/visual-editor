@@ -41,7 +41,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
   this.searchSpinner = $('<div>').addClass('spinner').append( $('<div>').addClass('throbber') );
   this.referencesTab = new OO.ui.ActionWidget({
     action: 'references',
-    label: 'References',
+    label: 'Select existing',
     classes: ['tab', 'referencesTab']
   });
   $searchBarContainer.append([ $searchFieldLabel, this.searchField.$element, this.searchSpinner, this.searchButton.$element ] );
@@ -49,7 +49,7 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   this.newReferencesTab = new OO.ui.ActionWidget({
     action: 'newReferences',
-    label: 'New References',
+    label: 'Add new',
     classes: ['tab', 'newReferencesTab']
   });
 

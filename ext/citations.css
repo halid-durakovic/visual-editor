@@ -78,7 +78,7 @@ span.citation {
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body {
   min-height: 200px;
-  background-color: #444;
+  background-color: #eee;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .toolbar {
@@ -123,7 +123,6 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab .oo-ui-labelElement-label {
-  color: #fff;
   /* TODO: center this div within the tab div? */
 }
 
@@ -140,6 +139,7 @@ span.citation {
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .container {
   display: table-row;
   overflow: hidden;
+  position: relative;
   /*background-color: #f8f8f8;*/
 }
 
@@ -148,6 +148,7 @@ span.citation {
   text-transform: uppercase;
   font-weight: bold;
   padding-left: 15px;
+  font-size: 10px;
   color: #777;
 }
 
@@ -163,16 +164,15 @@ span.citation {
   background: transparent;
   font-size: 14px;
   margin: 0px;
-  color: #fff;
 }
-
-
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .search-button {
   display: table-cell;
   background-color: #666;
-  /*color: white;*/
-  padding: 0px 10px 0 10px;
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  padding: 3px 8px;
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .searchbar .search-button:hover {
