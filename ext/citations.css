@@ -115,11 +115,11 @@ span.citation {
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab:not(.active) {
-  background: rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.1);
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab:not(.active):hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.05);
 }
 
 .ve-ui-nodeInspector.ve-ui-citationInspector-content .oo-ui-window-body .tabs .tab .oo-ui-labelElement-label {
