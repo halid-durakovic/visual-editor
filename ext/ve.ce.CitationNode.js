@@ -45,7 +45,13 @@ ve.ce.CitationNode.prototype.onUpdate = function () {
 ve.ce.CitationNode.prototype.updateLabel = function() {
   var label = this.model.getAttribute('label');
   this.$element.html(label);
-  if (this.surface) this.redrawHighlights();
+  if (this.surface) {
+    // HACK: there were some timing issues, creating the highlights too early.
+    // Waiting a bit helped.
+    window.setTimeout(ve.bind( function() {
+      this.redrawHighlights();
+    }, this ), 100);
+  }
 };
 
 ve.ce.CitationNode.prototype.onTeardown = function () {
