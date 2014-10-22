@@ -249,7 +249,7 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
         this.inputMethod ="search";
         if (this.currentPanel) this.currentPanel.deactivateCursor();
       }, this ));
-      this.searchField.$input.focus();
+      // this.searchField.$input.focus();
       var tabName = 'local';
       this.openTab(tabName);
     }, this )
@@ -317,6 +317,10 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
       localRefs.addReference(ref.element.attributes);
     }, this);
     localRefs.setFilter('');
+    this.$searchBar.hide();
+  } else if (newTab === 'new') {
+    this.$searchBar.show();
+    this.searchField.$input.focus();
   }
 
   // enabel new tab
