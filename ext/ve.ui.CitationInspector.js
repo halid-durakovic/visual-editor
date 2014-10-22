@@ -55,14 +55,6 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   // set when opening a tab
   this.currentTabName = "";
-  this.tabStates = {
-    "local": {
-      searchStr: ""
-    },
-    "new": {
-      searchStr: ""
-    }
-  };
 
   this.$info =  $('<div>').addClass('description');
 
@@ -79,9 +71,6 @@ ve.ui.CitationInspector = function VeUiCitationInspector( config ) {
 
   // extracted from fragment on setup when the inspector is opened for an existing citation
   this.citationNode = null;
-
-  // to support keyboard driven selection
-  this.filterPattern = "";
 
   this.removeButton.connect(this, { click: ['executeAction', 'remove' ] });
   this.closeButton.connect(this, { click: ['executeAction', 'done' ] });
@@ -190,12 +179,12 @@ ve.ui.CitationInspector.prototype.getSetupProcess = function ( data ) {
         this.panels = {
           'local': new ve.ui.ReferencesPanel(this.bibliography, {
             classes: 'local',
-            placeholder: 'No references available in this article. Start a search and add new references.'
+            placeholder: OO.ui.deferMsg( 'visualeditor-citationinspector-tab-local-panel-placeholder' )
           }),
           'new': new ve.ui.ReferencesPanel(this.bibliography, {
             removeSelectedReferences: true,
             classes: 'new',
-            placeholder: 'Start a search and find new references.'
+            placeholder: OO.ui.deferMsg( 'visualeditor-citationinspector-tab-new-panel-placeholder' )
           })
         };
         this.tabs = {
@@ -249,9 +238,7 @@ ve.ui.CitationInspector.prototype.getReadyProcess = function ( data ) {
         this.inputMethod ="search";
         if (this.currentPanel) this.currentPanel.deactivateCursor();
       }, this ));
-      // this.searchField.$input.focus();
-      var tabName = 'local';
-      this.openTab(tabName);
+      this.openTab('local');
     }, this )
     .next( function() {
       this.$element.parents('.oo-ui-popupWidget-popup').css({ visibility: '' });
@@ -280,24 +267,16 @@ ve.ui.CitationInspector.prototype.getTeardownProcess = function ( data ) {
 };
 
 /**
- * Retrieves the current tab's state.
- */
-ve.ui.CitationInspector.prototype.getTabState = function() {
-  return this.tabStates[this.currentTabName];
-};
-
-/**
  * Opens the tab with given name;
  */
 ve.ui.CitationInspector.prototype.openTab = function(newTab) {
-  var state, oldTab, infos;
+  var oldTab, infos;
   if (!this.tabs[newTab]) throw new Error('Unknown tab ' + newTab);
-  state = this.getTabState();
   oldTab = this.currentTabName;
   // TODO: these should come from i18n
   infos = {
-    'local': 'These References are available in this Article. Enter text to filter or start a search to find new references.',
-    'new': 'References can be added to the Article by adding a citation. Start a search to find new references.'
+    'local': 'These References are available in this article and can be added to the current citation.',
+    'new': 'Start a search to find new references.'
   };
   // disable old tab
   if (oldTab) {
@@ -307,8 +286,6 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
   }
 
   if (newTab === 'local') {
-    // always reset the filter for local references when opening th dialog
-    this.tabStates.local.searchStr = '';
     // always recreate the local reference list when opening this tab
     var refs = this.bibliography.getSortedReferences();
     var localRefs = this.panels.local;
@@ -316,7 +293,6 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
     refs.forEach(function(ref) {
       localRefs.addReference(ref.element.attributes);
     }, this);
-    localRefs.setFilter('');
     this.$searchBar.hide();
   } else if (newTab === 'new') {
     this.$searchBar.show();
@@ -326,17 +302,15 @@ ve.ui.CitationInspector.prototype.openTab = function(newTab) {
   // enabel new tab
   this.currentTabName = newTab;
   this.currentPanel = this.panels[newTab];
-  state = this.getTabState();
-  this.searchField.$input.val(state.searchStr);
   this.panels[newTab].show();
   this.tabs[newTab].$element.addClass('active');
   this.$body.addClass(newTab);
-  this.searchField.$input.attr("placeholder", "Enter search term...");
-  this.$info.text(infos[newTab]);
+  this.searchField.$input.attr( "placeholder", OO.ui.deferMsg( 'visualeditor-citationinspector-searchfield-placeholder' ) );
 
   this.currentPanel.setSelectedReferences( this.citationNode.getAttribute('references') );
   this.currentPanel.update();
   this.currentPanel.scrollToFirstSelected();
+  this.updateInfo();
 };
 
 ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
@@ -363,26 +337,12 @@ ve.ui.CitationInspector.prototype.toggleReference = function( refId ) {
   this.bibliography._compile();
   this.currentPanel.setSelectedReferences(this.citationNode.getAttribute('references'));
   this.currentPanel.update();
+  this.updateInfo();
 };
 
 ve.ui.CitationInspector.prototype.acceptSearch = function() {
   var searchStr = this.searchField.$input.val().trim();
-  if (this.currentTabName === "local" && searchStr.length > 0) {
-    this.tabStates['new'].searchStr = searchStr;
-    this.openTab('new');
-  }
-  this.lookupExternalReferences();
-};
-
-ve.ui.CitationInspector.prototype.showLocalReferences = function( ) {
-  var state, searchStr;
-  searchStr = this.searchField.$input.val().trim();
-  state = this.getTabState();
-  if (state.searchStr !== searchStr) {
-    window.console.error("FIXME: search field is not in sync with tab state.", state, searchStr);
-  }
-  this.currentPanel.setFilter(searchStr);
-  this.currentPanel.applyFilter(searchStr);
+  this.lookupExternalReferences(searchStr);
 };
 
 ve.ui.CitationInspector.prototype._lookupExternalReferences = function(name, searchStr, panel) {
@@ -396,6 +356,7 @@ ve.ui.CitationInspector.prototype._lookupExternalReferences = function(name, sea
     if (!this.bibliography.hasReference(id)) {
       data.id = id;
       panel.addReference(data);
+      this.updateInfo();
     }
   }).done(function() {
     this.$body.removeClass('searching');
@@ -422,33 +383,18 @@ ve.ui.CitationInspector.prototype.lookupExternalReferences = function() {
 };
 
 ve.ui.CitationInspector.prototype.onKeyDown = function( e ) {
-  var state, searchStr;
-
   if (e.keyCode !== OO.ui.Keys.UP && e.keyCode !== OO.ui.Keys.DOWN && e.keyCode !== OO.ui.Keys.ENTER) {
     // TODO: we should make sure that we react only to keyboard events that indeed change the search field
     this.inputMethod = "search";
     this.currentPanel.$element.removeClass('select').addClass('search');
-    state = this.getTabState();
-
-    // Apply the search/filter while typing (only for local references)
-    if (this.currentTabName === "local") {
-      window.setTimeout(ve.bind( function() {
-        // filter is only in for local references where it is ok to do that on every change of the pattern
-        searchStr = this.searchField.$input.val().trim();
-        if (state.searchStr !== searchStr) {
-          state.searchStr = searchStr;
-          this.currentPanel.setFilter(searchStr);
-          this.currentPanel.applyFilter(searchStr);
-        }
-      }, this), 0);
-    }
   }
   // UP || DOWN || ENTER
   else {
-    state = this.getTabState();
     if (e.keyCode === OO.ui.Keys.ENTER) {
       if (this.inputMethod === "search") {
-        this.acceptSearch();
+        if (this.currentTabName === 'new') {
+          this.acceptSearch();
+        }
       } else {
         this.acceptSelection();
       }
@@ -492,6 +438,16 @@ ve.ui.CitationInspector.prototype.acceptSelection = function() {
   } else {
     window.console.error('No reference selected.');
   }
+};
+
+ve.ui.CitationInspector.prototype.updateInfo = function() {
+  var msgKey;
+  if (this.currentPanel.references.length === 0) {
+    msgKey = 'visualeditor-citationinspector-tab-' + this.currentTabName + '-info-empty';
+  } else {
+    msgKey = 'visualeditor-citationinspector-tab-' + this.currentTabName + '-info';
+  }
+  this.$info.text( OO.ui.deferMsg( msgKey ) );
 };
 
 /* Registration */
