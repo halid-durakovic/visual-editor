@@ -8,29 +8,32 @@ There are severeal singletons used in the project which make modularization hard
 
 ### `ve.init.platform`:
 
-  Is used, e.g., for i18n messages
+Is used, e.g., for i18n messages
 
-  ```
-  /home/oliver/projects/plos/tahi-refactorings/src/ve.utils.js:
-    359   */
-    360  ve.msg = function () {
-    361:   // Avoid using bind because ve.init.platform doesn't exist yet.
-    362:   // TODO: Fix dependency issues between ve.js and ve.init.platform
-    363:   return ve.init.platform.getMessage.apply( ve.init.platform, arguments );
-    364  };
-    365
-    ...
-   1177   */
-   1178  ve.getSystemPlatform = function () {
-   1179:   return ( ve.init.platform && ve.init.platform.constructor || ve.init.Platform ).static.getSystemPlatform();
-   1180  };
-   1181
-  ```
+```
+/home/oliver/projects/plos/tahi-refactorings/src/ve.utils.js:
+  359   */
+  360  ve.msg = function () {
+  361:   // Avoid using bind because ve.init.platform doesn't exist yet.
+  362:   // TODO: Fix dependency issues between ve.js and ve.init.platform
+  363:   return ve.init.platform.getMessage.apply( ve.init.platform, arguments );
+  364  };
+  365
+  ...
+ 1177   */
+ 1178  ve.getSystemPlatform = function () {
+ 1179:   return ( ve.init.platform && ve.init.platform.constructor || ve.init.Platform ).static.getSystemPlatform();
+ 1180  };
+ 1181
+```
 
-  The most important thing is to have `ve.init.platform` in place before including ve.utils.js.
+The most important thing is to have `ve.init.platform` in place before including ve.utils.js.
+I.e., a custom Platform implementation can be used, but needs to be registered as `ve.init.platform`
 
 
-### `ve.dm.nodeFactory` is used all over the whole project
+### `ve.dm.nodeFactory`
+
+Is used all over the whole project
 
 - mainly it is used for the purpose of creating new nodes and for querying static properties of node types
   The latter seems unnecessary if it was implemented on the node in first place
@@ -289,8 +292,16 @@ There are severeal singletons used in the project which make modularization hard
 ```
 
 
+### Others
 
-- ve.dm.ModelFactory is using other singletons:
+- `ve.dm.nodeFactory`
+- `ve.dm.annotationFactory`
+- `ve.dm.metaItemFactory`
+- `ve.ce.nodeFactory`
+- `ve.dm.modelRegistry`
+- `ve.dm.ModelRegistry`
+
+  Is using other singletons:
 
   ```
       ve.dm.annotationFactory.register( constructor );
@@ -298,4 +309,3 @@ There are severeal singletons used in the project which make modularization hard
       ve.dm.metaItemFactory.register( constructor );
   ```
   Instead it should use injected instances and singletons only as default (~for legacy)
-

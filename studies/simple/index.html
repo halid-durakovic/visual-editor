@@ -11,54 +11,25 @@
     <script src="../../lib/oojs/oojs.jquery.js"></script>
     <!-- oojs-ui -->
     <script src="../../lib/oojs-ui/oojs-ui.js"></script>
-
     <!-- jquery.uls.data -->
     <script src="../../lib/jquery.uls/src/jquery.uls.data.js"></script>
     <script src="../../lib/jquery.uls/src/jquery.uls.data.utils.js"></script>
+    <!-- unicodejs -->
+    <script src="../../lib/unicodejs/unicodejs.js"></script>
+    <!-- rangefix -->
+    <script src="../../lib/rangefix/rangefix.js"></script>
+    <!-- visualEditor.base.build -->
+    <script src="../../src/ve.js"></script>
+    <script src="../../src/ve.utils.js"></script>
+    <script src="../../src/init/ve.init.js"></script>
+    <script src="../../src/init/ve.init.Platform.js"></script>
+    <!-- oojs-ui-apex -->
+    <script src="../../lib/oojs-ui/oojs-ui-apex.js"></script>
 
-        <!-- jquery.i18n -->
-<!--
-        <script src="../../lib/jquery.i18n/src/jquery.i18n.js"></script>
-        <script src="../../lib/jquery.i18n/src/jquery.i18n.messagestore.js"></script>
-        <script src="../../lib/jquery.i18n/src/jquery.i18n.parser.js"></script>
-        <script src="../../lib/jquery.i18n/src/jquery.i18n.emitter.js"></script>
-        <script src="../../lib/jquery.i18n/src/jquery.i18n.language.js"></script>
-        <script src="../../lib/jquery.i18n/src/jquery.i18n.fallbacks.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/bs.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/dsb.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/fi.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/ga.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/he.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/hsb.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/hu.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/hy.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/la.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/ml.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/os.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/ru.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/sl.js"></script>
-        <script src="../../lib/jquery.i18n/src/languages/uk.js"></script>
--->
-        <!-- unicodejs -->
-        <script src="../../lib/unicodejs/unicodejs.js"></script>
-
-        <!-- rangefix -->
-        <script src="../../lib/rangefix/rangefix.js"></script>
-
-        <!-- visualEditor.base.build -->
-        <script src="../../src/ve.js"></script>
-        <script src="../../src/ve.utils.js"></script>
-        <script src="../../src/ve.debug.js"></script>
-        <script src="../../src/ve.track.js"></script>
-        <script src="../../src/init/ve.init.js"></script>
-        <script src="../../src/init/ve.init.Platform.js"></script>
-        <script src="../../src/init/ve.init.Target.js"></script>
-
-        <script src="../src/tahi.js"></script>
-        <script src="../src/tahi.Platform.js"></script>
-
-        <!-- oojs-ui-apex -->
-        <script src="../../lib/oojs-ui/oojs-ui-apex.js"></script>
+    <!-- TAHI Platform implementation -->
+    <!-- Note: Platform must be assigned to 've.init.platform' before any of the model registry things ǵet loaded -->
+    <script src="../src/tahi.js"></script>
+    <script src="../src/tahi.Platform.js"></script>
 
     <script src="../../src/ve.Range.js"></script>
     <script src="../../src/ve.Node.js"></script>
@@ -287,12 +258,17 @@
     <script src="../../src/ui/inspectors/ve.ui.LanguageInspector.js"></script>
     <script src="../../src/ui/inspectors/ve.ui.SpecialCharacterInspector.js"></script>
 
-    <script src="./study.js"></script>
+    <!-- visualEditor.desktop.build -->
+    <script src="../../src/ui/ve.ui.DesktopSurface.js"></script>
+    <script src="../../src/ui/ve.ui.DesktopContext.js"></script>
+    <script src="../../src/ui/windowmanagers/ve.ui.DesktopInspectorWindowManager.js"></script>
 
+    <script src="./study.js"></script>
   </head>
 
   <body>
-      HELLO
+    <div id="content-panel">
+    </div>
   </body>
 
 </html>
