@@ -1,30 +1,52 @@
 
-// Experimental: we will change the architecture in future, making nodes and view configurable at application level
-tahi.EmbeddedSurface = function tahiEmbeddedSurface( dmDoc, $element, config ) {
+/* global tahi: true */
 
-  var surface = new ve.ui.DesktopSurface( dmDoc );
+// Experimental: we will change the architecture in future, making nodes and view configurable at application level
+tahi.EmbeddedSurface = function tahiEmbeddedSurface( dmDoc, $element, toolbar ) {
+
+  this.toolbar = toolbar;
+
+  this.surface = new ve.ui.DesktopSurface( dmDoc );
+
   // Very important: first attach the surface to the DOM, then call initialize
-  $element.append(surface.$element);
+  $element.append(this.surface.$element);
   // does some global element injection plus activates tracking of changes
-  surface.initialize();
+  this.surface.initialize();
 
   // Events
 
-  var surfaceModel = surface.getModel();
+  this.surfaceModel = this.surface.getModel();
   dmDoc.connect(this, {
     'transact': 'onDocumentTransact'
   });
-  surfaceModel.connect(this, {
-    'select': 'onSurfaceSelect'
+  this.surfaceModel.connect(this, {
+    'select': 'onSurfaceSelect',
+    'contextChange': 'onSurfaceContextChange'
+  });
+  this.toolbar.connect(this, {
+    'select': 'onToolbarSelect',
   });
 };
 
 // Experimental: we would like to create kind of an VE agnostic abstraction layer
 tahi.EmbeddedSurface.prototype.onDocumentTransact = function() {
-  console.log('received "transact" from dm.Document', arguments);
+  window.console.log('received "transact" from dm.Document', arguments);
 };
 
 // Experimental: we would like to create kind of an VE agnostic abstraction layer
 tahi.EmbeddedSurface.prototype.onSurfaceSelect = function() {
-  console.log('received "select" from dm.Surface', arguments);
+  window.console.log('received "select" from dm.Surface', arguments);
+  var fragment = this.surfaceModel.getFragment();
+  this.toolbar.updateTools(fragment);
+};
+
+// Experimental: we would like to create kind of an VE agnostic abstraction layer
+tahi.EmbeddedSurface.prototype.onSurfaceContextChange = function() {
+  window.console.log('received "contextChange" from dm.Surface', arguments);
+  var fragment = this.surfaceModel.getFragment();
+  this.toolbar.updateTools(fragment);
+};
+
+tahi.EmbeddedSurface.prototype.onToolbarSelect = function(command) {
+  command.execute( this.surface );
 };

@@ -1,0 +1,34 @@
+
+ul#toolbar{
+ width:500px;
+ height:52px;
+ margin:0px;
+ padding:0px;
+ background-color:#fff;
+ border-bottom:2px solid #ccc;
+ list-style-type: none;
+}
+
+ul#toolbar li{
+ display:inline;
+}
+
+ul#toolbar li a {
+  text-align: center;
+  text-decoration: none;
+  float:left;
+  cursor:pointer;
+  width:30px;
+  height:30px;
+  border: solid 1px black;
+  line-height: 30px;
+  color: black;
+}
+
+ul#toolbar li a:hover{
+ background-color: #ccc;
+}
+
+ul#toolbar li a[data-enabled=true]{
+  background-color: #ccc;
+}

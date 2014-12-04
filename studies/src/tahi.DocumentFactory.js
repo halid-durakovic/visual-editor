@@ -50,7 +50,9 @@ tahi.defaultNodeViews = [
   ve.ce.HeadingNode,
   ve.ce.InternalListNode,
   ve.ce.ParagraphNode,
-  ve.ce.TextNode
+  ve.ce.TextNode,
+  ve.ce.BoldAnnotation,
+  ve.ce.ItalicAnnotation
 ];
 
 tahi.defaultNodeModels = [
@@ -58,5 +60,7 @@ tahi.defaultNodeModels = [
   ve.dm.HeadingNode,
   ve.dm.InternalListNode,
   ve.dm.ParagraphNode,
-  ve.dm.TextNode
+  ve.dm.TextNode,
+  ve.dm.BoldAnnotation,
+  ve.dm.ItalicAnnotation
 ];
